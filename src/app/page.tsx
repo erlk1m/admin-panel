@@ -1,65 +1,427 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
+import { useState, useEffect } from "react";
+import { Tv, ShieldAlert, Key, Save, Globe, RefreshCcw, Bell, AlertTriangle, Image as ImageIcon } from "lucide-react";
+
+export default function AdminPanel() {
+  const [adminPassword, setAdminPassword] = useState("");
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  const [m3uUrl, setM3uUrl] = useState("");
+  const [m3uUrl2, setM3uUrl2] = useState("");
+  const [m3uUrl3, setM3uUrl3] = useState("");
+  interface TokenObject {
+    code: string;
+    expiresAt: number | null;
+    label: string;
+  }
+
+  const [tokens, setTokens] = useState<TokenObject[]>([]); // Ganti accessCode jadi tokens
+  const [customTokenInput, setCustomTokenInput] = useState(""); // Input untuk token custom
+  const [tokenDuration, setTokenDuration] = useState("lifetime");
+  const [notificationText, setNotificationText] = useState("");
+  const [notificationEnabled, setNotificationEnabled] = useState(false);
+  const [backgroundUrl, setBackgroundUrl] = useState("");
+  const [isMaintenance, setIsMaintenance] = useState(false);
+
+  useEffect(() => {
+    // Coba ambil config yang ada (publik)
+    fetch("/api/config")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data) {
+          setM3uUrl(data.m3uUrl || "");
+          setM3uUrl2(data.m3uUrl2 || "");
+          setM3uUrl3(data.m3uUrl3 || "");
+          
+          // Migrasi otomatis jika masih pakai accessCode lama
+          if (data.tokens && Array.isArray(data.tokens)) {
+            const mappedTokens = data.tokens.map((t: any) => {
+              if (typeof t === 'string') {
+                return { code: t, expiresAt: null, label: "Lifetime" };
+              }
+              return t;
+            });
+            setTokens(mappedTokens);
+          } else if (data.accessCode) {
+            setTokens([{ code: data.accessCode, expiresAt: null, label: "Lifetime" }]);
+          } else {
+            setTokens([]);
+          }
+
+          setNotificationText(data.notificationText || "");
+          setNotificationEnabled(data.notificationEnabled || false);
+          setBackgroundUrl(data.backgroundUrl || "");
+          setIsMaintenance(data.isMaintenance || false);
+        }
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
+  }, []);
+
+  const handleLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (adminPassword.trim() !== "") {
+      setIsAuthenticated(true);
+    }
+  };
+
+  const getExpirationParams = (duration: string) => {
+    const now = Date.now();
+    switch (duration) {
+      case "1h": return { expiresAt: now + 3600000, label: "1 Jam" };
+      case "1d": return { expiresAt: now + 86400000, label: "1 Hari" };
+      case "1w": return { expiresAt: now + 604800000, label: "1 Minggu" };
+      case "1m": return { expiresAt: now + 2592000000, label: "1 Bulan" };
+      default: return { expiresAt: null, label: "Lifetime" };
+    }
+  };
+
+  const generateRandomToken = () => {
+    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    let token = "KIM-";
+    for (let i = 0; i < 6; i++) {
+      token += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    if (!tokens.some(t => t.code === token)) {
+      setTokens([...tokens, { code: token, ...getExpirationParams(tokenDuration) }]);
+    }
+  };
+
+  const addCustomToken = () => {
+    const cleanToken = customTokenInput.trim();
+    if (cleanToken !== "" && !tokens.some(t => t.code === cleanToken)) {
+      setTokens([...tokens, { code: cleanToken, ...getExpirationParams(tokenDuration) }]);
+      setCustomTokenInput("");
+    }
+  };
+
+  const removeToken = (tokenToRemove: string) => {
+    setTokens(tokens.filter(t => t.code !== tokenToRemove));
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const res = await fetch("/api/config", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-admin-password": adminPassword,
+        },
+        body: JSON.stringify({
+          m3uUrl,
+          m3uUrl2,
+          m3uUrl3,
+          tokens, // Kirim array tokens
+          notificationText,
+          notificationEnabled,
+          backgroundUrl,
+          isMaintenance,
+        }),
+      });
+
+      if (res.ok) {
+        alert("Pengaturan berhasil disimpan ke Firebase!");
+      } else {
+        const err = await res.json();
+        alert("Gagal menyimpan: " + (err.error || "Password Admin Salah!"));
+        if (res.status === 401) setIsAuthenticated(false);
+      }
+    } catch (e) {
+      alert("Terjadi kesalahan jaringan.");
+    }
+    setSaving(false);
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center text-white">
+        <RefreshCcw className="animate-spin w-8 h-8 text-red-500" />
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-[#110000] to-[#000000] flex items-center justify-center p-4">
+        <div className="bg-[#1a1a1a]/80 backdrop-blur-xl p-8 rounded-3xl border border-white/10 w-full max-w-md shadow-2xl">
+          <div className="flex justify-center mb-6">
+            <div className="bg-red-600/20 p-4 rounded-full">
+              <Tv className="w-10 h-10 text-red-500" />
+            </div>
+          </div>
+          <h1 className="text-2xl font-bold text-center text-white mb-2">KIMTV Admin Panel</h1>
+          <p className="text-gray-400 text-center text-sm mb-8">Silakan masukkan password admin untuk melanjutkan.</p>
+          
+          <form onSubmit={handleLogin} className="space-y-6">
+            <div>
+              <div className="relative">
+                <ShieldAlert className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <input
+                  type="password"
+                  required
+                  placeholder="Admin Password"
+                  value={adminPassword}
+                  onChange={(e) => setAdminPassword(e.target.value)}
+                  className="w-full bg-black/50 border border-white/10 text-white rounded-xl py-3 pl-12 pr-4 focus:outline-none focus:border-red-500 transition-colors"
+                />
+              </div>
+            </div>
+            <button
+              type="submit"
+              className="w-full bg-gradient-to-r from-red-600 to-red-800 text-white font-bold py-3 rounded-xl hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
+            >
+              <Key className="w-5 h-5" /> Masuk Panel
+            </button>
+          </form>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+    <div className="min-h-screen bg-[#0a0a0a] text-white p-4 md:p-8">
+      <div className="max-w-6xl mx-auto space-y-8">
+        {/* Header */}
+        <div className="flex items-center justify-between bg-[#111] p-6 rounded-3xl border border-white/5">
+          <div className="flex items-center gap-4">
+            <div className="bg-red-500 p-3 rounded-2xl">
+              <Tv className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <h1 className="text-xl font-bold">KIMTV Dashboard</h1>
+              <p className="text-gray-400 text-sm">Kelola pengaturan aplikasi Android secara real-time</p>
+            </div>
+          </div>
+          <button 
+            onClick={() => setIsAuthenticated(false)}
+            className="text-gray-400 hover:text-white transition-colors text-sm font-medium"
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+            Logout
+          </button>
         </div>
-      </main>
+
+        {/* Content */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          
+          {/* Card 1: Playlist M3U Multi-Server */}
+          <div className="bg-[#111] p-6 rounded-3xl border border-white/5 space-y-4 md:col-span-2">
+            <div className="flex items-center gap-3 border-b border-white/10 pb-4 mb-4">
+              <Globe className="text-blue-500" />
+              <h2 className="text-lg font-semibold">Multi-Server Playlist (M3U)</h2>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div>
+                <label className="block text-sm font-bold text-blue-400 mb-2">Server Utama</label>
+                <input
+                  type="url"
+                  value={m3uUrl}
+                  onChange={(e) => setM3uUrl(e.target.value)}
+                  placeholder="https://server1.com/list.m3u"
+                  className="w-full bg-black/50 border border-blue-500/30 text-white rounded-xl p-3 focus:outline-none focus:border-blue-500 transition-colors"
+                />
+              </div>
+              <div>
+                <label className="block text-sm text-gray-400 mb-2">Server Cadangan 1</label>
+                <input
+                  type="url"
+                  value={m3uUrl2}
+                  onChange={(e) => setM3uUrl2(e.target.value)}
+                  placeholder="https://server2.com/list.m3u"
+                  className="w-full bg-black/50 border border-white/10 text-white rounded-xl p-3 focus:outline-none focus:border-blue-500 transition-colors"
+                />
+              </div>
+              <div>
+                <label className="block text-sm text-gray-400 mb-2">Server Cadangan 2</label>
+                <input
+                  type="url"
+                  value={m3uUrl3}
+                  onChange={(e) => setM3uUrl3(e.target.value)}
+                  placeholder="https://server3.com/list.m3u"
+                  className="w-full bg-black/50 border border-white/10 text-white rounded-xl p-3 focus:outline-none focus:border-blue-500 transition-colors"
+                />
+              </div>
+            </div>
+            <p className="text-xs text-gray-500 mt-2">Jika Server Utama gagal dimuat, aplikasi akan otomatis mencoba Server Cadangan tanpa sepengetahuan pengguna.</p>
+          </div>
+
+          {/* Card 2: Keamanan Akses (Multi-Token) */}
+          <div className="bg-[#111] p-6 rounded-3xl border border-white/5 space-y-6">
+            <div className="flex items-center justify-between border-b border-white/10 pb-4">
+              <div className="flex items-center gap-3">
+                <Key className="text-yellow-500" />
+                <h2 className="text-lg font-semibold">Manajemen Token Akses</h2>
+              </div>
+              <span className="bg-yellow-500/20 text-yellow-500 text-xs font-bold px-2 py-1 rounded-lg">
+                {tokens.length} Token Aktif
+              </span>
+            </div>
+            
+            <div className="space-y-4">
+              {/* Tambah Token Baru */}
+              <div className="flex flex-col gap-2">
+                <label className="block text-sm text-gray-400">Buat Token Custom</label>
+                <div className="flex flex-wrap gap-2">
+                  <select
+                    value={tokenDuration}
+                    onChange={(e) => setTokenDuration(e.target.value)}
+                    className="bg-black/50 border border-white/10 text-white rounded-xl px-3 py-3 focus:outline-none focus:border-yellow-500 text-sm"
+                  >
+                    <option value="lifetime">Lifetime</option>
+                    <option value="1h">1 Jam</option>
+                    <option value="1d">1 Hari</option>
+                    <option value="1w">1 Minggu</option>
+                    <option value="1m">1 Bulan</option>
+                  </select>
+                  <input
+                    type="text"
+                    value={customTokenInput}
+                    onChange={(e) => setCustomTokenInput(e.target.value)}
+                    placeholder="Misal: VIP-BUDI"
+                    className="flex-1 bg-black/50 border border-white/10 text-white rounded-xl p-3 focus:outline-none focus:border-yellow-500 transition-colors min-w-[150px]"
+                  />
+                  <button 
+                    onClick={addCustomToken}
+                    className="bg-yellow-600 hover:bg-yellow-700 text-white font-bold px-4 py-3 rounded-xl transition-colors"
+                  >
+                    Tambah
+                  </button>
+                </div>
+              </div>
+
+              <button 
+                onClick={generateRandomToken}
+                className="w-full bg-white/5 hover:bg-white/10 text-white border border-white/10 font-medium py-3 rounded-xl transition-colors text-sm"
+              >
+                + Generate Token Acak
+              </button>
+
+              {/* Daftar Token Aktif */}
+              <div className="mt-4 pt-4 border-t border-white/5 max-h-48 overflow-y-auto pr-2 space-y-2">
+                {tokens.length === 0 ? (
+                  <p className="text-sm text-gray-500 text-center py-4">Belum ada token. Aplikasi TV akan menolak semua masuk.</p>
+                ) : (
+                  tokens.map((tokenObj, idx) => (
+                    <div key={idx} className="flex items-center justify-between bg-black/40 p-3 rounded-xl border border-white/5">
+                      <div>
+                        <span className="font-mono text-yellow-400 font-bold block">{tokenObj.code}</span>
+                        <span className="text-xs text-gray-400">
+                          Durasi: {tokenObj.label} 
+                          {tokenObj.expiresAt ? ` (s.d ${new Date(tokenObj.expiresAt).toLocaleString()})` : ""}
+                        </span>
+                      </div>
+                      <button 
+                        onClick={() => removeToken(tokenObj.code)}
+                        className="text-red-500 hover:text-red-400 text-sm font-bold bg-red-500/10 hover:bg-red-500/20 px-3 py-1 rounded-lg transition-colors"
+                      >
+                        Hapus
+                      </button>
+                    </div>
+                  ))
+                )}
+              </div>
+              <p className="text-xs text-gray-500 mt-2">Hapus token untuk langsung mengeluarkan pengguna (logout) dari TV mereka.</p>
+            </div>
+          </div>
+
+          {/* Card 3: Wallpaper TV */}
+          <div className="bg-[#111] p-6 rounded-3xl border border-white/5 space-y-6">
+            <div className="flex items-center gap-3 border-b border-white/10 pb-4">
+              <ImageIcon className="text-purple-500" />
+              <h2 className="text-lg font-semibold">Wallpaper TV (Background)</h2>
+            </div>
+            <div>
+              <label className="block text-sm text-gray-400 mb-2">URL Gambar Latar Belakang</label>
+              <input
+                type="url"
+                value={backgroundUrl}
+                onChange={(e) => setBackgroundUrl(e.target.value)}
+                placeholder="https://contoh.com/gambar-bagus.jpg"
+                className="w-full bg-black/50 border border-white/10 text-white rounded-xl p-3 focus:outline-none focus:border-purple-500 transition-colors"
+              />
+              <p className="text-xs text-gray-500 mt-2">Kosongkan kolom ini jika ingin menggunakan wallpaper bawaan aplikasi.</p>
+            </div>
+          </div>
+
+          {/* Card 4: Notifikasi / Marquee */}
+          <div className="bg-[#111] p-6 rounded-3xl border border-white/5 space-y-6 md:col-span-2">
+            <div className="flex items-center gap-3 border-b border-white/10 pb-4">
+              <Bell className="text-green-500" />
+              <h2 className="text-lg font-semibold">Teks Berjalan (Marquee)</h2>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+              <div className="md:col-span-3">
+                <label className="block text-sm text-gray-400 mb-2">Teks Pengumuman</label>
+                <input
+                  type="text"
+                  value={notificationText}
+                  onChange={(e) => setNotificationText(e.target.value)}
+                  placeholder="Contoh: Selamat datang di KIMTV..."
+                  className="w-full bg-black/50 border border-white/10 text-white rounded-xl p-3 focus:outline-none focus:border-green-500 transition-colors"
+                />
+              </div>
+              <div className="flex flex-col justify-end">
+                <label className="flex items-center gap-3 cursor-pointer p-3 bg-black/50 rounded-xl border border-white/10">
+                  <div className="relative">
+                    <input 
+                      type="checkbox" 
+                      className="sr-only" 
+                      checked={notificationEnabled}
+                      onChange={(e) => setNotificationEnabled(e.target.checked)}
+                    />
+                    <div className={`block w-10 h-6 rounded-full transition-colors ${notificationEnabled ? 'bg-green-500' : 'bg-gray-600'}`}></div>
+                    <div className={`dot absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform ${notificationEnabled ? 'transform translate-x-4' : ''}`}></div>
+                  </div>
+                  <span className="text-sm font-medium">{notificationEnabled ? 'Aktif' : 'Mati'}</span>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          {/* Card 5: Maintenance Mode */}
+          <div className={`p-6 rounded-3xl border md:col-span-2 transition-all ${isMaintenance ? 'bg-red-900/30 border-red-500' : 'bg-[#111] border-white/5'}`}>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className={`p-3 rounded-2xl ${isMaintenance ? 'bg-red-600' : 'bg-gray-800'}`}>
+                  <AlertTriangle className={`w-8 h-8 ${isMaintenance ? 'text-white' : 'text-gray-500'}`} />
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold text-white mb-1">MODE PERBAIKAN (MAINTENANCE)</h2>
+                  <p className="text-gray-400 text-sm">Kunci semua aplikasi TV pengguna jika server sedang mati atau diperbaiki.</p>
+                </div>
+              </div>
+              <label className="flex items-center cursor-pointer">
+                <div className="relative">
+                  <input 
+                    type="checkbox" 
+                    className="sr-only" 
+                    checked={isMaintenance}
+                    onChange={(e) => setIsMaintenance(e.target.checked)}
+                  />
+                  <div className={`block w-16 h-8 rounded-full transition-colors ${isMaintenance ? 'bg-red-600' : 'bg-gray-700'}`}></div>
+                  <div className={`dot absolute left-1 top-1 bg-white w-6 h-6 rounded-full transition-transform ${isMaintenance ? 'transform translate-x-8' : ''}`}></div>
+                </div>
+              </label>
+            </div>
+          </div>
+
+        </div>
+
+        {/* Save Button */}
+        <div className="flex justify-end pt-4 pb-12">
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="bg-red-600 hover:bg-red-700 text-white font-bold py-4 px-8 rounded-2xl transition-all flex items-center gap-2 disabled:opacity-50"
+          >
+            {saving ? <RefreshCcw className="animate-spin w-5 h-5" /> : <Save className="w-5 h-5" />}
+            {saving ? "Menyimpan..." : "Simpan Pengaturan"}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
