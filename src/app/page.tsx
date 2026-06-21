@@ -18,6 +18,7 @@ export default function AdminPanel() {
     label: string;
     badgeIcon?: string;
     badgeColor?: string;
+    nameEffect?: string;
   }
 
   const [tokens, setTokens] = useState<TokenObject[]>([]); // Ganti accessCode jadi tokens
@@ -37,9 +38,11 @@ export default function AdminPanel() {
 
   const [adminBadgeIcon, setAdminBadgeIcon] = useState("🔧");
   const [adminBadgeColor, setAdminBadgeColor] = useState("#FF00FF");
+  const [adminNameEffect, setAdminNameEffect] = useState("NONE");
 
   const [tokenBadgeIcon, setTokenBadgeIcon] = useState("");
   const [tokenBadgeColor, setTokenBadgeColor] = useState("#FFD700");
+  const [tokenNameEffect, setTokenNameEffect] = useState("NONE");
 
   const [activeUsers, setActiveUsers] = useState<any[]>([]);
   const [activeUsersCount, setActiveUsersCount] = useState(0);
@@ -79,6 +82,7 @@ export default function AdminPanel() {
           setChatEnabled(data.chatEnabled !== false); // default true if not set
           setAdminBadgeIcon(data.adminBadgeIcon || "🔧");
           setAdminBadgeColor(data.adminBadgeColor || "#FF00FF");
+          setAdminNameEffect(data.adminNameEffect || "NONE");
         }
         setLoading(false);
       })
@@ -131,7 +135,7 @@ export default function AdminPanel() {
       await fetch("/api/chats", {
         method: "POST",
         headers: { "Content-Type": "application/json", "x-admin-password": adminPassword },
-        body: JSON.stringify({ message: chatInput.trim(), senderOverride: `Admin|ID|${adminBadgeIcon}|${adminBadgeColor}|ADMIN` })
+        body: JSON.stringify({ message: chatInput.trim(), senderOverride: `Admin|ID|${adminBadgeIcon}|${adminBadgeColor}|ADMIN|${adminNameEffect}` })
       });
       setChatInput("");
     } catch (e) {}
@@ -179,14 +183,14 @@ export default function AdminPanel() {
       token += chars.charAt(Math.floor(Math.random() * chars.length));
     }
     if (!tokens.some(t => t.code === token)) {
-      setTokens([...tokens, { code: token, badgeIcon: tokenBadgeIcon, badgeColor: tokenBadgeColor, ...getExpirationParams(tokenDuration) }]);
+      setTokens([...tokens, { code: token, badgeIcon: tokenBadgeIcon, badgeColor: tokenBadgeColor, nameEffect: tokenNameEffect, ...getExpirationParams(tokenDuration) }]);
     }
   };
 
   const addCustomToken = () => {
     const cleanToken = customTokenInput.trim();
     if (cleanToken !== "" && !tokens.some(t => t.code === cleanToken)) {
-      setTokens([...tokens, { code: cleanToken, badgeIcon: tokenBadgeIcon, badgeColor: tokenBadgeColor, ...getExpirationParams(tokenDuration) }]);
+      setTokens([...tokens, { code: cleanToken, badgeIcon: tokenBadgeIcon, badgeColor: tokenBadgeColor, nameEffect: tokenNameEffect, ...getExpirationParams(tokenDuration) }]);
       setCustomTokenInput("");
     }
   };
@@ -219,6 +223,7 @@ export default function AdminPanel() {
           chatEnabled,
           adminBadgeIcon,
           adminBadgeColor,
+          adminNameEffect,
         }),
       });
 
@@ -435,6 +440,19 @@ export default function AdminPanel() {
                     className="w-12 h-12 p-1 bg-black/50 border border-white/10 rounded-xl cursor-pointer"
                     title="Warna Chat"
                   />
+                  <select
+                    value={tokenNameEffect}
+                    onChange={(e) => setTokenNameEffect(e.target.value)}
+                    className="bg-black/50 border border-white/10 text-white rounded-xl px-3 py-3 focus:outline-none focus:border-yellow-500 text-sm"
+                    title="Efek Nama (Glitch/Sparkle)"
+                  >
+                    <option value="NONE">Normal</option>
+                    <option value="GLITCH">⚡ Glitch</option>
+                    <option value="SPARKLE">✨ Sparkle</option>
+                    <option value="NEON">🔮 Neon Glow</option>
+                    <option value="RAINBOW">🌈 Rainbow</option>
+                    <option value="WAVY">🌊 Wavy Bounce</option>
+                  </select>
                   <button 
                     onClick={addCustomToken}
                     className="bg-yellow-600 hover:bg-yellow-700 text-white font-bold px-4 py-3 rounded-xl transition-colors"
@@ -463,6 +481,7 @@ export default function AdminPanel() {
                         <span className="text-xs text-gray-400">
                           Durasi: {tokenObj.label} 
                           {tokenObj.expiresAt ? ` (s.d ${new Date(tokenObj.expiresAt).toLocaleString()})` : ""}
+                          {tokenObj.nameEffect && tokenObj.nameEffect !== "NONE" ? ` • Efek: ${tokenObj.nameEffect}` : ""}
                         </span>
                       </div>
                       <button 
@@ -610,6 +629,21 @@ export default function AdminPanel() {
                     onChange={(e) => setAdminBadgeColor(e.target.value)}
                     className="w-10 h-10 p-1 bg-black/50 border border-white/10 rounded-lg cursor-pointer"
                   />
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-400 mb-1">Efek Animasi</label>
+                  <select
+                    value={adminNameEffect}
+                    onChange={(e) => setAdminNameEffect(e.target.value)}
+                    className="h-10 bg-black/50 border border-white/10 text-white rounded-lg px-2 focus:outline-none focus:border-pink-500 text-sm"
+                  >
+                    <option value="NONE">Normal</option>
+                    <option value="GLITCH">⚡ Glitch</option>
+                    <option value="SPARKLE">✨ Sparkle</option>
+                    <option value="NEON">🔮 Neon Glow</option>
+                    <option value="RAINBOW">🌈 Rainbow</option>
+                    <option value="WAVY">🌊 Wavy Bounce</option>
+                  </select>
                 </div>
               </div>
 
