@@ -19,6 +19,7 @@ export default function AdminPanel() {
     badgeIcon?: string;
     badgeColor?: string;
     nameEffect?: string;
+    deviceId?: string;
   }
 
   const [tokens, setTokens] = useState<TokenObject[]>([]); // Ganti accessCode jadi tokens
@@ -190,13 +191,20 @@ export default function AdminPanel() {
   const addCustomToken = () => {
     const cleanToken = customTokenInput.trim();
     if (cleanToken !== "" && !tokens.some(t => t.code === cleanToken)) {
-      setTokens([...tokens, { code: cleanToken, badgeIcon: tokenBadgeIcon, badgeColor: tokenBadgeColor, nameEffect: tokenNameEffect, ...getExpirationParams(tokenDuration) }]);
+      setTokens([...tokens, { code: cleanToken, badgeIcon: tokenBadgeIcon, badgeColor: tokenBadgeColor, nameEffect: tokenNameEffect, deviceId: "", ...getExpirationParams(tokenDuration) }]);
       setCustomTokenInput("");
     }
   };
 
   const removeToken = (tokenToRemove: string) => {
     setTokens(tokens.filter(t => t.code !== tokenToRemove));
+  };
+
+  const resetTokenDevice = (tokenCode: string) => {
+    setTokens(tokens.map(t => t.code === tokenCode ? { ...t, deviceId: "" } : t));
+    // Kita harus panggil handleSave atau biarkan user klik "Simpan Perubahan" sendiri.
+    // Untuk kenyamanan, biarkan mereka klik "Simpan" setelah mereset, atau kita panggil otomatis.
+    // Di sini kita biarkan admin menekan tombol "Simpan Perubahan" utama.
   };
 
   const handleSave = async () => {
@@ -483,18 +491,34 @@ export default function AdminPanel() {
                           {tokenObj.expiresAt ? ` (s.d ${new Date(tokenObj.expiresAt).toLocaleString()})` : ""}
                           {tokenObj.nameEffect && tokenObj.nameEffect !== "NONE" ? ` • Efek: ${tokenObj.nameEffect}` : ""}
                         </span>
+                        {tokenObj.deviceId && (
+                          <span className="text-xs font-bold text-red-400 block mt-1">
+                            🔒 Terikat dengan TV (ID: {tokenObj.deviceId.substring(0, 8)}...)
+                          </span>
+                        )}
                       </div>
-                      <button 
-                        onClick={() => removeToken(tokenObj.code)}
-                        className="text-red-500 hover:text-red-400 text-sm font-bold bg-red-500/10 hover:bg-red-500/20 px-3 py-1 rounded-lg transition-colors"
-                      >
-                        Hapus
-                      </button>
+                      <div className="flex gap-2">
+                        {tokenObj.deviceId && (
+                          <button 
+                            onClick={() => resetTokenDevice(tokenObj.code)}
+                            className="text-yellow-500 hover:text-yellow-400 text-sm font-bold bg-yellow-500/10 hover:bg-yellow-500/20 px-3 py-1 rounded-lg transition-colors"
+                            title="Hapus kaitan dengan TV lama"
+                          >
+                            Reset TV
+                          </button>
+                        )}
+                        <button 
+                          onClick={() => removeToken(tokenObj.code)}
+                          className="text-red-500 hover:text-red-400 text-sm font-bold bg-red-500/10 hover:bg-red-500/20 px-3 py-1 rounded-lg transition-colors"
+                        >
+                          Hapus
+                        </button>
+                      </div>
                     </div>
                   ))
                 )}
               </div>
-              <p className="text-xs text-gray-500 mt-2">Hapus token untuk langsung mengeluarkan pengguna (logout) dari TV mereka.</p>
+              <p className="text-xs text-gray-500 mt-2">Hapus token untuk mengeluarkan pengguna (logout) dari TV mereka. Gunakan <b>Reset TV</b> jika pengguna membeli TV baru.</p>
             </div>
           </div>
 
