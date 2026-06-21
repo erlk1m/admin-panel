@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Tv, ShieldAlert, Key, Save, Globe, RefreshCcw, Bell, AlertTriangle, Image as ImageIcon, MessageSquare, Trash2, Send } from "lucide-react";
+import { Tv, ShieldAlert, Key, Save, Globe, RefreshCcw, Bell, AlertTriangle, Image as ImageIcon, MessageSquare, Trash2, Send, Activity, Users } from "lucide-react";
 
 export default function AdminPanel() {
   const [adminPassword, setAdminPassword] = useState("");
@@ -16,6 +16,8 @@ export default function AdminPanel() {
     code: string;
     expiresAt: number | null;
     label: string;
+    badgeIcon?: string;
+    badgeColor?: string;
   }
 
   const [tokens, setTokens] = useState<TokenObject[]>([]); // Ganti accessCode jadi tokens
@@ -29,6 +31,15 @@ export default function AdminPanel() {
   const [chatEnabled, setChatEnabled] = useState(true);
   const [chatMessages, setChatMessages] = useState<any[]>([]);
   const [chatInput, setChatInput] = useState("");
+
+  const [adminBadgeIcon, setAdminBadgeIcon] = useState("🔧");
+  const [adminBadgeColor, setAdminBadgeColor] = useState("#FF00FF");
+
+  const [tokenBadgeIcon, setTokenBadgeIcon] = useState("");
+  const [tokenBadgeColor, setTokenBadgeColor] = useState("#FFD700");
+
+  const [activeUsers, setActiveUsers] = useState<any[]>([]);
+  const [activeUsersCount, setActiveUsersCount] = useState(0);
 
   useEffect(() => {
     // Coba ambil config yang ada (publik)
@@ -60,6 +71,8 @@ export default function AdminPanel() {
           setBackgroundUrl(data.backgroundUrl || "");
           setIsMaintenance(data.isMaintenance || false);
           setChatEnabled(data.chatEnabled !== false); // default true if not set
+          setAdminBadgeIcon(data.adminBadgeIcon || "🔧");
+          setAdminBadgeColor(data.adminBadgeColor || "#FF00FF");
         }
         setLoading(false);
       })
@@ -83,9 +96,25 @@ export default function AdminPanel() {
           })
           .catch(() => {});
       };
+      const fetchPresence = () => {
+        fetch("/api/presence")
+          .then(res => res.json())
+          .then(data => {
+            if (data.users) {
+              setActiveUsers(data.users);
+              setActiveUsersCount(data.count);
+            }
+          })
+          .catch(() => {});
+      };
       fetchChats();
-      const interval = setInterval(fetchChats, 3000);
-      return () => clearInterval(interval);
+      fetchPresence();
+      const chatInterval = setInterval(fetchChats, 3000);
+      const presenceInterval = setInterval(fetchPresence, 10000);
+      return () => {
+        clearInterval(chatInterval);
+        clearInterval(presenceInterval);
+      };
     }
   }, [isAuthenticated]);
 
@@ -96,7 +125,7 @@ export default function AdminPanel() {
       await fetch("/api/chats", {
         method: "POST",
         headers: { "Content-Type": "application/json", "x-admin-password": adminPassword },
-        body: JSON.stringify({ message: chatInput.trim() })
+        body: JSON.stringify({ message: chatInput.trim(), senderOverride: `Admin|ID|${adminBadgeIcon}|${adminBadgeColor}|ADMIN` })
       });
       setChatInput("");
     } catch (e) {}
@@ -130,14 +159,14 @@ export default function AdminPanel() {
       token += chars.charAt(Math.floor(Math.random() * chars.length));
     }
     if (!tokens.some(t => t.code === token)) {
-      setTokens([...tokens, { code: token, ...getExpirationParams(tokenDuration) }]);
+      setTokens([...tokens, { code: token, badgeIcon: tokenBadgeIcon, badgeColor: tokenBadgeColor, ...getExpirationParams(tokenDuration) }]);
     }
   };
 
   const addCustomToken = () => {
     const cleanToken = customTokenInput.trim();
     if (cleanToken !== "" && !tokens.some(t => t.code === cleanToken)) {
-      setTokens([...tokens, { code: cleanToken, ...getExpirationParams(tokenDuration) }]);
+      setTokens([...tokens, { code: cleanToken, badgeIcon: tokenBadgeIcon, badgeColor: tokenBadgeColor, ...getExpirationParams(tokenDuration) }]);
       setCustomTokenInput("");
     }
   };
@@ -165,6 +194,8 @@ export default function AdminPanel() {
           backgroundUrl,
           isMaintenance,
           chatEnabled,
+          adminBadgeIcon,
+          adminBadgeColor,
         }),
       });
 
@@ -251,6 +282,40 @@ export default function AdminPanel() {
 
         {/* Content */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+
+          {/* Card 0: Analytics Dashboard */}
+          <div className="bg-gradient-to-br from-blue-900/40 to-blue-900/10 p-6 rounded-3xl border border-blue-500/20 space-y-4 md:col-span-2">
+            <div className="flex items-center justify-between border-b border-white/10 pb-4">
+              <div className="flex items-center gap-3">
+                <Activity className="text-blue-400" />
+                <h2 className="text-lg font-semibold text-blue-100">Analitik Pengguna Aktif</h2>
+              </div>
+              <div className="flex items-center gap-2 bg-blue-500/20 text-blue-300 px-3 py-1.5 rounded-xl font-bold">
+                <Users className="w-4 h-4" />
+                <span>{activeUsersCount} Online</span>
+              </div>
+            </div>
+            
+            <div className="bg-black/40 rounded-xl p-4 min-h-[100px] max-h-64 overflow-y-auto">
+              {activeUsers.length === 0 ? (
+                <div className="text-center text-gray-500 py-6">Belum ada perangkat TV yang terhubung saat ini.</div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {activeUsers.map((user, idx) => (
+                    <div key={idx} className="flex items-center justify-between bg-white/5 p-3 rounded-lg border border-white/5">
+                      <div>
+                        <div className="font-mono text-sm text-yellow-400 font-bold">{user.token}</div>
+                        <div className="text-xs text-gray-400 mt-1">📺 Menonton: <span className="text-white">{user.channel}</span></div>
+                      </div>
+                      <div className="text-xs font-bold text-gray-500">
+                        {Math.floor((Date.now() - user.lastSeen) / 1000)}s lalu
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
           
           {/* Card 1: Playlist M3U Multi-Server */}
           <div className="bg-[#111] p-6 rounded-3xl border border-white/5 space-y-4 md:col-span-2">
@@ -327,6 +392,20 @@ export default function AdminPanel() {
                     onChange={(e) => setCustomTokenInput(e.target.value)}
                     placeholder="Misal: VIP-BUDI"
                     className="flex-1 bg-black/50 border border-white/10 text-white rounded-xl p-3 focus:outline-none focus:border-yellow-500 transition-colors min-w-[150px]"
+                  />
+                  <input
+                    type="text"
+                    value={tokenBadgeIcon}
+                    onChange={(e) => setTokenBadgeIcon(e.target.value)}
+                    placeholder="Badge (cth: 👑)"
+                    className="w-32 bg-black/50 border border-white/10 text-white rounded-xl p-3 focus:outline-none focus:border-yellow-500 transition-colors"
+                  />
+                  <input
+                    type="color"
+                    value={tokenBadgeColor}
+                    onChange={(e) => setTokenBadgeColor(e.target.value)}
+                    className="w-12 h-12 p-1 bg-black/50 border border-white/10 rounded-xl cursor-pointer"
+                    title="Warna Chat"
                   />
                   <button 
                     onClick={addCustomToken}
@@ -449,6 +528,27 @@ export default function AdminPanel() {
             </div>
             
             <div className="flex flex-col gap-4">
+              <div className="flex items-center gap-4 bg-black/50 p-4 rounded-xl border border-white/10">
+                <div>
+                  <label className="block text-xs text-gray-400 mb-1">Badge Admin</label>
+                  <input
+                    type="text"
+                    value={adminBadgeIcon}
+                    onChange={(e) => setAdminBadgeIcon(e.target.value)}
+                    className="w-20 bg-black/50 border border-white/10 text-white rounded-lg p-2 focus:outline-none focus:border-pink-500 text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-400 mb-1">Warna</label>
+                  <input
+                    type="color"
+                    value={adminBadgeColor}
+                    onChange={(e) => setAdminBadgeColor(e.target.value)}
+                    className="w-10 h-10 p-1 bg-black/50 border border-white/10 rounded-lg cursor-pointer"
+                  />
+                </div>
+              </div>
+
               <div className="bg-black/50 border border-white/10 rounded-xl p-4 h-64 overflow-y-auto flex flex-col gap-2">
                 {chatMessages.length === 0 ? (
                   <div className="text-gray-500 text-center m-auto">Belum ada pesan chat</div>

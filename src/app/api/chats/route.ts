@@ -42,14 +42,14 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { message } = body;
+    const { message, senderOverride } = body;
     
     if (!message) {
       return NextResponse.json({ error: "Message is required" }, { status: 400 });
     }
 
     const chatPayload = {
-      sender: "Admin|🔧",
+      sender: senderOverride || "Admin|ID|🔧|#FF00FF|ADMIN",
       message: message,
       timestamp: Date.now()
     };
