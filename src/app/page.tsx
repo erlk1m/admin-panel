@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Tv, ShieldAlert, Key, Save, Globe, RefreshCcw, Bell, AlertTriangle, Image as ImageIcon } from "lucide-react";
+import { Tv, ShieldAlert, Key, Save, Globe, RefreshCcw, Bell, AlertTriangle, Image as ImageIcon, MessageSquare, Trash2, Send } from "lucide-react";
 
 export default function AdminPanel() {
   const [adminPassword, setAdminPassword] = useState("");
@@ -25,6 +25,10 @@ export default function AdminPanel() {
   const [notificationEnabled, setNotificationEnabled] = useState(false);
   const [backgroundUrl, setBackgroundUrl] = useState("");
   const [isMaintenance, setIsMaintenance] = useState(false);
+
+  const [chatEnabled, setChatEnabled] = useState(true);
+  const [chatMessages, setChatMessages] = useState<any[]>([]);
+  const [chatInput, setChatInput] = useState("");
 
   useEffect(() => {
     // Coba ambil config yang ada (publik)
@@ -55,6 +59,7 @@ export default function AdminPanel() {
           setNotificationEnabled(data.notificationEnabled || false);
           setBackgroundUrl(data.backgroundUrl || "");
           setIsMaintenance(data.isMaintenance || false);
+          setChatEnabled(data.chatEnabled !== false); // default true if not set
         }
         setLoading(false);
       })
@@ -66,6 +71,45 @@ export default function AdminPanel() {
     if (adminPassword.trim() !== "") {
       setIsAuthenticated(true);
     }
+  };
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      const fetchChats = () => {
+        fetch("/api/chats")
+          .then(res => res.json())
+          .then(data => {
+            if (Array.isArray(data)) setChatMessages(data);
+          })
+          .catch(() => {});
+      };
+      fetchChats();
+      const interval = setInterval(fetchChats, 3000);
+      return () => clearInterval(interval);
+    }
+  }, [isAuthenticated]);
+
+  const handleSendChat = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!chatInput.trim()) return;
+    try {
+      await fetch("/api/chats", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-admin-password": adminPassword },
+        body: JSON.stringify({ message: chatInput.trim() })
+      });
+      setChatInput("");
+    } catch (e) {}
+  };
+
+  const handleDeleteChat = async (id: string) => {
+    if (id === 'all' && !confirm("Yakin ingin menghapus semua pesan chat?")) return;
+    try {
+      await fetch(`/api/chats?id=${id}`, {
+        method: "DELETE",
+        headers: { "x-admin-password": adminPassword }
+      });
+    } catch (e) {}
   };
 
   const getExpirationParams = (duration: string) => {
@@ -120,6 +164,7 @@ export default function AdminPanel() {
           notificationEnabled,
           backgroundUrl,
           isMaintenance,
+          chatEnabled,
         }),
       });
 
@@ -377,6 +422,68 @@ export default function AdminPanel() {
                   </div>
                   <span className="text-sm font-medium">{notificationEnabled ? 'Aktif' : 'Mati'}</span>
                 </label>
+              </div>
+            </div>
+          </div>
+
+          {/* Card: Chat Moderation */}
+          <div className="bg-[#111] p-6 rounded-3xl border border-white/5 space-y-6 md:col-span-2">
+            <div className="flex items-center justify-between border-b border-white/10 pb-4">
+              <div className="flex items-center gap-3">
+                <MessageSquare className="text-pink-500" />
+                <h2 className="text-lg font-semibold">Moderasi Live Chat</h2>
+              </div>
+              <label className="flex items-center gap-3 cursor-pointer p-2 bg-black/50 rounded-xl border border-white/10">
+                <span className="text-sm font-medium">{chatEnabled ? 'Chat Aktif' : 'Chat Dimatikan'}</span>
+                <div className="relative">
+                  <input 
+                    type="checkbox" 
+                    className="sr-only" 
+                    checked={chatEnabled}
+                    onChange={(e) => setChatEnabled(e.target.checked)}
+                  />
+                  <div className={`block w-10 h-6 rounded-full transition-colors ${chatEnabled ? 'bg-pink-500' : 'bg-gray-600'}`}></div>
+                  <div className={`dot absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform ${chatEnabled ? 'transform translate-x-4' : ''}`}></div>
+                </div>
+              </label>
+            </div>
+            
+            <div className="flex flex-col gap-4">
+              <div className="bg-black/50 border border-white/10 rounded-xl p-4 h-64 overflow-y-auto flex flex-col gap-2">
+                {chatMessages.length === 0 ? (
+                  <div className="text-gray-500 text-center m-auto">Belum ada pesan chat</div>
+                ) : (
+                  chatMessages.map((msg) => (
+                    <div key={msg.id} className="flex justify-between items-start group hover:bg-white/5 p-2 rounded-lg transition-colors">
+                      <div>
+                        <span className="font-bold text-sm text-blue-400 mr-2">{msg.sender.split('|')[0]}</span>
+                        <span className="text-sm text-gray-300">{msg.message}</span>
+                        <div className="text-xs text-gray-600 mt-1">{new Date(msg.timestamp).toLocaleString()}</div>
+                      </div>
+                      <button onClick={() => handleDeleteChat(msg.id)} className="text-red-500 opacity-50 group-hover:opacity-100 hover:text-red-400 p-2">
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ))
+                )}
+              </div>
+              
+              <div className="flex gap-2">
+                <button onClick={() => handleDeleteChat('all')} className="bg-red-500/20 hover:bg-red-500/30 text-red-500 p-3 rounded-xl transition-colors" title="Hapus Semua Chat">
+                  <Trash2 className="w-5 h-5" />
+                </button>
+                <form onSubmit={handleSendChat} className="flex-1 flex gap-2">
+                  <input
+                    type="text"
+                    value={chatInput}
+                    onChange={(e) => setChatInput(e.target.value)}
+                    placeholder="Kirim pesan sebagai Admin..."
+                    className="flex-1 bg-black/50 border border-white/10 text-white rounded-xl p-3 focus:outline-none focus:border-pink-500 transition-colors"
+                  />
+                  <button type="submit" className="bg-pink-600 hover:bg-pink-700 text-white px-4 rounded-xl transition-colors">
+                    <Send className="w-5 h-5" />
+                  </button>
+                </form>
               </div>
             </div>
           </div>
