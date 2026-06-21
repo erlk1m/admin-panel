@@ -26,6 +26,9 @@ export default function AdminPanel() {
   const [notificationText, setNotificationText] = useState("");
   const [notificationEnabled, setNotificationEnabled] = useState(false);
   const [backgroundUrl, setBackgroundUrl] = useState("");
+  const [welcomeBannerUrl, setWelcomeBannerUrl] = useState("");
+  const [latestVersionCode, setLatestVersionCode] = useState(1);
+  const [apkUpdateUrl, setApkUpdateUrl] = useState("");
   const [isMaintenance, setIsMaintenance] = useState(false);
 
   const [chatEnabled, setChatEnabled] = useState(true);
@@ -69,6 +72,9 @@ export default function AdminPanel() {
           setNotificationText(data.notificationText || "");
           setNotificationEnabled(data.notificationEnabled || false);
           setBackgroundUrl(data.backgroundUrl || "");
+          setWelcomeBannerUrl(data.welcomeBannerUrl || "");
+          setLatestVersionCode(data.latestVersionCode || 1);
+          setApkUpdateUrl(data.apkUpdateUrl || "");
           setIsMaintenance(data.isMaintenance || false);
           setChatEnabled(data.chatEnabled !== false); // default true if not set
           setAdminBadgeIcon(data.adminBadgeIcon || "🔧");
@@ -141,6 +147,20 @@ export default function AdminPanel() {
     } catch (e) {}
   };
 
+  const handleKick = async (token: string) => {
+    if (!confirm(`Yakin ingin menendang perangkat dengan token ${token}? Aplikasi mereka akan dipaksa keluar secara real-time.`)) return;
+    try {
+      await fetch("/api/kick", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-admin-password": adminPassword },
+        body: JSON.stringify({ token })
+      });
+      alert(`Sinyal KICK berhasil dikirim ke ${token}!`);
+    } catch (e) {
+      alert("Gagal mengirim sinyal KICK.");
+    }
+  };
+
   const getExpirationParams = (duration: string) => {
     const now = Date.now();
     switch (duration) {
@@ -192,6 +212,9 @@ export default function AdminPanel() {
           notificationText,
           notificationEnabled,
           backgroundUrl,
+          welcomeBannerUrl,
+          latestVersionCode,
+          apkUpdateUrl,
           isMaintenance,
           chatEnabled,
           adminBadgeIcon,
@@ -307,8 +330,13 @@ export default function AdminPanel() {
                         <div className="font-mono text-sm text-yellow-400 font-bold">{user.token}</div>
                         <div className="text-xs text-gray-400 mt-1">📺 Menonton: <span className="text-white">{user.channel}</span></div>
                       </div>
-                      <div className="text-xs font-bold text-gray-500">
-                        {Math.floor((Date.now() - user.lastSeen) / 1000)}s lalu
+                      <div className="flex gap-2 items-center">
+                        <div className="text-xs font-bold text-gray-500">
+                          {Math.floor((Date.now() - user.lastSeen) / 1000)}s lalu
+                        </div>
+                        <button onClick={() => handleKick(user.token)} className="text-red-500 hover:text-white bg-red-500/10 hover:bg-red-500/50 p-1.5 rounded-lg text-xs font-bold transition-colors">
+                          KICK
+                        </button>
                       </div>
                     </div>
                   ))}
@@ -466,7 +494,43 @@ export default function AdminPanel() {
                 placeholder="https://contoh.com/gambar-bagus.jpg"
                 className="w-full bg-black/50 border border-white/10 text-white rounded-xl p-3 focus:outline-none focus:border-purple-500 transition-colors"
               />
-              <p className="text-xs text-gray-500 mt-2">Kosongkan kolom ini jika ingin menggunakan wallpaper bawaan aplikasi.</p>
+              <p className="text-xs text-gray-500 mt-2 mb-4">Kosongkan kolom ini jika ingin menggunakan wallpaper bawaan aplikasi.</p>
+
+              <label className="block text-sm text-gray-400 mb-2 border-t border-white/10 pt-4">URL Banner Promo (Pop-up Sambutan)</label>
+              <input
+                type="url"
+                value={welcomeBannerUrl}
+                onChange={(e) => setWelcomeBannerUrl(e.target.value)}
+                placeholder="https://contoh.com/promo-diskon.jpg"
+                className="w-full bg-black/50 border border-white/10 text-white rounded-xl p-3 focus:outline-none focus:border-purple-500 transition-colors"
+              />
+              <p className="text-xs text-gray-500 mt-2">Gambar akan muncul sekali setiap pengguna membuka aplikasi TV. Kosongkan untuk mematikan.</p>
+            </div>
+          </div>
+
+          {/* Card: Auto Update */}
+          <div className="bg-[#111] p-6 rounded-3xl border border-white/5 space-y-6">
+            <div className="flex items-center gap-3 border-b border-white/10 pb-4">
+              <RefreshCcw className="text-cyan-500" />
+              <h2 className="text-lg font-semibold">Auto-Update Aplikasi TV</h2>
+            </div>
+            <div>
+              <label className="block text-sm text-gray-400 mb-2">Versi Aplikasi Terbaru (Version Code)</label>
+              <input
+                type="number"
+                value={latestVersionCode}
+                onChange={(e) => setLatestVersionCode(parseInt(e.target.value) || 1)}
+                className="w-full bg-black/50 border border-white/10 text-white rounded-xl p-3 focus:outline-none focus:border-cyan-500 transition-colors mb-4"
+              />
+              <label className="block text-sm text-gray-400 mb-2">URL Download APK Terbaru</label>
+              <input
+                type="url"
+                value={apkUpdateUrl}
+                onChange={(e) => setApkUpdateUrl(e.target.value)}
+                placeholder="https://contoh.com/KIMTV_v2.apk"
+                className="w-full bg-black/50 border border-white/10 text-white rounded-xl p-3 focus:outline-none focus:border-cyan-500 transition-colors"
+              />
+              <p className="text-xs text-gray-500 mt-2">Ubah version code lebih tinggi dari aplikasi TV (saat ini biasanya 1) agar TV menampilkan popup Update.</p>
             </div>
           </div>
 
