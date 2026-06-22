@@ -50,7 +50,8 @@ export async function GET() {
         'Surrogate-Control': 'no-store'
       }
     });
-  } catch (error) {
+  } // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  catch (error: any) {
     return NextResponse.json({ error: "Failed to fetch from Firebase" }, { status: 500 });
   }
 }

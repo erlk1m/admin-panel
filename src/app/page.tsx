@@ -34,7 +34,7 @@ export default function AdminPanel() {
   const [isMaintenance, setIsMaintenance] = useState(false);
 
   const [chatEnabled, setChatEnabled] = useState(true);
-  const [chatMessages, setChatMessages] = useState<any[]>([]);
+  const [chatMessages, setChatMessages] = useState<{ id: string; sender: string; message: string; timestamp: number }[]>([]);
   const [chatInput, setChatInput] = useState("");
 
   const [adminBadgeIcon, setAdminBadgeIcon] = useState("🔧");
@@ -46,8 +46,14 @@ export default function AdminPanel() {
   const [tokenNameEffect, setTokenNameEffect] = useState("NONE");
   const [editingTokenCode, setEditingTokenCode] = useState<string | null>(null);
 
-  const [activeUsers, setActiveUsers] = useState<any[]>([]);
+  const [activeUsers, setActiveUsers] = useState<{ token: string; channel: string; lastSeen: number }[]>([]);
   const [activeUsersCount, setActiveUsersCount] = useState(0);
+  const [now, setNow] = useState<number | null>(null);
+
+  useEffect(() => {
+    const timer = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   useEffect(() => {
     // Coba ambil config yang ada (publik)
@@ -61,7 +67,7 @@ export default function AdminPanel() {
           
           // Migrasi otomatis jika masih pakai accessCode lama
           if (data.tokens && Array.isArray(data.tokens)) {
-            const mappedTokens = data.tokens.map((t: any) => {
+            const mappedTokens = data.tokens.map((t: TokenObject | string) => {
               if (typeof t === 'string') {
                 return { code: t, expiresAt: null, label: "Lifetime" };
               }
@@ -140,7 +146,7 @@ export default function AdminPanel() {
         body: JSON.stringify({ message: chatInput.trim(), senderOverride: `Admin|ID|${adminBadgeIcon}|${adminBadgeColor}|ADMIN|${adminNameEffect}` })
       });
       setChatInput("");
-    } catch (e) {}
+    } catch {}
   };
 
   const handleDeleteChat = async (id: string) => {
@@ -150,7 +156,7 @@ export default function AdminPanel() {
         method: "DELETE",
         headers: { "x-admin-password": adminPassword }
       });
-    } catch (e) {}
+    } catch {}
   };
 
   const handleKick = async (token: string) => {
@@ -162,7 +168,7 @@ export default function AdminPanel() {
         body: JSON.stringify({ token })
       });
       alert(`Sinyal KICK berhasil dikirim ke ${token}!`);
-    } catch (e) {
+    } catch {
       alert("Gagal mengirim sinyal KICK.");
     }
   };
@@ -205,7 +211,7 @@ export default function AdminPanel() {
     }
   };
 
-  const startEditToken = (token: any) => {
+  const startEditToken = (token: TokenObject) => {
     setEditingTokenCode(token.code);
     setCustomTokenInput(token.code);
     setTokenBadgeIcon(token.badgeIcon || "");
@@ -260,7 +266,7 @@ export default function AdminPanel() {
         alert("Gagal menyimpan: " + (err.error || "Password Admin Salah!"));
         if (res.status === 401) setIsAuthenticated(false);
       }
-    } catch (e) {
+    } catch {
       alert("Terjadi kesalahan jaringan.");
     }
     setSaving(false);
@@ -363,7 +369,7 @@ export default function AdminPanel() {
                       </div>
                       <div className="flex gap-2 items-center">
                         <div className="text-xs font-bold text-gray-500">
-                          {Math.floor((Date.now() - user.lastSeen) / 1000)}s lalu
+                          {now ? Math.floor((now - user.lastSeen) / 1000) : 0}s lalu
                         </div>
                         <button onClick={() => handleKick(user.token)} className="text-red-500 hover:text-white bg-red-500/10 hover:bg-red-500/50 p-1.5 rounded-lg text-xs font-bold transition-colors">
                           KICK
