@@ -492,8 +492,17 @@ export default function AdminPanel() {
                           {tokenObj.nameEffect && tokenObj.nameEffect !== "NONE" ? ` • Efek: ${tokenObj.nameEffect}` : ""}
                         </span>
                         {tokenObj.deviceId && (
-                          <span className="text-xs font-bold text-red-400 block mt-1">
-                            🔒 Terikat dengan TV (ID: {tokenObj.deviceId.substring(0, 8)}...)
+                          <span 
+                            onClick={() => {
+                              navigator.clipboard.writeText(tokenObj.deviceId || "");
+                              alert('Device ID disalin: ' + tokenObj.deviceId);
+                            }}
+                            className="text-xs font-bold text-red-400 mt-1 flex items-center gap-1 cursor-pointer hover:text-red-300 transition-colors w-fit"
+                            title="Klik untuk menyalin Device ID lengkap"
+                          >
+                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+                            Terikat dengan TV (ID: {tokenObj.deviceId.substring(0, 8)}...)
+                            <svg className="w-3 h-3 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
                           </span>
                         )}
                       </div>
