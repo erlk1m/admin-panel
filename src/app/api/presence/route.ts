@@ -18,13 +18,14 @@ export async function GET() {
     if (data && typeof data === 'object') {
       for (const token in data) {
         const userPresence = data[token];
-        // Cek apakah lastSeen masih dalam rentang 60 detik terakhir
-        if (userPresence.lastSeen && (now - userPresence.lastSeen) <= threshold) {
+        const lastSeenTime = userPresence.lastActive || userPresence.lastSeen;
+        // Cek apakah lastActive masih dalam rentang 60 detik terakhir
+        if (lastSeenTime && (now - lastSeenTime) <= threshold) {
           activeUsers.push({
             token: token,
-            channel: userPresence.channel || "Lainnya",
+            channel: userPresence.activity || userPresence.channel || "Lainnya",
             country: userPresence.country || "ID",
-            lastSeen: userPresence.lastSeen
+            lastSeen: lastSeenTime
           });
         }
       }
