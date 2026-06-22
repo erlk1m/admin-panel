@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
   try {
     const firebaseUrl = process.env.FIREBASE_URL;
@@ -7,10 +9,20 @@ export async function GET() {
       return NextResponse.json({ error: "FIREBASE_URL is not configured" }, { status: 500 });
     }
 
-    const res = await fetch(`${firebaseUrl}/config.json`, { cache: 'no-store' });
+    const res = await fetch(`${firebaseUrl}/config.json?_t=${Date.now()}`, { 
+      cache: 'no-store',
+      headers: { 'Cache-Control': 'no-cache, no-store, must-revalidate' }
+    });
     const data = await res.json();
     
-    return NextResponse.json(data || {});
+    return NextResponse.json(data || {}, {
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0',
+        'Surrogate-Control': 'no-store'
+      }
+    });
   } catch (error) {
     return NextResponse.json({ error: "Failed to fetch from Firebase" }, { status: 500 });
   }

@@ -14,7 +14,10 @@ export async function POST(request: Request) {
     }
 
     // 1. Fetch current config
-    const getRes = await fetch(`${firebaseUrl}/config.json`, { cache: 'no-store' });
+    const getRes = await fetch(`${firebaseUrl}/config.json?_t=${Date.now()}`, { 
+      cache: 'no-store',
+      headers: { 'Cache-Control': 'no-cache, no-store, must-revalidate' }
+    });
     const data = await getRes.json();
 
     if (!data || !data.tokens || !Array.isArray(data.tokens)) {
