@@ -466,19 +466,37 @@ export default function AdminPanel() {
                     className="w-12 h-12 p-1 bg-black/50 border border-white/10 rounded-xl cursor-pointer"
                     title="Warna Chat"
                   />
-                  <select
-                    value={tokenNameEffect}
-                    onChange={(e) => setTokenNameEffect(e.target.value)}
-                    className="bg-black/50 border border-white/10 text-white rounded-xl px-3 py-3 focus:outline-none focus:border-yellow-500 text-sm"
-                    title="Efek Nama (Glitch/Sparkle)"
-                  >
-                    <option value="NONE">Normal</option>
-                    <option value="GLITCH">⚡ Glitch</option>
-                    <option value="SPARKLE">✨ Sparkle</option>
-                    <option value="NEON">🔮 Neon Glow</option>
-                    <option value="RAINBOW">🌈 Rainbow</option>
-                    <option value="WAVY">🌊 Wavy Bounce</option>
-                  </select>
+                  <div className="flex flex-col gap-2">
+                    <select
+                      value={tokenNameEffect.startsWith('http') ? 'CUSTOM' : tokenNameEffect}
+                      onChange={(e) => {
+                        if (e.target.value === 'CUSTOM') {
+                          setTokenNameEffect('https://');
+                        } else {
+                          setTokenNameEffect(e.target.value);
+                        }
+                      }}
+                      className="bg-black/50 border border-white/10 text-white rounded-xl px-3 py-3 focus:outline-none focus:border-yellow-500 text-sm"
+                      title="Efek Nama (Glitch/Sparkle)"
+                    >
+                      <option value="NONE">Normal</option>
+                      <option value="GLITCH">⚡ Glitch</option>
+                      <option value="SPARKLE">✨ Sparkle</option>
+                      <option value="NEON">🔮 Neon Glow</option>
+                      <option value="RAINBOW">🌈 Rainbow</option>
+                      <option value="WAVY">🌊 Wavy Bounce</option>
+                      <option value="CUSTOM">🎨 Custom GIF URL...</option>
+                    </select>
+                    {tokenNameEffect.startsWith('http') && (
+                      <input
+                        type="url"
+                        value={tokenNameEffect}
+                        onChange={(e) => setTokenNameEffect(e.target.value)}
+                        placeholder="https://...gif"
+                        className="bg-black/50 border border-white/10 text-white rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-yellow-500 w-full max-w-[200px]"
+                      />
+                    )}
+                  </div>
                   <button 
                     onClick={addCustomToken}
                     className="bg-yellow-600 hover:bg-yellow-700 text-white font-bold px-4 py-3 rounded-xl transition-colors"
@@ -698,11 +716,17 @@ export default function AdminPanel() {
                     className="w-10 h-10 p-1 bg-black/50 border border-white/10 rounded-lg cursor-pointer"
                   />
                 </div>
-                <div>
+                <div className="flex flex-col gap-1">
                   <label className="block text-xs text-gray-400 mb-1">Efek Animasi</label>
                   <select
-                    value={adminNameEffect}
-                    onChange={(e) => setAdminNameEffect(e.target.value)}
+                    value={adminNameEffect.startsWith('http') ? 'CUSTOM' : adminNameEffect}
+                    onChange={(e) => {
+                      if (e.target.value === 'CUSTOM') {
+                        setAdminNameEffect('https://');
+                      } else {
+                        setAdminNameEffect(e.target.value);
+                      }
+                    }}
                     className="h-10 bg-black/50 border border-white/10 text-white rounded-lg px-2 focus:outline-none focus:border-pink-500 text-sm"
                   >
                     <option value="NONE">Normal</option>
@@ -711,7 +735,17 @@ export default function AdminPanel() {
                     <option value="NEON">🔮 Neon Glow</option>
                     <option value="RAINBOW">🌈 Rainbow</option>
                     <option value="WAVY">🌊 Wavy Bounce</option>
+                    <option value="CUSTOM">🎨 Custom GIF URL...</option>
                   </select>
+                  {adminNameEffect.startsWith('http') && (
+                    <input
+                      type="url"
+                      value={adminNameEffect}
+                      onChange={(e) => setAdminNameEffect(e.target.value)}
+                      placeholder="https://..."
+                      className="bg-black/50 border border-white/10 text-white rounded-lg px-2 py-1 text-xs focus:outline-none focus:border-pink-500 w-32"
+                    />
+                  )}
                 </div>
               </div>
 
