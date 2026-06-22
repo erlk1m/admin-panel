@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+export const dynamic = 'force-dynamic';
 export async function GET() {
   try {
     const firebaseUrl = process.env.FIREBASE_URL;
@@ -7,8 +8,15 @@ export async function GET() {
       return NextResponse.json({ error: "FIREBASE_URL is not configured" }, { status: 500 });
     }
 
-    // Ambil data presence dari Firebase
-    const res = await fetch(`${firebaseUrl}/presence.json`, { cache: 'no-store' });
+    // Ambil data presence dari Firebase (tambahkan timestamp agar tidak di-cache)
+    const res = await fetch(`${firebaseUrl}/presence.json?_t=${Date.now()}`, { 
+      cache: 'no-store',
+      headers: {
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+      }
+    });
     const data = await res.json();
     
     const activeUsers = [];
@@ -34,7 +42,14 @@ export async function GET() {
     // Urutkan berdasarkan waktu terakhir aktif (paling baru)
     activeUsers.sort((a, b) => b.lastSeen - a.lastSeen);
     
-    return NextResponse.json({ count: activeUsers.length, users: activeUsers });
+    return NextResponse.json({ count: activeUsers.length, users: activeUsers }, {
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0',
+        'Surrogate-Control': 'no-store'
+      }
+    });
   } catch (error) {
     return NextResponse.json({ error: "Failed to fetch from Firebase" }, { status: 500 });
   }
