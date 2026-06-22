@@ -44,6 +44,7 @@ export default function AdminPanel() {
   const [tokenBadgeIcon, setTokenBadgeIcon] = useState("");
   const [tokenBadgeColor, setTokenBadgeColor] = useState("#FFD700");
   const [tokenNameEffect, setTokenNameEffect] = useState("NONE");
+  const [editingTokenCode, setEditingTokenCode] = useState<string | null>(null);
 
   const [activeUsers, setActiveUsers] = useState<any[]>([]);
   const [activeUsersCount, setActiveUsersCount] = useState(0);
@@ -190,10 +191,27 @@ export default function AdminPanel() {
 
   const addCustomToken = () => {
     const cleanToken = customTokenInput.trim();
-    if (cleanToken !== "" && !tokens.some(t => t.code === cleanToken)) {
-      setTokens([...tokens, { code: cleanToken, badgeIcon: tokenBadgeIcon, badgeColor: tokenBadgeColor, nameEffect: tokenNameEffect, deviceId: "", ...getExpirationParams(tokenDuration) }]);
-      setCustomTokenInput("");
+    if (editingTokenCode) {
+      if (cleanToken !== "") {
+        setTokens(tokens.map(t => t.code === editingTokenCode ? { ...t, code: cleanToken, badgeIcon: tokenBadgeIcon, badgeColor: tokenBadgeColor, nameEffect: tokenNameEffect } : t));
+        setEditingTokenCode(null);
+        setCustomTokenInput("");
+      }
+    } else {
+      if (cleanToken !== "" && !tokens.some(t => t.code === cleanToken)) {
+        setTokens([...tokens, { code: cleanToken, badgeIcon: tokenBadgeIcon, badgeColor: tokenBadgeColor, nameEffect: tokenNameEffect, deviceId: "", ...getExpirationParams(tokenDuration) }]);
+        setCustomTokenInput("");
+      }
     }
+  };
+
+  const startEditToken = (token: any) => {
+    setEditingTokenCode(token.code);
+    setCustomTokenInput(token.code);
+    setTokenBadgeIcon(token.badgeIcon || "");
+    setTokenBadgeColor(token.badgeColor || "#FFD700");
+    setTokenNameEffect(token.nameEffect || "NONE");
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const removeToken = (tokenToRemove: string) => {
@@ -465,8 +483,19 @@ export default function AdminPanel() {
                     onClick={addCustomToken}
                     className="bg-yellow-600 hover:bg-yellow-700 text-white font-bold px-4 py-3 rounded-xl transition-colors"
                   >
-                    Tambah
+                    {editingTokenCode ? "Simpan" : "Tambah"}
                   </button>
+                  {editingTokenCode && (
+                    <button 
+                      onClick={() => {
+                        setEditingTokenCode(null);
+                        setCustomTokenInput("");
+                      }}
+                      className="bg-gray-600 hover:bg-gray-700 text-white font-bold px-4 py-3 rounded-xl transition-colors"
+                    >
+                      Batal
+                    </button>
+                  )}
                 </div>
               </div>
 
@@ -516,6 +545,12 @@ export default function AdminPanel() {
                             Reset TV
                           </button>
                         )}
+                        <button 
+                          onClick={() => startEditToken(tokenObj)}
+                          className="text-blue-500 hover:text-blue-400 text-sm font-bold bg-blue-500/10 hover:bg-blue-500/20 px-3 py-1 rounded-lg transition-colors"
+                        >
+                          Edit
+                        </button>
                         <button 
                           onClick={() => removeToken(tokenObj.code)}
                           className="text-red-500 hover:text-red-400 text-sm font-bold bg-red-500/10 hover:bg-red-500/20 px-3 py-1 rounded-lg transition-colors"
