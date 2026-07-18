@@ -66,11 +66,18 @@ export async function POST(request: Request) {
 
       if (!putRes.ok) throw new Error("Gagal menyimpan ke Firebase");
       
+      // Hapus riwayat kick jika ada
+      await fetch(`${firebaseUrl}/kicks/${code}.json`, { method: "DELETE" }).catch(() => {});
+
       return NextResponse.json({ success: true, message: "Token berhasil diikat ke perangkat ini." });
     } else {
       // Already bound
       if (tokenObj.deviceId === deviceId) {
         // Same device, allow
+        
+        // Hapus riwayat kick jika ada
+        await fetch(`${firebaseUrl}/kicks/${code}.json`, { method: "DELETE" }).catch(() => {});
+
         return NextResponse.json({ success: true, message: "Akses diizinkan." });
       } else {
         // Different device! Reject.
