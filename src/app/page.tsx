@@ -18,6 +18,21 @@ export default function AdminPanel() {
   const [m3uName3, setM3uName3] = useState("");
   const [epgUrl, setEpgUrl] = useState("");
   const [proxyUrl, setProxyUrl] = useState("");
+  interface CustomChannel {
+    id: string;
+    name: string;
+    streamUrl: string;
+    group?: string;
+    logoUrl?: string;
+    licenseKey?: string;
+    licenseType?: string;
+    userAgent?: string;
+    referer?: string;
+    tvgId?: string;
+  }
+  const [customChannels, setCustomChannels] = useState<CustomChannel[]>([]);
+  const [editingCustomChannel, setEditingCustomChannel] = useState<Partial<CustomChannel> | null>(null);
+
   interface TokenObject {
     code: string;
     expiresAt: number | null;
@@ -80,6 +95,7 @@ export default function AdminPanel() {
           setM3uName3(data.m3uName3 || "");
           setEpgUrl(data.epgUrl || "");
           setProxyUrl(data.proxyUrl || "");
+          setCustomChannels(data.customChannels || []);
           
           // Migrasi otomatis jika masih pakai accessCode lama
           if (data.tokens && Array.isArray(data.tokens)) {
@@ -309,6 +325,7 @@ export default function AdminPanel() {
           m3uName3,
           epgUrl,
           proxyUrl,
+          customChannels,
           tokens, // Kirim array tokens
           notificationText,
           notificationEnabled,
@@ -615,6 +632,74 @@ export default function AdminPanel() {
                 className="w-full bg-black/50 border border-purple-500/30 text-white rounded-xl p-3 focus:outline-none focus:border-purple-500 transition-colors"
               />
               <p className="text-xs text-gray-500 mt-2">Opsional. Jika diisi, channel dengan DRM atau Referer akan otomatis dirutekan melalui proxy ini untuk melewati pemblokiran.</p>
+            </div>
+
+            <div className="border-t border-white/10 pt-4 mt-6">
+              <div className="flex items-center gap-3 mb-4">
+                <Tv className="text-orange-500" />
+                <h2 className="text-lg font-semibold">Custom Channels (Manual)</h2>
+              </div>
+              <p className="text-xs text-gray-500 mb-4">Tambahkan channel sendiri tanpa perlu mengedit file M3U. Channel ini akan digabungkan otomatis ke daftar tayangan di TV.</p>
+              
+              <div className="bg-black/30 p-4 rounded-xl border border-white/5 space-y-3 mb-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <input type="text" placeholder="Nama Channel (Wajib)" className="bg-black/50 border border-white/10 rounded-lg p-2 text-sm text-white focus:border-orange-500"
+                    value={editingCustomChannel?.name || ""}
+                    onChange={(e) => setEditingCustomChannel({...editingCustomChannel, name: e.target.value})} />
+                  <input type="url" placeholder="Stream URL (Wajib)" className="bg-black/50 border border-white/10 rounded-lg p-2 text-sm text-white focus:border-orange-500"
+                    value={editingCustomChannel?.streamUrl || ""}
+                    onChange={(e) => setEditingCustomChannel({...editingCustomChannel, streamUrl: e.target.value})} />
+                  <input type="text" placeholder="Grup (Cth: VIP)" className="bg-black/50 border border-white/10 rounded-lg p-2 text-sm text-white focus:border-orange-500"
+                    value={editingCustomChannel?.group || ""}
+                    onChange={(e) => setEditingCustomChannel({...editingCustomChannel, group: e.target.value})} />
+                  <input type="url" placeholder="Logo URL" className="bg-black/50 border border-white/10 rounded-lg p-2 text-sm text-white focus:border-orange-500"
+                    value={editingCustomChannel?.logoUrl || ""}
+                    onChange={(e) => setEditingCustomChannel({...editingCustomChannel, logoUrl: e.target.value})} />
+                  <input type="text" placeholder="License Key (opsional)" className="bg-black/50 border border-white/10 rounded-lg p-2 text-sm text-white focus:border-orange-500"
+                    value={editingCustomChannel?.licenseKey || ""}
+                    onChange={(e) => setEditingCustomChannel({...editingCustomChannel, licenseKey: e.target.value})} />
+                  <input type="text" placeholder="User-Agent (opsional)" className="bg-black/50 border border-white/10 rounded-lg p-2 text-sm text-white focus:border-orange-500"
+                    value={editingCustomChannel?.userAgent || ""}
+                    onChange={(e) => setEditingCustomChannel({...editingCustomChannel, userAgent: e.target.value})} />
+                </div>
+                <div className="flex gap-2 justify-end mt-2">
+                  <button onClick={() => setEditingCustomChannel(null)} className="px-3 py-1.5 text-xs rounded-lg bg-gray-500/20 text-white">Batal</button>
+                  <button onClick={() => {
+                    if (!editingCustomChannel?.name || !editingCustomChannel?.streamUrl) return alert("Nama dan Stream URL wajib diisi!");
+                    const isNew = !editingCustomChannel.id;
+                    const id = isNew ? "cc_" + Date.now() : editingCustomChannel.id;
+                    const newChannel = { ...editingCustomChannel, id } as CustomChannel;
+                    if (isNew) {
+                      setCustomChannels([...customChannels, newChannel]);
+                    } else {
+                      setCustomChannels(customChannels.map(c => c.id === id ? newChannel : c));
+                    }
+                    setEditingCustomChannel(null);
+                  }} className="px-3 py-1.5 text-xs rounded-lg bg-orange-500 text-white font-bold">
+                    {editingCustomChannel?.id ? "Simpan Perubahan" : "Tambah Channel"}
+                  </button>
+                </div>
+              </div>
+
+              <div className="space-y-2 max-h-60 overflow-y-auto pr-2">
+                {customChannels.length === 0 ? (
+                  <p className="text-xs text-gray-500 text-center py-4">Belum ada custom channel.</p>
+                ) : (
+                  customChannels.map((c) => (
+                    <div key={c.id} className="flex justify-between items-center bg-black/40 p-3 rounded-lg border border-white/5">
+                      <div>
+                        <div className="font-bold text-orange-400 text-sm">{c.name}</div>
+                        <div className="text-xs text-gray-400 truncate max-w-[200px] md:max-w-[400px]">{c.streamUrl}</div>
+                        {c.group && <div className="text-[10px] bg-white/10 inline-block px-1.5 rounded mt-1">{c.group}</div>}
+                      </div>
+                      <div className="flex gap-2">
+                        <button onClick={() => setEditingCustomChannel(c)} className="text-xs px-2 py-1 bg-blue-500/20 text-blue-400 rounded hover:bg-blue-500/40">Edit</button>
+                        <button onClick={() => setCustomChannels(customChannels.filter(x => x.id !== c.id))} className="text-xs px-2 py-1 bg-red-500/20 text-red-400 rounded hover:bg-red-500/40">Hapus</button>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
             </div>
           </div>
               </>
