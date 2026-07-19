@@ -16,6 +16,7 @@ export default function AdminPanel() {
   const [m3uName, setM3uName] = useState("");
   const [m3uName2, setM3uName2] = useState("");
   const [m3uName3, setM3uName3] = useState("");
+  const [epgUrl, setEpgUrl] = useState("");
   interface TokenObject {
     code: string;
     expiresAt: number | null;
@@ -76,6 +77,7 @@ export default function AdminPanel() {
           setM3uName(data.m3uName || "");
           setM3uName2(data.m3uName2 || "");
           setM3uName3(data.m3uName3 || "");
+          setEpgUrl(data.epgUrl || "");
           
           // Migrasi otomatis jika masih pakai accessCode lama
           if (data.tokens && Array.isArray(data.tokens)) {
@@ -303,6 +305,7 @@ export default function AdminPanel() {
           m3uName,
           m3uName2,
           m3uName3,
+          epgUrl,
           tokens, // Kirim array tokens
           notificationText,
           notificationEnabled,
@@ -585,7 +588,19 @@ export default function AdminPanel() {
                 />
               </div>
             </div>
-            <p className="text-xs text-gray-500 mt-2">Jika Server Utama gagal dimuat, aplikasi akan otomatis mencoba Server Cadangan tanpa sepengetahuan pengguna.</p>
+            <p className="text-xs text-gray-500 mt-2 mb-6">Jika Server Utama gagal dimuat, aplikasi akan otomatis mencoba Server Cadangan tanpa sepengetahuan pengguna.</p>
+            
+            <div className="border-t border-white/10 pt-4 mt-2">
+              <label className="block text-sm font-bold text-green-400 mb-2">Global EPG URL (Jadwal Tayangan XMLTV)</label>
+              <input
+                type="url"
+                value={epgUrl}
+                onChange={(e) => setEpgUrl(e.target.value)}
+                placeholder="https://example.com/epg.xml"
+                className="w-full bg-black/50 border border-green-500/30 text-white rounded-xl p-3 focus:outline-none focus:border-green-500 transition-colors"
+              />
+              <p className="text-xs text-gray-500 mt-2">Opsional. Jika diisi, semua aplikasi TV akan otomatis menggunakan jadwal (EPG) dari URL ini dan menimpa pengaturan EPG manual di dalam aplikasi TV.</p>
+            </div>
           </div>
               </>
             )}
