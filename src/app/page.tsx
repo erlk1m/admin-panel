@@ -17,6 +17,7 @@ export default function AdminPanel() {
   const [m3uName2, setM3uName2] = useState("");
   const [m3uName3, setM3uName3] = useState("");
   const [epgUrl, setEpgUrl] = useState("");
+  const [proxyUrl, setProxyUrl] = useState("");
   interface TokenObject {
     code: string;
     expiresAt: number | null;
@@ -78,6 +79,7 @@ export default function AdminPanel() {
           setM3uName2(data.m3uName2 || "");
           setM3uName3(data.m3uName3 || "");
           setEpgUrl(data.epgUrl || "");
+          setProxyUrl(data.proxyUrl || "");
           
           // Migrasi otomatis jika masih pakai accessCode lama
           if (data.tokens && Array.isArray(data.tokens)) {
@@ -306,6 +308,7 @@ export default function AdminPanel() {
           m3uName2,
           m3uName3,
           epgUrl,
+          proxyUrl,
           tokens, // Kirim array tokens
           notificationText,
           notificationEnabled,
@@ -600,6 +603,18 @@ export default function AdminPanel() {
                 className="w-full bg-black/50 border border-green-500/30 text-white rounded-xl p-3 focus:outline-none focus:border-green-500 transition-colors"
               />
               <p className="text-xs text-gray-500 mt-2">Opsional. Jika diisi, semua aplikasi TV akan otomatis menggunakan jadwal (EPG) dari URL ini dan menimpa pengaturan EPG manual di dalam aplikasi TV.</p>
+            </div>
+
+            <div className="border-t border-white/10 pt-4 mt-2">
+              <label className="block text-sm font-bold text-purple-400 mb-2">Global Stream Proxy URL (Cloudflare Worker)</label>
+              <input
+                type="url"
+                value={proxyUrl}
+                onChange={(e) => setProxyUrl(e.target.value)}
+                placeholder="https://proxy.namakamu.workers.dev/"
+                className="w-full bg-black/50 border border-purple-500/30 text-white rounded-xl p-3 focus:outline-none focus:border-purple-500 transition-colors"
+              />
+              <p className="text-xs text-gray-500 mt-2">Opsional. Jika diisi, channel dengan DRM atau Referer akan otomatis dirutekan melalui proxy ini untuk melewati pemblokiran.</p>
             </div>
           </div>
               </>
