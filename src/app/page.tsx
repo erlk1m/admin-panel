@@ -366,31 +366,32 @@ export default function AdminPanel() {
       {/* Main Content Area */}
       <main className="flex-1 flex flex-col h-screen overflow-hidden relative">
         {/* Top Header */}
-        <header className="h-20 bg-[#111]/80 backdrop-blur-md border-b border-white/5 flex items-center justify-between px-8 sticky top-0 z-10">
-          <div>
-            <h2 className="text-xl font-bold capitalize">
+        <header className="h-16 md:h-20 bg-[#111]/80 backdrop-blur-md border-b border-white/5 flex items-center justify-between px-4 md:px-8 sticky top-0 z-10 gap-2">
+          <div className="flex-1 overflow-hidden">
+            <h2 className="text-base md:text-xl font-bold capitalize truncate">
               {activeTab === "overview" && "Dashboard Analytics"}
               {activeTab === "playlist" && "M3U Playlist Configuration"}
               {activeTab === "tokens" && "Access & Token Management"}
               {activeTab === "chat" && "Live Chat Moderation"}
               {activeTab === "settings" && "Global App Settings"}
             </h2>
-            <p className="text-sm text-gray-500">Kelola pengaturan aplikasi secara real-time</p>
+            <p className="text-sm text-gray-500 hidden md:block">Kelola pengaturan aplikasi secara real-time</p>
           </div>
           
           <button
             onClick={handleSave}
             disabled={saving}
-            className="bg-red-600 hover:bg-red-700 text-white font-bold py-2.5 px-6 rounded-xl transition-all flex items-center gap-2 disabled:opacity-50 shadow-lg shadow-red-900/20"
+            className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 md:py-2.5 md:px-6 rounded-xl transition-all flex items-center gap-1 md:gap-2 disabled:opacity-50 shadow-lg shadow-red-900/20 flex-shrink-0"
           >
-            {saving ? <RefreshCcw className="animate-spin w-4 h-4" /> : <Save className="w-4 h-4" />}
-            {saving ? "Menyimpan..." : "Simpan Perubahan"}
+            {saving ? <RefreshCcw className="animate-spin w-4 h-4 md:w-5 md:h-5" /> : <Save className="w-4 h-4 md:w-5 md:h-5" />}
+            <span className="text-sm md:text-base hidden md:inline">{saving ? "Menyimpan..." : "Simpan Perubahan"}</span>
+            <span className="text-sm md:hidden">{saving ? "Simpan..." : "Simpan"}</span>
           </button>
         </header>
 
         {/* Scrollable Content */}
-        <div className="flex-1 overflow-y-auto p-8">
-          <div className="max-w-4xl mx-auto space-y-8 pb-12">
+        <div className="flex-1 overflow-y-auto p-4 md:p-8 pb-24 md:pb-8">
+          <div className="max-w-4xl mx-auto space-y-6 md:space-y-8 pb-12">
             {activeTab === "overview" && (
               <>
               {/* Card 0: Analytics Dashboard */}
@@ -892,6 +893,30 @@ export default function AdminPanel() {
           </div>
         </div>
       </main>
+
+      {/* Mobile Bottom Navigation */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-[#111] border-t border-white/10 flex justify-around p-2 z-50 pb-[env(safe-area-inset-bottom)]">
+        {[
+          { id: "overview", label: "Beranda", icon: Activity },
+          { id: "playlist", label: "M3U", icon: Globe },
+          { id: "tokens", label: "Token", icon: Key },
+          { id: "chat", label: "Chat", icon: MessageSquare },
+          { id: "settings", label: "Setelan", icon: ShieldAlert }
+        ].map(tab => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            className={`flex flex-col items-center justify-center w-16 h-12 rounded-xl transition-colors ${
+              activeTab === tab.id 
+                ? "text-red-500" 
+                : "text-gray-500 hover:text-gray-300"
+            }`}
+          >
+            <tab.icon className="w-5 h-5 mb-1" />
+            <span className="text-[10px] font-medium">{tab.label}</span>
+          </button>
+        ))}
+      </nav>
     </div>
   );
 }
