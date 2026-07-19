@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Tv, ShieldAlert, Key, Save, Globe, RefreshCcw, Bell, AlertTriangle, Image as ImageIcon, MessageSquare, Trash2, Send, Activity, Users } from "lucide-react";
+import { Tv, ShieldAlert, Key, Save, Globe, RefreshCcw, Bell, AlertTriangle, Image as ImageIcon, MessageSquare, Trash2, Send, Activity, Users, PlaySquare, TrendingUp } from "lucide-react";
 
 export default function AdminPanel() {
   const [adminPassword, setAdminPassword] = useState("");
@@ -34,6 +34,9 @@ export default function AdminPanel() {
   const [apkUpdateUrl, setApkUpdateUrl] = useState("");
   const [isMaintenance, setIsMaintenance] = useState(false);
 
+  const [prerollAdUrl, setPrerollAdUrl] = useState("");
+  const [prerollAdEnabled, setPrerollAdEnabled] = useState(false);
+
   const [chatEnabled, setChatEnabled] = useState(true);
   const [chatMessages, setChatMessages] = useState<{ id: string; sender: string; message: string; timestamp: number }[]>([]);
   const [chatInput, setChatInput] = useState("");
@@ -49,6 +52,7 @@ export default function AdminPanel() {
 
   const [activeUsers, setActiveUsers] = useState<{ token: string; channel: string; lastSeen: number }[]>([]);
   const [activeUsersCount, setActiveUsersCount] = useState(0);
+  const [channelStats, setChannelStats] = useState<{name: string, count: number}[]>([]);
   const [now, setNow] = useState<number | null>(null);
 
   useEffect(() => {
@@ -88,6 +92,8 @@ export default function AdminPanel() {
           setLatestVersionCode(data.latestVersionCode || 1);
           setApkUpdateUrl(data.apkUpdateUrl || "");
           setIsMaintenance(data.isMaintenance || false);
+          setPrerollAdUrl(data.prerollAdUrl || "");
+          setPrerollAdEnabled(data.prerollAdEnabled || false);
           setChatEnabled(data.chatEnabled !== false); // default true if not set
           setAdminBadgeIcon(data.adminBadgeIcon || "🔧");
           setAdminBadgeColor(data.adminBadgeColor || "#FF00FF");
@@ -126,13 +132,31 @@ export default function AdminPanel() {
           })
           .catch(() => {});
       };
+      const fetchStats = () => {
+        fetch("/api/stats")
+          .then(res => res.json())
+          .then(data => {
+            if (data && !data.error) {
+              const statsArray = Object.keys(data).map(key => ({
+                name: decodeURIComponent(key),
+                count: data[key]
+              }));
+              statsArray.sort((a, b) => b.count - a.count);
+              setChannelStats(statsArray.slice(0, 5));
+            }
+          })
+          .catch(() => {});
+      };
       fetchChats();
       fetchPresence();
+      fetchStats();
       const chatInterval = setInterval(fetchChats, 3000);
       const presenceInterval = setInterval(fetchPresence, 10000);
+      const statsInterval = setInterval(fetchStats, 60000);
       return () => {
         clearInterval(chatInterval);
         clearInterval(presenceInterval);
+        clearInterval(statsInterval);
       };
     }
   }, [isAuthenticated]);
@@ -232,6 +256,29 @@ export default function AdminPanel() {
     // Di sini kita biarkan admin menekan tombol "Simpan Perubahan" utama.
   };
 
+  const handleSendInbox = async (tokenCode: string) => {
+    const message = window.prompt(`Masukkan pesan peringatan untuk token ${tokenCode}:\n(Pesan ini akan muncul popup besar di layar TV mereka)`);
+    if (!message) return;
+
+    try {
+      const res = await fetch("/api/inbox", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-admin-password": adminPassword,
+        },
+        body: JSON.stringify({ token: tokenCode, message }),
+      });
+      if (res.ok) {
+        alert("Pesan berhasil dikirim!");
+      } else {
+        alert("Gagal mengirim pesan.");
+      }
+    } catch {
+      alert("Terjadi kesalahan jaringan.");
+    }
+  };
+
   const handleSave = async () => {
     setSaving(true);
     try {
@@ -254,6 +301,8 @@ export default function AdminPanel() {
           apkUpdateUrl,
           isMaintenance,
           chatEnabled,
+          prerollAdUrl,
+          prerollAdEnabled,
           adminBadgeIcon,
           adminBadgeColor,
           adminNameEffect,
@@ -394,6 +443,35 @@ export default function AdminPanel() {
           <div className="max-w-4xl mx-auto space-y-6 md:space-y-8 pb-12">
             {activeTab === "overview" && (
               <>
+              {/* Card: Top Channels */}
+              <div className="bg-[#111] p-6 rounded-3xl border border-white/5 space-y-4 mb-8">
+                <div className="flex items-center gap-3 border-b border-white/10 pb-4">
+                  <TrendingUp className="text-purple-500" />
+                  <h2 className="text-lg font-semibold">Top 5 Channel Terpopuler</h2>
+                </div>
+                {channelStats.length === 0 ? (
+                  <div className="text-center text-gray-500 py-4 text-sm bg-white/5 rounded-xl">
+                    Belum ada data statistik channel.
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {channelStats.map((stat, i) => (
+                      <div key={stat.name} className="flex items-center justify-between bg-white/5 p-3 rounded-xl border border-white/5">
+                        <div className="flex items-center gap-3">
+                          <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold ${i === 0 ? 'bg-yellow-500/20 text-yellow-500' : i === 1 ? 'bg-gray-400/20 text-gray-400' : i === 2 ? 'bg-orange-600/20 text-orange-500' : 'bg-white/10 text-gray-400'}`}>
+                            #{i + 1}
+                          </div>
+                          <span className="font-medium text-gray-200">{stat.name}</span>
+                        </div>
+                        <div className="text-sm font-bold bg-white/10 px-3 py-1 rounded-lg">
+                          {stat.count} klik
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
               {/* Card 0: Analytics Dashboard */}
           <div className="bg-gradient-to-br from-blue-900/40 to-blue-900/10 p-6 rounded-3xl border border-blue-500/20 space-y-4">
             <div className="flex items-center justify-between border-b border-white/10 pb-4">
@@ -627,6 +705,12 @@ export default function AdminPanel() {
                           </button>
                         )}
                         <button 
+                          onClick={() => handleSendInbox(tokenObj.code)}
+                          className="text-green-500 hover:text-green-400 text-sm font-bold bg-green-500/10 hover:bg-green-500/20 px-3 py-1 rounded-lg transition-colors"
+                        >
+                          Pesan
+                        </button>
+                        <button 
                           onClick={() => startEditToken(tokenObj)}
                           className="text-blue-500 hover:text-blue-400 text-sm font-bold bg-blue-500/10 hover:bg-blue-500/20 px-3 py-1 rounded-lg transition-colors"
                         >
@@ -802,7 +886,36 @@ export default function AdminPanel() {
             </div>
           </div>
 
-          
+              {/* Pre-roll Ads Settings */}
+              <div className="bg-[#111] p-6 rounded-3xl border border-white/5 space-y-6">
+                <div className="flex items-center gap-3 border-b border-white/10 pb-4">
+                  <PlaySquare className="text-green-500" />
+                  <h2 className="text-lg font-semibold">Iklan Pembuka (Pre-roll Ad)</h2>
+                </div>
+                
+                <div className="flex items-center gap-4">
+                  <label className="text-sm text-gray-400 font-medium">Aktifkan Iklan Video?</label>
+                  <button
+                    onClick={() => setPrerollAdEnabled(!prerollAdEnabled)}
+                    className={`w-12 h-6 rounded-full transition-colors relative ${prerollAdEnabled ? 'bg-green-600' : 'bg-gray-700'}`}
+                  >
+                    <div className={`w-4 h-4 bg-white rounded-full absolute top-1 transition-transform ${prerollAdEnabled ? 'translate-x-7' : 'translate-x-1'}`} />
+                  </button>
+                </div>
+
+                <div className="space-y-2 mt-4">
+                  <label className="block text-sm text-gray-400 mb-2">URL Video Iklan (MP4/HLS)</label>
+                  <input 
+                    type="url"
+                    value={prerollAdUrl}
+                    onChange={(e) => setPrerollAdUrl(e.target.value)}
+                    placeholder="https://example.com/ad.mp4"
+                    className="w-full bg-black/50 border border-white/10 text-white rounded-xl p-3 focus:outline-none focus:border-green-500 transition-colors"
+                  />
+                  <p className="text-xs text-gray-500 mt-2">Video iklan akan diputar sebelum tayangan TV dimulai.</p>
+                </div>
+              </div>
+
                 {/* Card 3: Wallpaper TV */}
           <div className="bg-[#111] p-6 rounded-3xl border border-white/5 space-y-6">
             <div className="flex items-center gap-3 border-b border-white/10 pb-4">
