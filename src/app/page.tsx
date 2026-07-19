@@ -13,6 +13,9 @@ export default function AdminPanel() {
   const [m3uUrl, setM3uUrl] = useState("");
   const [m3uUrl2, setM3uUrl2] = useState("");
   const [m3uUrl3, setM3uUrl3] = useState("");
+  const [m3uName, setM3uName] = useState("");
+  const [m3uName2, setM3uName2] = useState("");
+  const [m3uName3, setM3uName3] = useState("");
   interface TokenObject {
     code: string;
     expiresAt: number | null;
@@ -69,6 +72,9 @@ export default function AdminPanel() {
           setM3uUrl(data.m3uUrl || "");
           setM3uUrl2(data.m3uUrl2 || "");
           setM3uUrl3(data.m3uUrl3 || "");
+          setM3uName(data.m3uName || "");
+          setM3uName2(data.m3uName2 || "");
+          setM3uName3(data.m3uName3 || "");
           
           // Migrasi otomatis jika masih pakai accessCode lama
           if (data.tokens && Array.isArray(data.tokens)) {
@@ -292,6 +298,9 @@ export default function AdminPanel() {
           m3uUrl,
           m3uUrl2,
           m3uUrl3,
+          m3uName,
+          m3uName2,
+          m3uName3,
           tokens, // Kirim array tokens
           notificationText,
           notificationEnabled,
@@ -524,6 +533,13 @@ export default function AdminPanel() {
               <div>
                 <label className="block text-sm font-bold text-blue-400 mb-2">Server Utama</label>
                 <input
+                  type="text"
+                  value={m3uName}
+                  onChange={(e) => setM3uName(e.target.value)}
+                  placeholder="Nama (opsional, cth: VIP Server)"
+                  className="w-full bg-black/50 border border-blue-500/30 text-white rounded-xl p-3 mb-2 focus:outline-none focus:border-blue-500 transition-colors"
+                />
+                <input
                   type="url"
                   value={m3uUrl}
                   onChange={(e) => setM3uUrl(e.target.value)}
@@ -534,6 +550,13 @@ export default function AdminPanel() {
               <div>
                 <label className="block text-sm text-gray-400 mb-2">Server Cadangan 1</label>
                 <input
+                  type="text"
+                  value={m3uName2}
+                  onChange={(e) => setM3uName2(e.target.value)}
+                  placeholder="Nama (opsional, cth: Server Cadangan)"
+                  className="w-full bg-black/50 border border-white/10 text-white rounded-xl p-3 mb-2 focus:outline-none focus:border-blue-500 transition-colors"
+                />
+                <input
                   type="url"
                   value={m3uUrl2}
                   onChange={(e) => setM3uUrl2(e.target.value)}
@@ -543,6 +566,13 @@ export default function AdminPanel() {
               </div>
               <div>
                 <label className="block text-sm text-gray-400 mb-2">Server Cadangan 2</label>
+                <input
+                  type="text"
+                  value={m3uName3}
+                  onChange={(e) => setM3uName3(e.target.value)}
+                  placeholder="Nama (opsional, cth: Server 3)"
+                  className="w-full bg-black/50 border border-white/10 text-white rounded-xl p-3 mb-2 focus:outline-none focus:border-blue-500 transition-colors"
+                />
                 <input
                   type="url"
                   value={m3uUrl3}
