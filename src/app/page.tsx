@@ -39,6 +39,7 @@ export default function AdminPanel() {
 
   const [prerollAdUrl, setPrerollAdUrl] = useState("");
   const [prerollAdEnabled, setPrerollAdEnabled] = useState(false);
+  const [appName, setAppName] = useState("KIMTV");
 
   const [chatEnabled, setChatEnabled] = useState(true);
   const [chatMessages, setChatMessages] = useState<{ id: string; sender: string; message: string; timestamp: number }[]>([]);
@@ -104,6 +105,7 @@ export default function AdminPanel() {
           setAdminBadgeIcon(data.adminBadgeIcon || "🔧");
           setAdminBadgeColor(data.adminBadgeColor || "#FF00FF");
           setAdminNameEffect(data.adminNameEffect || "NONE");
+          setAppName(data.appName || "KIMTV");
         }
         setLoading(false);
       })
@@ -315,6 +317,7 @@ export default function AdminPanel() {
           adminBadgeIcon,
           adminBadgeColor,
           adminNameEffect,
+          appName,
         }),
       });
 
@@ -385,7 +388,7 @@ export default function AdminPanel() {
           <div className="bg-red-600 p-2 rounded-xl">
             <Tv className="w-6 h-6 text-white" />
           </div>
-          <h1 className="text-xl font-bold tracking-tight">KIMTV<span className="text-red-500">.</span></h1>
+          <h1 className="text-xl font-bold tracking-tight">{appName}<span className="text-red-500">.</span></h1>
         </div>
         
         <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
@@ -912,6 +915,26 @@ export default function AdminPanel() {
                   </div>
                   <span className="text-sm font-medium">{notificationEnabled ? 'Aktif' : 'Mati'}</span>
                 </label>
+              </div>
+            </div>
+          </div>
+
+          {/* Card: Konfigurasi Teks Aplikasi */}
+          <div className="bg-[#111] p-6 rounded-3xl border border-white/5 space-y-6 mt-6">
+            <div className="flex items-center gap-3 border-b border-white/10 pb-4">
+              <Tv className="text-purple-500" />
+              <h2 className="text-lg font-semibold">Teks Logo Aplikasi</h2>
+            </div>
+            <div className="grid grid-cols-1 gap-6">
+              <div>
+                <label className="block text-sm text-gray-400 mb-2">Nama Aplikasi (Tampil di Menu Utama & Settings)</label>
+                <input
+                  type="text"
+                  value={appName}
+                  onChange={(e) => setAppName(e.target.value)}
+                  placeholder="KIMTV"
+                  className="w-full bg-black/50 border border-white/10 text-white rounded-xl p-3 focus:outline-none focus:border-purple-500 transition-colors"
+                />
               </div>
             </div>
           </div>
