@@ -5,6 +5,7 @@ import { Tv, ShieldAlert, Key, Save, Globe, RefreshCcw, Bell, AlertTriangle, Ima
 
 export default function AdminPanel() {
   const [adminPassword, setAdminPassword] = useState("");
+  const [activeTab, setActiveTab] = useState("overview");
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -319,32 +320,81 @@ export default function AdminPanel() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] text-white p-4 md:p-8">
-      <div className="max-w-6xl mx-auto space-y-8">
-        {/* Header */}
-        <div className="flex items-center justify-between bg-[#111] p-6 rounded-3xl border border-white/5">
-          <div className="flex items-center gap-4">
-            <div className="bg-red-500 p-3 rounded-2xl">
-              <Tv className="w-6 h-6 text-white" />
-            </div>
-            <div>
-              <h1 className="text-xl font-bold">KIMTV Dashboard</h1>
-              <p className="text-gray-400 text-sm">Kelola pengaturan aplikasi Android secara real-time</p>
-            </div>
+    <div className="flex h-screen bg-[#0a0a0a] text-white overflow-hidden">
+      {/* Sidebar */}
+      <aside className="w-64 bg-[#111] border-r border-white/5 flex flex-col hidden md:flex">
+        <div className="p-6 flex items-center gap-4 border-b border-white/5">
+          <div className="bg-red-600 p-2 rounded-xl">
+            <Tv className="w-6 h-6 text-white" />
           </div>
+          <h1 className="text-xl font-bold tracking-tight">KIMTV<span className="text-red-500">.</span></h1>
+        </div>
+        
+        <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
+          {[
+            { id: "overview", label: "Overview", icon: Activity },
+            { id: "playlist", label: "Playlist M3U", icon: Globe },
+            { id: "tokens", label: "Akses & Token", icon: Key },
+            { id: "chat", label: "Live Chat", icon: MessageSquare },
+            { id: "settings", label: "Pengaturan", icon: ShieldAlert }
+          ].map(tab => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-medium ${
+                activeTab === tab.id 
+                  ? "bg-red-600/10 text-red-500 border border-red-500/20" 
+                  : "text-gray-400 hover:text-white hover:bg-white/5"
+              }`}
+            >
+              <tab.icon className="w-5 h-5" />
+              {tab.label}
+            </button>
+          ))}
+        </nav>
+        
+        <div className="p-4 border-t border-white/5">
           <button 
             onClick={() => setIsAuthenticated(false)}
-            className="text-gray-400 hover:text-white transition-colors text-sm font-medium"
+            className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-white/5 hover:bg-white/10 text-gray-300 hover:text-white rounded-xl transition-colors font-medium"
           >
             Logout
           </button>
         </div>
+      </aside>
 
-        {/* Content */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+      {/* Main Content Area */}
+      <main className="flex-1 flex flex-col h-screen overflow-hidden relative">
+        {/* Top Header */}
+        <header className="h-20 bg-[#111]/80 backdrop-blur-md border-b border-white/5 flex items-center justify-between px-8 sticky top-0 z-10">
+          <div>
+            <h2 className="text-xl font-bold capitalize">
+              {activeTab === "overview" && "Dashboard Analytics"}
+              {activeTab === "playlist" && "M3U Playlist Configuration"}
+              {activeTab === "tokens" && "Access & Token Management"}
+              {activeTab === "chat" && "Live Chat Moderation"}
+              {activeTab === "settings" && "Global App Settings"}
+            </h2>
+            <p className="text-sm text-gray-500">Kelola pengaturan aplikasi secara real-time</p>
+          </div>
+          
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="bg-red-600 hover:bg-red-700 text-white font-bold py-2.5 px-6 rounded-xl transition-all flex items-center gap-2 disabled:opacity-50 shadow-lg shadow-red-900/20"
+          >
+            {saving ? <RefreshCcw className="animate-spin w-4 h-4" /> : <Save className="w-4 h-4" />}
+            {saving ? "Menyimpan..." : "Simpan Perubahan"}
+          </button>
+        </header>
 
-          {/* Card 0: Analytics Dashboard */}
-          <div className="bg-gradient-to-br from-blue-900/40 to-blue-900/10 p-6 rounded-3xl border border-blue-500/20 space-y-4 md:col-span-2">
+        {/* Scrollable Content */}
+        <div className="flex-1 overflow-y-auto p-8">
+          <div className="max-w-4xl mx-auto space-y-8 pb-12">
+            {activeTab === "overview" && (
+              <>
+              {/* Card 0: Analytics Dashboard */}
+          <div className="bg-gradient-to-br from-blue-900/40 to-blue-900/10 p-6 rounded-3xl border border-blue-500/20 space-y-4">
             <div className="flex items-center justify-between border-b border-white/10 pb-4">
               <div className="flex items-center gap-3">
                 <Activity className="text-blue-400" />
@@ -381,9 +431,12 @@ export default function AdminPanel() {
               )}
             </div>
           </div>
-          
-          {/* Card 1: Playlist M3U Multi-Server */}
-          <div className="bg-[#111] p-6 rounded-3xl border border-white/5 space-y-4 md:col-span-2">
+              </>
+            )}
+            {activeTab === "playlist" && (
+              <>
+              {/* Card 1: Playlist M3U Multi-Server */}
+          <div className="bg-[#111] p-6 rounded-3xl border border-white/5 space-y-4">
             <div className="flex items-center gap-3 border-b border-white/10 pb-4 mb-4">
               <Globe className="text-blue-500" />
               <h2 className="text-lg font-semibold">Multi-Server Playlist (M3U)</h2>
@@ -422,8 +475,11 @@ export default function AdminPanel() {
             </div>
             <p className="text-xs text-gray-500 mt-2">Jika Server Utama gagal dimuat, aplikasi akan otomatis mencoba Server Cadangan tanpa sepengetahuan pengguna.</p>
           </div>
-
-          {/* Card 2: Keamanan Akses (Multi-Token) */}
+              </>
+            )}
+            {activeTab === "tokens" && (
+              <>
+              {/* Card 2: Keamanan Akses (Multi-Token) */}
           <div className="bg-[#111] p-6 rounded-3xl border border-white/5 space-y-6">
             <div className="flex items-center justify-between border-b border-white/10 pb-4">
               <div className="flex items-center gap-3">
@@ -589,99 +645,12 @@ export default function AdminPanel() {
               <p className="text-xs text-gray-500 mt-2">Hapus token untuk mengeluarkan pengguna (logout) dari TV mereka. Gunakan <b>Reset TV</b> jika pengguna membeli TV baru.</p>
             </div>
           </div>
-
-          {/* Card 3: Wallpaper TV */}
+              </>
+            )}
+            {activeTab === "chat" && (
+              <>
+              {/* Card: Chat Moderation */}
           <div className="bg-[#111] p-6 rounded-3xl border border-white/5 space-y-6">
-            <div className="flex items-center gap-3 border-b border-white/10 pb-4">
-              <ImageIcon className="text-purple-500" />
-              <h2 className="text-lg font-semibold">Wallpaper TV (Background)</h2>
-            </div>
-            <div>
-              <label className="block text-sm text-gray-400 mb-2">URL Gambar Latar Belakang</label>
-              <input
-                type="url"
-                value={backgroundUrl}
-                onChange={(e) => setBackgroundUrl(e.target.value)}
-                placeholder="https://contoh.com/gambar-bagus.jpg"
-                className="w-full bg-black/50 border border-white/10 text-white rounded-xl p-3 focus:outline-none focus:border-purple-500 transition-colors"
-              />
-              <p className="text-xs text-gray-500 mt-2 mb-4">Kosongkan kolom ini jika ingin menggunakan wallpaper bawaan aplikasi.</p>
-
-              <label className="block text-sm text-gray-400 mb-2 border-t border-white/10 pt-4">URL Banner Promo (Pop-up Sambutan)</label>
-              <input
-                type="url"
-                value={welcomeBannerUrl}
-                onChange={(e) => setWelcomeBannerUrl(e.target.value)}
-                placeholder="https://contoh.com/promo-diskon.jpg"
-                className="w-full bg-black/50 border border-white/10 text-white rounded-xl p-3 focus:outline-none focus:border-purple-500 transition-colors"
-              />
-              <p className="text-xs text-gray-500 mt-2">Gambar akan muncul sekali setiap pengguna membuka aplikasi TV. Kosongkan untuk mematikan.</p>
-            </div>
-          </div>
-
-          {/* Card: Auto Update */}
-          <div className="bg-[#111] p-6 rounded-3xl border border-white/5 space-y-6">
-            <div className="flex items-center gap-3 border-b border-white/10 pb-4">
-              <RefreshCcw className="text-cyan-500" />
-              <h2 className="text-lg font-semibold">Auto-Update Aplikasi TV</h2>
-            </div>
-            <div>
-              <label className="block text-sm text-gray-400 mb-2">Versi Aplikasi Terbaru (Version Code)</label>
-              <input
-                type="number"
-                value={latestVersionCode}
-                onChange={(e) => setLatestVersionCode(parseInt(e.target.value) || 1)}
-                className="w-full bg-black/50 border border-white/10 text-white rounded-xl p-3 focus:outline-none focus:border-cyan-500 transition-colors mb-4"
-              />
-              <label className="block text-sm text-gray-400 mb-2">URL Download APK Terbaru</label>
-              <input
-                type="url"
-                value={apkUpdateUrl}
-                onChange={(e) => setApkUpdateUrl(e.target.value)}
-                placeholder="https://contoh.com/KIMTV_v2.apk"
-                className="w-full bg-black/50 border border-white/10 text-white rounded-xl p-3 focus:outline-none focus:border-cyan-500 transition-colors"
-              />
-              <p className="text-xs text-gray-500 mt-2">Ubah version code lebih tinggi dari aplikasi TV (saat ini biasanya 1) agar TV menampilkan popup Update.</p>
-            </div>
-          </div>
-
-          {/* Card 4: Notifikasi / Marquee */}
-          <div className="bg-[#111] p-6 rounded-3xl border border-white/5 space-y-6 md:col-span-2">
-            <div className="flex items-center gap-3 border-b border-white/10 pb-4">
-              <Bell className="text-green-500" />
-              <h2 className="text-lg font-semibold">Teks Berjalan (Marquee)</h2>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-              <div className="md:col-span-3">
-                <label className="block text-sm text-gray-400 mb-2">Teks Pengumuman</label>
-                <input
-                  type="text"
-                  value={notificationText}
-                  onChange={(e) => setNotificationText(e.target.value)}
-                  placeholder="Contoh: Selamat datang di KIMTV..."
-                  className="w-full bg-black/50 border border-white/10 text-white rounded-xl p-3 focus:outline-none focus:border-green-500 transition-colors"
-                />
-              </div>
-              <div className="flex flex-col justify-end">
-                <label className="flex items-center gap-3 cursor-pointer p-3 bg-black/50 rounded-xl border border-white/10">
-                  <div className="relative">
-                    <input 
-                      type="checkbox" 
-                      className="sr-only" 
-                      checked={notificationEnabled}
-                      onChange={(e) => setNotificationEnabled(e.target.checked)}
-                    />
-                    <div className={`block w-10 h-6 rounded-full transition-colors ${notificationEnabled ? 'bg-green-500' : 'bg-gray-600'}`}></div>
-                    <div className={`dot absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform ${notificationEnabled ? 'transform translate-x-4' : ''}`}></div>
-                  </div>
-                  <span className="text-sm font-medium">{notificationEnabled ? 'Aktif' : 'Mati'}</span>
-                </label>
-              </div>
-            </div>
-          </div>
-
-          {/* Card: Chat Moderation */}
-          <div className="bg-[#111] p-6 rounded-3xl border border-white/5 space-y-6 md:col-span-2">
             <div className="flex items-center justify-between border-b border-white/10 pb-4">
               <div className="flex items-center gap-3">
                 <MessageSquare className="text-pink-500" />
@@ -793,9 +762,105 @@ export default function AdminPanel() {
               </div>
             </div>
           </div>
+              </>
+            )}
+            {activeTab === "settings" && (
+              <div className="space-y-8">
+                {/* Card 4: Notifikasi / Marquee */}
+          <div className="bg-[#111] p-6 rounded-3xl border border-white/5 space-y-6">
+            <div className="flex items-center gap-3 border-b border-white/10 pb-4">
+              <Bell className="text-green-500" />
+              <h2 className="text-lg font-semibold">Teks Berjalan (Marquee)</h2>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+              <div className="md:col-span-3">
+                <label className="block text-sm text-gray-400 mb-2">Teks Pengumuman</label>
+                <input
+                  type="text"
+                  value={notificationText}
+                  onChange={(e) => setNotificationText(e.target.value)}
+                  placeholder="Contoh: Selamat datang di KIMTV..."
+                  className="w-full bg-black/50 border border-white/10 text-white rounded-xl p-3 focus:outline-none focus:border-green-500 transition-colors"
+                />
+              </div>
+              <div className="flex flex-col justify-end">
+                <label className="flex items-center gap-3 cursor-pointer p-3 bg-black/50 rounded-xl border border-white/10">
+                  <div className="relative">
+                    <input 
+                      type="checkbox" 
+                      className="sr-only" 
+                      checked={notificationEnabled}
+                      onChange={(e) => setNotificationEnabled(e.target.checked)}
+                    />
+                    <div className={`block w-10 h-6 rounded-full transition-colors ${notificationEnabled ? 'bg-green-500' : 'bg-gray-600'}`}></div>
+                    <div className={`dot absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform ${notificationEnabled ? 'transform translate-x-4' : ''}`}></div>
+                  </div>
+                  <span className="text-sm font-medium">{notificationEnabled ? 'Aktif' : 'Mati'}</span>
+                </label>
+              </div>
+            </div>
+          </div>
 
-          {/* Card 5: Maintenance Mode */}
-          <div className={`p-6 rounded-3xl border md:col-span-2 transition-all ${isMaintenance ? 'bg-red-900/30 border-red-500' : 'bg-[#111] border-white/5'}`}>
+          
+                {/* Card 3: Wallpaper TV */}
+          <div className="bg-[#111] p-6 rounded-3xl border border-white/5 space-y-6">
+            <div className="flex items-center gap-3 border-b border-white/10 pb-4">
+              <ImageIcon className="text-purple-500" />
+              <h2 className="text-lg font-semibold">Wallpaper TV (Background)</h2>
+            </div>
+            <div>
+              <label className="block text-sm text-gray-400 mb-2">URL Gambar Latar Belakang</label>
+              <input
+                type="url"
+                value={backgroundUrl}
+                onChange={(e) => setBackgroundUrl(e.target.value)}
+                placeholder="https://contoh.com/gambar-bagus.jpg"
+                className="w-full bg-black/50 border border-white/10 text-white rounded-xl p-3 focus:outline-none focus:border-purple-500 transition-colors"
+              />
+              <p className="text-xs text-gray-500 mt-2 mb-4">Kosongkan kolom ini jika ingin menggunakan wallpaper bawaan aplikasi.</p>
+
+              <label className="block text-sm text-gray-400 mb-2 border-t border-white/10 pt-4">URL Banner Promo (Pop-up Sambutan)</label>
+              <input
+                type="url"
+                value={welcomeBannerUrl}
+                onChange={(e) => setWelcomeBannerUrl(e.target.value)}
+                placeholder="https://contoh.com/promo-diskon.jpg"
+                className="w-full bg-black/50 border border-white/10 text-white rounded-xl p-3 focus:outline-none focus:border-purple-500 transition-colors"
+              />
+              <p className="text-xs text-gray-500 mt-2">Gambar akan muncul sekali setiap pengguna membuka aplikasi TV. Kosongkan untuk mematikan.</p>
+            </div>
+          </div>
+
+          
+                {/* Card: Auto Update */}
+          <div className="bg-[#111] p-6 rounded-3xl border border-white/5 space-y-6">
+            <div className="flex items-center gap-3 border-b border-white/10 pb-4">
+              <RefreshCcw className="text-cyan-500" />
+              <h2 className="text-lg font-semibold">Auto-Update Aplikasi TV</h2>
+            </div>
+            <div>
+              <label className="block text-sm text-gray-400 mb-2">Versi Aplikasi Terbaru (Version Code)</label>
+              <input
+                type="number"
+                value={latestVersionCode}
+                onChange={(e) => setLatestVersionCode(parseInt(e.target.value) || 1)}
+                className="w-full bg-black/50 border border-white/10 text-white rounded-xl p-3 focus:outline-none focus:border-cyan-500 transition-colors mb-4"
+              />
+              <label className="block text-sm text-gray-400 mb-2">URL Download APK Terbaru</label>
+              <input
+                type="url"
+                value={apkUpdateUrl}
+                onChange={(e) => setApkUpdateUrl(e.target.value)}
+                placeholder="https://contoh.com/KIMTV_v2.apk"
+                className="w-full bg-black/50 border border-white/10 text-white rounded-xl p-3 focus:outline-none focus:border-cyan-500 transition-colors"
+              />
+              <p className="text-xs text-gray-500 mt-2">Ubah version code lebih tinggi dari aplikasi TV (saat ini biasanya 1) agar TV menampilkan popup Update.</p>
+            </div>
+          </div>
+
+          
+                {/* Card 5: Maintenance Mode */}
+          <div className={`p-6 rounded-3xl border transition-all ${isMaintenance ? 'bg-red-900/30 border-red-500' : 'bg-[#111] border-white/5'}`}>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
                 <div className={`p-3 rounded-2xl ${isMaintenance ? 'bg-red-600' : 'bg-gray-800'}`}>
@@ -821,20 +886,12 @@ export default function AdminPanel() {
             </div>
           </div>
 
+        
+              </div>
+            )}
+          </div>
         </div>
-
-        {/* Save Button */}
-        <div className="flex justify-end pt-4 pb-12">
-          <button
-            onClick={handleSave}
-            disabled={saving}
-            className="bg-red-600 hover:bg-red-700 text-white font-bold py-4 px-8 rounded-2xl transition-all flex items-center gap-2 disabled:opacity-50"
-          >
-            {saving ? <RefreshCcw className="animate-spin w-5 h-5" /> : <Save className="w-5 h-5" />}
-            {saving ? "Menyimpan..." : "Simpan Pengaturan"}
-          </button>
-        </div>
-      </div>
+      </main>
     </div>
   );
 }
