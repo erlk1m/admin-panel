@@ -21,6 +21,7 @@ export default function AdminPanel() {
   interface CustomChannel {
     id: string;
     name: string;
+    type?: string;
     streamUrl: string;
     group?: string;
     logoUrl?: string;
@@ -646,21 +647,44 @@ export default function AdminPanel() {
                   <input type="text" placeholder="Nama Channel (Wajib)" className="bg-black/50 border border-white/10 rounded-lg p-2 text-sm text-white focus:border-orange-500"
                     value={editingCustomChannel?.name || ""}
                     onChange={(e) => setEditingCustomChannel({...editingCustomChannel, name: e.target.value})} />
-                  <input type="url" placeholder="Stream URL (Wajib)" className="bg-black/50 border border-white/10 rounded-lg p-2 text-sm text-white focus:border-orange-500"
-                    value={editingCustomChannel?.streamUrl || ""}
-                    onChange={(e) => setEditingCustomChannel({...editingCustomChannel, streamUrl: e.target.value})} />
+                  <select 
+                    value={editingCustomChannel?.type || "direct"} 
+                    onChange={(e) => setEditingCustomChannel({...editingCustomChannel, type: e.target.value})}
+                    className="bg-black/50 border border-white/10 rounded-lg p-2 text-sm text-white focus:border-orange-500">
+                    <option value="direct">Direct Stream (m3u8/mp4)</option>
+                    <option value="embed">Embed Code / Iframe</option>
+                  </select>
+                  
+                  {editingCustomChannel?.type === "embed" ? (
+                    <textarea 
+                      placeholder="Masukkan kode Iframe HTML atau URL webpage di sini (Wajib)" 
+                      className="bg-black/50 border border-white/10 rounded-lg p-2 text-sm text-white focus:border-orange-500 md:col-span-2 min-h-[100px]"
+                      value={editingCustomChannel?.streamUrl || ""}
+                      onChange={(e) => setEditingCustomChannel({...editingCustomChannel, streamUrl: e.target.value})}
+                    />
+                  ) : (
+                    <input type="url" placeholder="Stream URL (Wajib)" className="bg-black/50 border border-white/10 rounded-lg p-2 text-sm text-white focus:border-orange-500"
+                      value={editingCustomChannel?.streamUrl || ""}
+                      onChange={(e) => setEditingCustomChannel({...editingCustomChannel, streamUrl: e.target.value})} />
+                  )}
+
                   <input type="text" placeholder="Grup (Cth: VIP)" className="bg-black/50 border border-white/10 rounded-lg p-2 text-sm text-white focus:border-orange-500"
                     value={editingCustomChannel?.group || ""}
                     onChange={(e) => setEditingCustomChannel({...editingCustomChannel, group: e.target.value})} />
                   <input type="url" placeholder="Logo URL" className="bg-black/50 border border-white/10 rounded-lg p-2 text-sm text-white focus:border-orange-500"
                     value={editingCustomChannel?.logoUrl || ""}
                     onChange={(e) => setEditingCustomChannel({...editingCustomChannel, logoUrl: e.target.value})} />
-                  <input type="text" placeholder="License Key (opsional)" className="bg-black/50 border border-white/10 rounded-lg p-2 text-sm text-white focus:border-orange-500"
-                    value={editingCustomChannel?.licenseKey || ""}
-                    onChange={(e) => setEditingCustomChannel({...editingCustomChannel, licenseKey: e.target.value})} />
-                  <input type="text" placeholder="User-Agent (opsional)" className="bg-black/50 border border-white/10 rounded-lg p-2 text-sm text-white focus:border-orange-500"
-                    value={editingCustomChannel?.userAgent || ""}
-                    onChange={(e) => setEditingCustomChannel({...editingCustomChannel, userAgent: e.target.value})} />
+                  
+                  {editingCustomChannel?.type !== "embed" && (
+                    <>
+                      <input type="text" placeholder="License Key (opsional)" className="bg-black/50 border border-white/10 rounded-lg p-2 text-sm text-white focus:border-orange-500"
+                        value={editingCustomChannel?.licenseKey || ""}
+                        onChange={(e) => setEditingCustomChannel({...editingCustomChannel, licenseKey: e.target.value})} />
+                      <input type="text" placeholder="User-Agent (opsional)" className="bg-black/50 border border-white/10 rounded-lg p-2 text-sm text-white focus:border-orange-500"
+                        value={editingCustomChannel?.userAgent || ""}
+                        onChange={(e) => setEditingCustomChannel({...editingCustomChannel, userAgent: e.target.value})} />
+                    </>
+                  )}
                 </div>
                 <div className="flex gap-2 justify-end mt-2">
                   <button onClick={() => setEditingCustomChannel(null)} className="px-3 py-1.5 text-xs rounded-lg bg-gray-500/20 text-white">Batal</button>
@@ -688,7 +712,7 @@ export default function AdminPanel() {
                   customChannels.map((c) => (
                     <div key={c.id} className="flex justify-between items-center bg-black/40 p-3 rounded-lg border border-white/5">
                       <div>
-                        <div className="font-bold text-orange-400 text-sm">{c.name}</div>
+                        <div className="font-bold text-orange-400 text-sm">{c.name} {c.type === 'embed' && <span className="text-[10px] bg-blue-500/20 text-blue-300 px-1 ml-1 rounded">EMBED</span>}</div>
                         <div className="text-xs text-gray-400 truncate max-w-[200px] md:max-w-[400px]">{c.streamUrl}</div>
                         {c.group && <div className="text-[10px] bg-white/10 inline-block px-1.5 rounded mt-1">{c.group}</div>}
                       </div>
