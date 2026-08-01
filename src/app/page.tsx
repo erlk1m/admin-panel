@@ -536,7 +536,7 @@ export default function AdminPanel() {
                 });
                 const sortedCountries = Object.entries(countryCounts).sort((a, b) => b[1] - a[1]).slice(0, 5);
                 const getCountryName = (c: string) => {
-                  const map: Record<string, string> = { ID: "Indonesia 🇮🇩", MY: "Malaysia 🇲🇾", SG: "Singapura 🇸🇬", US: "Amerika Serikat 🇺🇸", AU: "Australia 🇦🇺" };
+                  const map: Record<string, string> = { ID: "Indonesia", MY: "Malaysia", SG: "Singapura", US: "Amerika Serikat", AU: "Australia" };
                   return map[c.toUpperCase()] || c.toUpperCase();
                 };
 
@@ -550,12 +550,15 @@ export default function AdminPanel() {
                       <div className="text-center text-gray-500 py-4 text-sm bg-white/5 rounded-xl">Belum ada data lokasi (user offline).</div>
                     ) : (
                       <div className="space-y-3">
-                        {sortedCountries.map(([code, count]) => (
+                        {sortedCountries.map(([code, count], i) => (
                           <div key={code} className="flex items-center justify-between bg-white/5 p-3 rounded-xl border border-white/5">
                             <div className="flex items-center gap-3">
+                              <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold ${i === 0 ? 'bg-blue-500/20 text-blue-400' : i === 1 ? 'bg-gray-400/20 text-gray-400' : i === 2 ? 'bg-orange-600/20 text-orange-500' : 'bg-white/10 text-gray-400'}`}>
+                                #{i + 1}
+                              </div>
                               <span className="font-medium text-gray-200">{getCountryName(code)}</span>
                             </div>
-                            <div className="text-sm font-bold bg-white/10 px-3 py-1 rounded-lg text-blue-300">
+                            <div className="text-sm font-bold bg-white/10 px-3 py-1 rounded-lg text-gray-300">
                               {count} Perangkat
                             </div>
                           </div>
