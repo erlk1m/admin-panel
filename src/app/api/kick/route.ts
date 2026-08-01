@@ -20,8 +20,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Token is required" }, { status: 400 });
     }
 
+    const firebaseSecret = process.env.FIREBASE_SECRET;
+    const authQuery = firebaseSecret ? `?auth=${firebaseSecret}` : "";
+
     // Tulis data KICK ke /kicks/<token>.json
-    const res = await fetch(`${firebaseUrl}/kicks/${token}.json`, {
+    const res = await fetch(`${firebaseUrl}/kicks/${token}.json${authQuery}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(Date.now()), // Menyimpan timestamp kapan ditendang

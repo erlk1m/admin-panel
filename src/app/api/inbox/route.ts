@@ -19,8 +19,11 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Firebase URL not configured" }, { status: 500 });
     }
 
+    const firebaseSecret = process.env.FIREBASE_SECRET;
+    const authQuery = firebaseSecret ? `?auth=${firebaseSecret}` : "";
+
     // Write to /inbox/{token}.json
-    const res = await fetch(`${firebaseUrl}/inbox/${token}.json`, {
+    const res = await fetch(`${firebaseUrl}/inbox/${token}.json${authQuery}`, {
       method: "PUT", // Replace existing message or set new one
       headers: {
         "Content-Type": "application/json",

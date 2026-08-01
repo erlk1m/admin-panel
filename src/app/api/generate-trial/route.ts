@@ -91,7 +91,10 @@ export async function POST(request: Request) {
     data.tokens.push(tokenObj);
 
     // 4. Save to Firebase
-    const putRes = await fetch(`${firebaseUrl}/config.json`, {
+    const firebaseSecret = process.env.FIREBASE_SECRET;
+    const authQuery = firebaseSecret ? `&auth=${firebaseSecret}` : "";
+
+    const putRes = await fetch(`${firebaseUrl}/config.json?_t=${Date.now()}${authQuery}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),

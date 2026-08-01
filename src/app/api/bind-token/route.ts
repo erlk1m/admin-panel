@@ -62,14 +62,17 @@ export async function POST(request: Request) {
     }
 
     const saveAndReturn = async (message: string) => {
+      const firebaseSecret = process.env.FIREBASE_SECRET;
+      const authQuery = firebaseSecret ? `?auth=${firebaseSecret}` : "";
+      
       data.tokens[tokenIndex] = tokenObj;
-      const putRes = await fetch(`${firebaseUrl}/config.json`, {
+      const putRes = await fetch(`${firebaseUrl}/config.json${authQuery}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
       });
       if (!putRes.ok) throw new Error("Gagal menyimpan ke Firebase");
-      await fetch(`${firebaseUrl}/kicks/${code}.json`, { method: "DELETE" }).catch(() => {});
+      await fetch(`${firebaseUrl}/kicks/${code}.json${authQuery}`, { method: "DELETE" }).catch(() => {});
       return NextResponse.json({ success: true, message });
     };
 
