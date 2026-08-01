@@ -52,36 +52,41 @@ export async function POST(request: Request) {
     }
 
     // 4. Bind logic
-    if (!tokenObj.deviceId) {
-      // Not bound yet, bind it!
-      tokenObj.deviceId = deviceId;
-      data.tokens[tokenIndex] = tokenObj;
+    const maxDevices = tokenObj.maxDevices || 1;
+    let currentDeviceIds: string[] = [];
+    
+    if (tokenObj.deviceIds && Array.isArray(tokenObj.deviceIds)) {
+      currentDeviceIds = [...tokenObj.deviceIds];
+    } else if (tokenObj.deviceId && typeof tokenObj.deviceId === 'string') {
+      currentDeviceIds = [tokenObj.deviceId];
+    }
 
-      // Save back to Firebase
+    const saveAndReturn = async (message: string) => {
+      data.tokens[tokenIndex] = tokenObj;
       const putRes = await fetch(`${firebaseUrl}/config.json`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
       });
-
       if (!putRes.ok) throw new Error("Gagal menyimpan ke Firebase");
-      
-      // Hapus riwayat kick jika ada
       await fetch(`${firebaseUrl}/kicks/${code}.json`, { method: "DELETE" }).catch(() => {});
+      return NextResponse.json({ success: true, message });
+    };
 
-      return NextResponse.json({ success: true, message: "Token berhasil diikat ke perangkat ini." });
+    if (currentDeviceIds.includes(deviceId)) {
+      // Already bound to this device, allow
+      await fetch(`${firebaseUrl}/kicks/${code}.json`, { method: "DELETE" }).catch(() => {});
+      return NextResponse.json({ success: true, message: "Akses diizinkan." });
     } else {
-      // Already bound
-      if (tokenObj.deviceId === deviceId) {
-        // Same device, allow
-        
-        // Hapus riwayat kick jika ada
-        await fetch(`${firebaseUrl}/kicks/${code}.json`, { method: "DELETE" }).catch(() => {});
-
-        return NextResponse.json({ success: true, message: "Akses diizinkan." });
+      // New device trying to bind
+      if (currentDeviceIds.length < maxDevices) {
+        currentDeviceIds.push(deviceId);
+        tokenObj.deviceIds = currentDeviceIds;
+        tokenObj.deviceId = currentDeviceIds[0]; // backward compatibility
+        return await saveAndReturn("Token berhasil diikat ke perangkat ini.");
       } else {
-        // Different device! Reject.
-        return NextResponse.json({ error: "Token sudah digunakan di TV lain!" }, { status: 403 });
+        // Full
+        return NextResponse.json({ error: `Token sudah digunakan di batas maksimum (${maxDevices} TV)!` }, { status: 403 });
       }
     }
 

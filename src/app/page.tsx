@@ -42,6 +42,8 @@ export default function AdminPanel() {
     badgeColor?: string;
     nameEffect?: string;
     deviceId?: string;
+    maxDevices?: number;
+    deviceIds?: string[];
   }
 
   const [tokens, setTokens] = useState<TokenObject[]>([]); // Ganti accessCode jadi tokens
@@ -70,6 +72,7 @@ export default function AdminPanel() {
   const [tokenBadgeIcon, setTokenBadgeIcon] = useState("");
   const [tokenBadgeColor, setTokenBadgeColor] = useState("#FFD700");
   const [tokenNameEffect, setTokenNameEffect] = useState("NONE");
+  const [tokenMaxDevices, setTokenMaxDevices] = useState(1);
   const [editingTokenCode, setEditingTokenCode] = useState<string | null>(null);
 
   const [activeUsers, setActiveUsers] = useState<{ token: string; channel: string; lastSeen: number }[]>([]);
@@ -245,7 +248,7 @@ export default function AdminPanel() {
       token += chars.charAt(Math.floor(Math.random() * chars.length));
     }
     if (!tokens.some(t => t.code === token)) {
-      setTokens([...tokens, { code: token, badgeIcon: tokenBadgeIcon, badgeColor: tokenBadgeColor, nameEffect: tokenNameEffect, ...getExpirationParams(tokenDuration) }]);
+      setTokens([...tokens, { code: token, badgeIcon: tokenBadgeIcon, badgeColor: tokenBadgeColor, nameEffect: tokenNameEffect, maxDevices: tokenMaxDevices, deviceIds: [], ...getExpirationParams(tokenDuration) }]);
     }
   };
 
@@ -253,13 +256,13 @@ export default function AdminPanel() {
     const cleanToken = customTokenInput.trim();
     if (editingTokenCode) {
       if (cleanToken !== "") {
-        setTokens(tokens.map(t => t.code === editingTokenCode ? { ...t, code: cleanToken, badgeIcon: tokenBadgeIcon, badgeColor: tokenBadgeColor, nameEffect: tokenNameEffect } : t));
+        setTokens(tokens.map(t => t.code === editingTokenCode ? { ...t, code: cleanToken, badgeIcon: tokenBadgeIcon, badgeColor: tokenBadgeColor, nameEffect: tokenNameEffect, maxDevices: tokenMaxDevices } : t));
         setEditingTokenCode(null);
         setCustomTokenInput("");
       }
     } else {
       if (cleanToken !== "" && !tokens.some(t => t.code === cleanToken)) {
-        setTokens([...tokens, { code: cleanToken, badgeIcon: tokenBadgeIcon, badgeColor: tokenBadgeColor, nameEffect: tokenNameEffect, deviceId: "", ...getExpirationParams(tokenDuration) }]);
+        setTokens([...tokens, { code: cleanToken, badgeIcon: tokenBadgeIcon, badgeColor: tokenBadgeColor, nameEffect: tokenNameEffect, deviceId: "", maxDevices: tokenMaxDevices, deviceIds: [], ...getExpirationParams(tokenDuration) }]);
         setCustomTokenInput("");
       }
     }
@@ -271,6 +274,7 @@ export default function AdminPanel() {
     setTokenBadgeIcon(token.badgeIcon || "");
     setTokenBadgeColor(token.badgeColor || "#FFD700");
     setTokenNameEffect(token.nameEffect || "NONE");
+    setTokenMaxDevices(token.maxDevices || 1);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
@@ -279,7 +283,7 @@ export default function AdminPanel() {
   };
 
   const resetTokenDevice = (tokenCode: string) => {
-    setTokens(tokens.map(t => t.code === tokenCode ? { ...t, deviceId: "" } : t));
+    setTokens(tokens.map(t => t.code === tokenCode ? { ...t, deviceId: "", deviceIds: [] } : t));
     // Kita harus panggil handleSave atau biarkan user klik "Simpan Perubahan" sendiri.
     // Untuk kenyamanan, biarkan mereka klik "Simpan" setelah mereset, atau kita panggil otomatis.
     // Di sini kita biarkan admin menekan tombol "Simpan Perubahan" utama.
@@ -772,6 +776,17 @@ export default function AdminPanel() {
                     placeholder="Badge (cth: 👑)"
                     className="w-32 bg-black/50 border border-white/10 text-white rounded-xl p-3 focus:outline-none focus:border-yellow-500 transition-colors"
                   />
+                  <div className="flex flex-col">
+                    <input
+                      type="number"
+                      min="1"
+                      value={tokenMaxDevices}
+                      onChange={(e) => setTokenMaxDevices(parseInt(e.target.value) || 1)}
+                      className="w-20 bg-black/50 border border-white/10 text-white rounded-xl p-3 focus:outline-none focus:border-yellow-500 transition-colors"
+                      title="Max Device"
+                    />
+                    <span className="text-[10px] text-gray-500 text-center mt-1">Max Device</span>
+                  </div>
                   <input
                     type="color"
                     value={tokenBadgeColor}
@@ -848,10 +863,14 @@ export default function AdminPanel() {
                         <span className="font-mono text-yellow-400 font-bold block">{tokenObj.code}</span>
                         <span className="text-xs text-gray-400">
                           Durasi: {tokenObj.label} 
-                          {tokenObj.expiresAt ? ` (s.d ${new Date(tokenObj.expiresAt).toLocaleString()})` : ""}
-                          {tokenObj.nameEffect && tokenObj.nameEffect !== "NONE" ? ` • Efek: ${tokenObj.nameEffect}` : ""}
+                          {tokenObj.expiresAt && ` (Exp: ${new Date(tokenObj.expiresAt).toLocaleString('id-ID')})`}
                         </span>
-                        {tokenObj.deviceId && (
+                        {tokenObj.maxDevices && tokenObj.maxDevices > 1 && (
+                          <span className="text-xs text-yellow-500 block mt-1">
+                            Batas Perangkat: {tokenObj.maxDevices} TV
+                          </span>
+                        )}
+                        {((tokenObj.deviceIds && tokenObj.deviceIds.length > 0) || tokenObj.deviceId) && (
                           <span 
                             onClick={() => {
                               navigator.clipboard.writeText(tokenObj.deviceId || "");
@@ -861,7 +880,7 @@ export default function AdminPanel() {
                             title="Klik untuk menyalin Device ID lengkap"
                           >
                             <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
-                            Terikat dengan TV (ID: {tokenObj.deviceId.substring(0, 8)}...)
+                            Terhubung ({tokenObj.deviceIds?.length || (tokenObj.deviceId ? 1 : 0)}/{tokenObj.maxDevices || 1})
                             <svg className="w-3 h-3 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
                           </span>
                         )}
