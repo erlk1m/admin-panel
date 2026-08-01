@@ -75,7 +75,7 @@ export default function AdminPanel() {
   const [tokenMaxDevices, setTokenMaxDevices] = useState(1);
   const [editingTokenCode, setEditingTokenCode] = useState<string | null>(null);
 
-  const [activeUsers, setActiveUsers] = useState<{ token: string; channel: string; lastSeen: number }[]>([]);
+  const [activeUsers, setActiveUsers] = useState<{ token: string; channel: string; country?: string; lastSeen: number }[]>([]);
   const [activeUsersCount, setActiveUsersCount] = useState(0);
   const [channelStats, setChannelStats] = useState<{name: string, count: number}[]>([]);
   const [now, setNow] = useState<number | null>(null);
@@ -526,6 +526,46 @@ export default function AdminPanel() {
                   <span className="text-2xl font-bold text-blue-400">v{latestVersionCode}</span>
                 </div>
               </div>
+              
+              {/* Geo Analytics Card */}
+              {(() => {
+                const countryCounts: Record<string, number> = {};
+                activeUsers.forEach(u => {
+                  const code = u.country || "ID";
+                  countryCounts[code] = (countryCounts[code] || 0) + 1;
+                });
+                const sortedCountries = Object.entries(countryCounts).sort((a, b) => b[1] - a[1]).slice(0, 5);
+                const getCountryName = (c: string) => {
+                  const map: Record<string, string> = { ID: "Indonesia 🇮🇩", MY: "Malaysia 🇲🇾", SG: "Singapura 🇸🇬", US: "Amerika Serikat 🇺🇸", AU: "Australia 🇦🇺" };
+                  return map[c.toUpperCase()] || c.toUpperCase();
+                };
+
+                return (
+                  <div className="bg-white/5 backdrop-blur-xl border-r border-white/10 p-6 rounded-3xl border border-white/5 space-y-4 mb-8">
+                    <div className="flex items-center gap-3 border-b border-white/10 pb-4">
+                      <Globe className="text-blue-500" />
+                      <h2 className="text-lg font-semibold">Distribusi Lokasi Penonton</h2>
+                    </div>
+                    {sortedCountries.length === 0 ? (
+                      <div className="text-center text-gray-500 py-4 text-sm bg-white/5 rounded-xl">Belum ada data lokasi (user offline).</div>
+                    ) : (
+                      <div className="space-y-3">
+                        {sortedCountries.map(([code, count]) => (
+                          <div key={code} className="flex items-center justify-between bg-white/5 p-3 rounded-xl border border-white/5">
+                            <div className="flex items-center gap-3">
+                              <span className="font-medium text-gray-200">{getCountryName(code)}</span>
+                            </div>
+                            <div className="text-sm font-bold bg-white/10 px-3 py-1 rounded-lg text-blue-300">
+                              {count} Perangkat
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
+
               {/* Card: Top Channels */}
               <div className="bg-white/5 backdrop-blur-xl border-r border-white/10 p-6 rounded-3xl border border-white/5 space-y-4 mb-8">
                 <div className="flex items-center gap-3 border-b border-white/10 pb-4">
