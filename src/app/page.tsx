@@ -6,6 +6,7 @@ import { Tv, ShieldAlert, Key, Save, Globe, RefreshCcw, Bell, AlertTriangle, Ima
 export default function AdminPanel() {
   const [adminPassword, setAdminPassword] = useState("");
   const [activeTab, setActiveTab] = useState("overview");
+  const [tokenSubTab, setTokenSubTab] = useState("premium");
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -44,6 +45,7 @@ export default function AdminPanel() {
     deviceId?: string;
     maxDevices?: number;
     deviceIds?: string[];
+    isTrial?: boolean;
   }
 
   const [tokens, setTokens] = useState<TokenObject[]>([]); // Ganti accessCode jadi tokens
@@ -291,6 +293,23 @@ export default function AdminPanel() {
     setTokenNameEffect(token.nameEffect || "NONE");
     setTokenMaxDevices(token.maxDevices || 1);
     window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const upgradeTrialToPremium = (tokenCode: string) => {
+    setTokens(tokens.map(t => {
+      if (t.code === tokenCode) {
+        return {
+          ...t,
+          isTrial: false,
+          label: "Lifetime",
+          expiresAt: null,
+          badgeIcon: "👑",
+          badgeColor: "#FFD700"
+        };
+      }
+      return t;
+    }));
+    // Note: requires saving config to take effect
   };
 
   const removeToken = (tokenToRemove: string) => {
@@ -938,12 +957,28 @@ export default function AdminPanel() {
                 + Generate Token Acak
               </button>
 
+              {/* Token Sub Tabs */}
+              <div className="flex gap-2 border-b border-white/10 pb-2">
+                <button 
+                  onClick={() => setTokenSubTab("premium")}
+                  className={`px-4 py-2 rounded-t-xl text-sm font-semibold transition-colors ${tokenSubTab === "premium" ? "bg-white/10 text-white" : "text-gray-400 hover:text-gray-200"}`}
+                >
+                  Premium Tokens
+                </button>
+                <button 
+                  onClick={() => setTokenSubTab("trial")}
+                  className={`px-4 py-2 rounded-t-xl text-sm font-semibold transition-colors ${tokenSubTab === "trial" ? "bg-white/10 text-white" : "text-gray-400 hover:text-gray-200"}`}
+                >
+                  Trial Users
+                </button>
+              </div>
+
               {/* Daftar Token Aktif */}
-              <div className="mt-4 pt-4 border-t border-white/5 max-h-48 overflow-y-auto pr-2 space-y-2">
-                {tokens.length === 0 ? (
-                  <p className="text-sm text-gray-500 text-center py-4">Belum ada token. Aplikasi TV akan menolak semua masuk.</p>
+              <div className="mt-4 pt-4 max-h-48 overflow-y-auto pr-2 space-y-2">
+                {tokens.filter(t => tokenSubTab === "premium" ? !t.isTrial : t.isTrial).length === 0 ? (
+                  <p className="text-sm text-gray-500 text-center py-4">Belum ada {tokenSubTab === "premium" ? "token premium" : "pengguna trial"}.</p>
                 ) : (
-                  tokens.map((tokenObj, idx) => (
+                  tokens.filter(t => tokenSubTab === "premium" ? !t.isTrial : t.isTrial).map((tokenObj, idx) => (
                     <div key={idx} className="flex items-center justify-between bg-black/40 p-3 rounded-xl border border-white/5">
                       <div>
                         <span className="font-mono text-yellow-400 font-bold block">{tokenObj.code}</span>
@@ -972,6 +1007,14 @@ export default function AdminPanel() {
                         )}
                       </div>
                       <div className="flex gap-2">
+                        {tokenObj.isTrial && (
+                          <button 
+                            onClick={() => upgradeTrialToPremium(tokenObj.code)}
+                            className="text-indigo-400 hover:text-indigo-300 text-sm font-bold bg-indigo-500/10 hover:bg-indigo-500/20 px-3 py-1 rounded-lg transition-colors"
+                          >
+                            Upgrade Premium
+                          </button>
+                        )}
                         {tokenObj.deviceId && (
                           <button 
                             onClick={() => resetTokenDevice(tokenObj.code)}
@@ -987,12 +1030,14 @@ export default function AdminPanel() {
                         >
                           Pesan
                         </button>
-                        <button 
-                          onClick={() => startEditToken(tokenObj)}
-                          className="text-blue-500 hover:text-blue-400 text-sm font-bold bg-blue-500/10 hover:bg-blue-500/20 px-3 py-1 rounded-lg transition-colors"
-                        >
-                          Edit
-                        </button>
+                        {!tokenObj.isTrial && (
+                          <button 
+                            onClick={() => startEditToken(tokenObj)}
+                            className="text-blue-500 hover:text-blue-400 text-sm font-bold bg-blue-500/10 hover:bg-blue-500/20 px-3 py-1 rounded-lg transition-colors"
+                          >
+                            Edit
+                          </button>
+                        )}
                         <button 
                           onClick={() => removeToken(tokenObj.code)}
                           className="text-purple-400 hover:text-purple-300 text-sm font-bold bg-purple-500/10 hover:bg-purple-500/20 px-3 py-1 rounded-lg transition-colors"
