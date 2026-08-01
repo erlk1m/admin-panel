@@ -136,10 +136,25 @@ export default function AdminPanel() {
       .catch(() => setLoading(false));
   }, []);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (adminPassword.trim() !== "") {
-      setIsAuthenticated(true);
+      try {
+        const res = await fetch("/api/verify-password", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ password: adminPassword })
+        });
+        
+        if (res.ok) {
+          setIsAuthenticated(true);
+        } else {
+          const data = await res.json();
+          alert(data.error || "Password Admin Salah!");
+        }
+      } catch {
+        alert("Terjadi kesalahan jaringan.");
+      }
     }
   };
 
