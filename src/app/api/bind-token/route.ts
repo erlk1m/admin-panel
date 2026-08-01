@@ -7,6 +7,9 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "FIREBASE_URL is not configured" }, { status: 500 });
     }
 
+    const firebaseSecret = process.env.FIREBASE_SECRET;
+    const authQuery = firebaseSecret ? `?auth=${firebaseSecret}` : "";
+
     const { code, deviceId } = await request.json();
 
     if (!code || !deviceId) {
@@ -62,9 +65,6 @@ export async function POST(request: Request) {
     }
 
     const saveAndReturn = async (message: string) => {
-      const firebaseSecret = process.env.FIREBASE_SECRET;
-      const authQuery = firebaseSecret ? `?auth=${firebaseSecret}` : "";
-      
       data.tokens[tokenIndex] = tokenObj;
       const putRes = await fetch(`${firebaseUrl}/config.json${authQuery}`, {
         method: "PUT",
@@ -78,7 +78,7 @@ export async function POST(request: Request) {
 
     if (currentDeviceIds.includes(deviceId)) {
       // Already bound to this device, allow
-      await fetch(`${firebaseUrl}/kicks/${code}.json`, { method: "DELETE" }).catch(() => {});
+      await fetch(`${firebaseUrl}/kicks/${code}.json${authQuery}`, { method: "DELETE" }).catch(() => {});
       return NextResponse.json({ success: true, message: "Akses diizinkan." });
     } else {
       // New device trying to bind

@@ -35,7 +35,9 @@ export async function POST(req: Request) {
     });
 
     if (!res.ok) {
-      return NextResponse.json({ error: "Gagal menyimpan pesan ke Firebase" }, { status: 500 });
+      const errorText = await res.text();
+      console.error("Firebase Error in Inbox:", errorText);
+      return NextResponse.json({ error: "Gagal menyimpan pesan ke Firebase: " + errorText }, { status: 500 });
     }
 
     return NextResponse.json({ success: true });
