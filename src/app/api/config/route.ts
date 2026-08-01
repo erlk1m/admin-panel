@@ -44,9 +44,12 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
+    
+    const firebaseSecret = process.env.FIREBASE_SECRET;
+    const authQuery = firebaseSecret ? `?auth=${firebaseSecret}` : "";
 
     // Gunakan method PUT untuk menimpa data (overwrite) di Firebase RTDB
-    const res = await fetch(`${firebaseUrl}/config.json`, {
+    const res = await fetch(`${firebaseUrl}/config.json${authQuery}`, {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
