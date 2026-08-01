@@ -379,19 +379,19 @@ export default function AdminPanel() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center text-white">
-        <RefreshCcw className="animate-spin w-8 h-8 text-red-500" />
+      <div className="min-h-screen bg-transparent flex items-center justify-center text-white">
+        <RefreshCcw className="animate-spin w-8 h-8 text-purple-400" />
       </div>
     );
   }
 
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#110000] to-[#000000] flex items-center justify-center p-4">
-        <div className="bg-[#1a1a1a]/80 backdrop-blur-xl p-8 rounded-3xl border border-white/10 w-full max-w-md shadow-2xl">
+      <div className="min-h-screen bg-gradient-to-br from-transparent to-transparent flex items-center justify-center p-4">
+        <div className="bg-black/40 backdrop-blur-3xl border border-white/10 shadow-[0_0_40px_rgba(139,92,246,0.15)] backdrop-blur-xl p-8 rounded-3xl border border-white/10 w-full max-w-md shadow-2xl">
           <div className="flex justify-center mb-6">
-            <div className="bg-red-600/20 p-4 rounded-full">
-              <Tv className="w-10 h-10 text-red-500" />
+            <div className="bg-purple-600/20 p-4 rounded-full">
+              <Tv className="w-10 h-10 text-purple-400" />
             </div>
           </div>
           <h1 className="text-2xl font-bold text-center text-white mb-2">KIMTV Admin Panel</h1>
@@ -407,13 +407,13 @@ export default function AdminPanel() {
                   placeholder="Admin Password"
                   value={adminPassword}
                   onChange={(e) => setAdminPassword(e.target.value)}
-                  className="w-full bg-black/50 border border-white/10 text-white rounded-xl py-3 pl-12 pr-4 focus:outline-none focus:border-red-500 transition-colors"
+                  className="w-full bg-black/50 border border-white/10 text-white rounded-xl py-3 pl-12 pr-4 focus:outline-none focus:border-purple-500 transition-colors"
                 />
               </div>
             </div>
             <button
               type="submit"
-              className="w-full bg-gradient-to-r from-red-600 to-red-800 text-white font-bold py-3 rounded-xl hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
+              className="w-full bg-gradient-to-r from-purple-600 to-blue-600 text-white font-bold py-3 rounded-xl hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
             >
               <Key className="w-5 h-5" /> Masuk Panel
             </button>
@@ -424,14 +424,14 @@ export default function AdminPanel() {
   }
 
   return (
-    <div className="flex h-screen bg-[#0a0a0a] text-white overflow-hidden">
+    <div className="flex h-screen bg-transparent text-white overflow-hidden">
       {/* Sidebar */}
-      <aside className="w-64 bg-[#111] border-r border-white/5 flex flex-col hidden md:flex">
+      <aside className="w-64 bg-white/5 backdrop-blur-xl border-r border-white/10 border-r border-white/5 flex flex-col hidden md:flex">
         <div className="p-6 flex items-center gap-4 border-b border-white/5">
-          <div className="bg-red-600 p-2 rounded-xl">
+          <div className="bg-purple-600 p-2 rounded-xl">
             <Tv className="w-6 h-6 text-white" />
           </div>
-          <h1 className="text-xl font-bold tracking-tight">{appName}<span className="text-red-500">.</span></h1>
+          <h1 className="text-xl font-bold tracking-tight">{appName}<span className="text-purple-400">.</span></h1>
         </div>
         
         <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
@@ -447,7 +447,7 @@ export default function AdminPanel() {
               onClick={() => setActiveTab(tab.id)}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-medium ${
                 activeTab === tab.id 
-                  ? "bg-red-600/10 text-red-500 border border-red-500/20" 
+                  ? "bg-purple-600/20 text-purple-400 border border-purple-500/30 shadow-[0_0_15px_rgba(139,92,246,0.2)]" 
                   : "text-gray-400 hover:text-white hover:bg-white/5"
               }`}
             >
@@ -470,7 +470,7 @@ export default function AdminPanel() {
       {/* Main Content Area */}
       <main className="flex-1 flex flex-col h-screen overflow-hidden relative">
         {/* Top Header */}
-        <header className="h-16 md:h-20 bg-[#111]/80 backdrop-blur-md border-b border-white/5 flex items-center justify-between px-4 md:px-8 sticky top-0 z-10 gap-2">
+        <header className="h-16 md:h-20 bg-white/5 backdrop-blur-xl border-r border-white/10/80 backdrop-blur-md border-b border-white/5 flex items-center justify-between px-4 md:px-8 sticky top-0 z-10 gap-2">
           <div className="flex-1 overflow-hidden">
             <h2 className="text-base md:text-xl font-bold capitalize truncate">
               {activeTab === "overview" && "Dashboard Analytics"}
@@ -485,7 +485,7 @@ export default function AdminPanel() {
           <button
             onClick={handleSave}
             disabled={saving}
-            className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 md:py-2.5 md:px-6 rounded-xl transition-all flex items-center gap-1 md:gap-2 disabled:opacity-50 shadow-lg shadow-red-900/20 flex-shrink-0"
+            className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 md:py-2.5 md:px-6 rounded-xl transition-all flex items-center gap-1 md:gap-2 disabled:opacity-50 shadow-lg shadow-purple-900/20 flex-shrink-0"
           >
             {saving ? <RefreshCcw className="animate-spin w-4 h-4 md:w-5 md:h-5" /> : <Save className="w-4 h-4 md:w-5 md:h-5" />}
             <span className="text-sm md:text-base hidden md:inline">{saving ? "Menyimpan..." : "Simpan Perubahan"}</span>
@@ -499,7 +499,7 @@ export default function AdminPanel() {
             {activeTab === "overview" && (
               <>
               {/* Card: Top Channels */}
-              <div className="bg-[#111] p-6 rounded-3xl border border-white/5 space-y-4 mb-8">
+              <div className="bg-white/5 backdrop-blur-xl border-r border-white/10 p-6 rounded-3xl border border-white/5 space-y-4 mb-8">
                 <div className="flex items-center gap-3 border-b border-white/10 pb-4">
                   <TrendingUp className="text-purple-500" />
                   <h2 className="text-lg font-semibold">Top 5 Channel Terpopuler</h2>
@@ -555,7 +555,7 @@ export default function AdminPanel() {
                         <div className="text-xs font-bold text-gray-500">
                           {now ? Math.floor((now - user.lastSeen) / 1000) : 0}s lalu
                         </div>
-                        <button onClick={() => handleKick(user.token)} className="text-red-500 hover:text-white bg-red-500/10 hover:bg-red-500/50 p-1.5 rounded-lg text-xs font-bold transition-colors">
+                        <button onClick={() => handleKick(user.token)} className="text-purple-400 hover:text-white bg-purple-500/10 hover:bg-purple-500/50 p-1.5 rounded-lg text-xs font-bold transition-colors">
                           KICK
                         </button>
                       </div>
@@ -570,7 +570,7 @@ export default function AdminPanel() {
             {activeTab === "playlist" && (
               <>
               {/* Card 1: Playlist M3U Multi-Server */}
-          <div className="bg-[#111] p-6 rounded-3xl border border-white/5 space-y-4">
+          <div className="bg-white/5 backdrop-blur-xl border-r border-white/10 p-6 rounded-3xl border border-white/5 space-y-4">
             <div className="flex items-center gap-3 border-b border-white/10 pb-4 mb-4">
               <Globe className="text-blue-500" />
               <h2 className="text-lg font-semibold">Multi-Server Playlist (M3U)</h2>
@@ -737,7 +737,7 @@ export default function AdminPanel() {
                       </div>
                       <div className="flex gap-2">
                         <button onClick={() => setEditingCustomChannel(c)} className="text-xs px-2 py-1 bg-blue-500/20 text-blue-400 rounded hover:bg-blue-500/40">Edit</button>
-                        <button onClick={() => setCustomChannels(customChannels.filter(x => x.id !== c.id))} className="text-xs px-2 py-1 bg-red-500/20 text-red-400 rounded hover:bg-red-500/40">Hapus</button>
+                        <button onClick={() => setCustomChannels(customChannels.filter(x => x.id !== c.id))} className="text-xs px-2 py-1 bg-purple-500/20 text-purple-300 rounded hover:bg-purple-500/40">Hapus</button>
                       </div>
                     </div>
                   ))
@@ -750,7 +750,7 @@ export default function AdminPanel() {
             {activeTab === "tokens" && (
               <>
               {/* Card 2: Keamanan Akses (Multi-Token) */}
-          <div className="bg-[#111] p-6 rounded-3xl border border-white/5 space-y-6">
+          <div className="bg-white/5 backdrop-blur-xl border-r border-white/10 p-6 rounded-3xl border border-white/5 space-y-6">
             <div className="flex items-center justify-between border-b border-white/10 pb-4">
               <div className="flex items-center gap-3">
                 <Key className="text-yellow-500" />
@@ -891,7 +891,7 @@ export default function AdminPanel() {
                               navigator.clipboard.writeText(tokenObj.deviceId || "");
                               alert('Device ID disalin: ' + tokenObj.deviceId);
                             }}
-                            className="text-xs font-bold text-red-400 mt-1 flex items-center gap-1 cursor-pointer hover:text-red-300 transition-colors w-fit"
+                            className="text-xs font-bold text-purple-300 mt-1 flex items-center gap-1 cursor-pointer hover:text-red-300 transition-colors w-fit"
                             title="Klik untuk menyalin Device ID lengkap"
                           >
                             <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
@@ -924,7 +924,7 @@ export default function AdminPanel() {
                         </button>
                         <button 
                           onClick={() => removeToken(tokenObj.code)}
-                          className="text-red-500 hover:text-red-400 text-sm font-bold bg-red-500/10 hover:bg-red-500/20 px-3 py-1 rounded-lg transition-colors"
+                          className="text-purple-400 hover:text-purple-300 text-sm font-bold bg-purple-500/10 hover:bg-purple-500/20 px-3 py-1 rounded-lg transition-colors"
                         >
                           Hapus
                         </button>
@@ -941,7 +941,7 @@ export default function AdminPanel() {
             {activeTab === "chat" && (
               <>
               {/* Card: Chat Moderation */}
-          <div className="bg-[#111] p-6 rounded-3xl border border-white/5 space-y-6">
+          <div className="bg-white/5 backdrop-blur-xl border-r border-white/10 p-6 rounded-3xl border border-white/5 space-y-6">
             <div className="flex items-center justify-between border-b border-white/10 pb-4">
               <div className="flex items-center gap-3">
                 <MessageSquare className="text-pink-500" />
@@ -1026,7 +1026,7 @@ export default function AdminPanel() {
                         <span className="text-sm text-gray-300">{msg.message}</span>
                         <div className="text-xs text-gray-600 mt-1">{new Date(msg.timestamp).toLocaleString()}</div>
                       </div>
-                      <button onClick={() => handleDeleteChat(msg.id)} className="text-red-500 opacity-50 group-hover:opacity-100 hover:text-red-400 p-2">
+                      <button onClick={() => handleDeleteChat(msg.id)} className="text-purple-400 opacity-50 group-hover:opacity-100 hover:text-purple-300 p-2">
                         <Trash2 className="w-4 h-4" />
                       </button>
                     </div>
@@ -1035,7 +1035,7 @@ export default function AdminPanel() {
               </div>
               
               <div className="flex gap-2">
-                <button onClick={() => handleDeleteChat('all')} className="bg-red-500/20 hover:bg-red-500/30 text-red-500 p-3 rounded-xl transition-colors" title="Hapus Semua Chat">
+                <button onClick={() => handleDeleteChat('all')} className="bg-purple-500/20 hover:bg-purple-500/30 text-purple-400 p-3 rounded-xl transition-colors" title="Hapus Semua Chat">
                   <Trash2 className="w-5 h-5" />
                 </button>
                 <form onSubmit={handleSendChat} className="flex-1 flex gap-2">
@@ -1058,7 +1058,7 @@ export default function AdminPanel() {
             {activeTab === "settings" && (
               <div className="space-y-8">
                 {/* Card 4: Notifikasi / Marquee */}
-          <div className="bg-[#111] p-6 rounded-3xl border border-white/5 space-y-6">
+          <div className="bg-white/5 backdrop-blur-xl border-r border-white/10 p-6 rounded-3xl border border-white/5 space-y-6">
             <div className="flex items-center gap-3 border-b border-white/10 pb-4">
               <Bell className="text-green-500" />
               <h2 className="text-lg font-semibold">Teks Berjalan (Marquee)</h2>
@@ -1093,7 +1093,7 @@ export default function AdminPanel() {
           </div>
 
           {/* Card: Konfigurasi Teks Aplikasi */}
-          <div className="bg-[#111] p-6 rounded-3xl border border-white/5 space-y-6 mt-6">
+          <div className="bg-white/5 backdrop-blur-xl border-r border-white/10 p-6 rounded-3xl border border-white/5 space-y-6 mt-6">
             <div className="flex items-center gap-3 border-b border-white/10 pb-4">
               <Tv className="text-purple-500" />
               <h2 className="text-lg font-semibold">Teks Logo Aplikasi</h2>
@@ -1113,7 +1113,7 @@ export default function AdminPanel() {
           </div>
 
               {/* Pre-roll Ads Settings */}
-              <div className="bg-[#111] p-6 rounded-3xl border border-white/5 space-y-6">
+              <div className="bg-white/5 backdrop-blur-xl border-r border-white/10 p-6 rounded-3xl border border-white/5 space-y-6">
                 <div className="flex items-center gap-3 border-b border-white/10 pb-4">
                   <PlaySquare className="text-green-500" />
                   <h2 className="text-lg font-semibold">Iklan Pembuka (Pre-roll Ad)</h2>
@@ -1143,7 +1143,7 @@ export default function AdminPanel() {
               </div>
 
                 {/* Card 3: Wallpaper TV */}
-          <div className="bg-[#111] p-6 rounded-3xl border border-white/5 space-y-6">
+          <div className="bg-white/5 backdrop-blur-xl border-r border-white/10 p-6 rounded-3xl border border-white/5 space-y-6">
             <div className="flex items-center gap-3 border-b border-white/10 pb-4">
               <ImageIcon className="text-purple-500" />
               <h2 className="text-lg font-semibold">Wallpaper TV (Background)</h2>
@@ -1173,7 +1173,7 @@ export default function AdminPanel() {
 
           
                 {/* Card: Auto Update */}
-          <div className="bg-[#111] p-6 rounded-3xl border border-white/5 space-y-6">
+          <div className="bg-white/5 backdrop-blur-xl border-r border-white/10 p-6 rounded-3xl border border-white/5 space-y-6">
             <div className="flex items-center gap-3 border-b border-white/10 pb-4">
               <RefreshCcw className="text-cyan-500" />
               <h2 className="text-lg font-semibold">Auto-Update Aplikasi TV</h2>
@@ -1200,10 +1200,10 @@ export default function AdminPanel() {
 
           
                 {/* Card 5: Maintenance Mode */}
-          <div className={`p-6 rounded-3xl border transition-all ${isMaintenance ? 'bg-red-900/30 border-red-500' : 'bg-[#111] border-white/5'}`}>
+          <div className={`p-6 rounded-3xl border transition-all ${isMaintenance ? 'bg-purple-900/30 border-purple-500' : 'bg-white/5 backdrop-blur-xl border-r border-white/10 border-white/5'}`}>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
-                <div className={`p-3 rounded-2xl ${isMaintenance ? 'bg-red-600' : 'bg-gray-800'}`}>
+                <div className={`p-3 rounded-2xl ${isMaintenance ? 'bg-purple-600' : 'bg-gray-800'}`}>
                   <AlertTriangle className={`w-8 h-8 ${isMaintenance ? 'text-white' : 'text-gray-500'}`} />
                 </div>
                 <div>
@@ -1219,7 +1219,7 @@ export default function AdminPanel() {
                     checked={isMaintenance}
                     onChange={(e) => setIsMaintenance(e.target.checked)}
                   />
-                  <div className={`block w-16 h-8 rounded-full transition-colors ${isMaintenance ? 'bg-red-600' : 'bg-gray-700'}`}></div>
+                  <div className={`block w-16 h-8 rounded-full transition-colors ${isMaintenance ? 'bg-purple-600' : 'bg-gray-700'}`}></div>
                   <div className={`dot absolute left-1 top-1 bg-white w-6 h-6 rounded-full transition-transform ${isMaintenance ? 'transform translate-x-8' : ''}`}></div>
                 </div>
               </label>
@@ -1234,7 +1234,7 @@ export default function AdminPanel() {
       </main>
 
       {/* Mobile Bottom Navigation */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-[#111] border-t border-white/10 flex justify-around p-2 z-50 pb-[env(safe-area-inset-bottom)]">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white/5 backdrop-blur-xl border-r border-white/10 border-t border-white/10 flex justify-around p-2 z-50 pb-[env(safe-area-inset-bottom)]">
         {[
           { id: "overview", label: "Beranda", icon: Activity },
           { id: "playlist", label: "M3U", icon: Globe },
@@ -1247,7 +1247,7 @@ export default function AdminPanel() {
             onClick={() => setActiveTab(tab.id)}
             className={`flex flex-col items-center justify-center w-16 h-12 rounded-xl transition-colors ${
               activeTab === tab.id 
-                ? "text-red-500" 
+                ? "text-purple-400" 
                 : "text-gray-500 hover:text-gray-300"
             }`}
           >

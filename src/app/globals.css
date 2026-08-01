@@ -20,7 +20,33 @@
 }
 
 body {
-  background: var(--background);
+  background: 
+    radial-gradient(circle at 15% 50%, rgba(139, 92, 246, 0.15), transparent 30%),
+    radial-gradient(circle at 85% 30%, rgba(59, 130, 246, 0.15), transparent 30%),
+    radial-gradient(circle at 50% 80%, rgba(236, 72, 153, 0.1), transparent 40%),
+    #050505;
+  background-attachment: fixed;
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+  min-height: 100vh;
+}
+
+/* Custom Scrollbar for sleek premium feel */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(139, 92, 246, 0.3);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(139, 92, 246, 0.5);
 }
