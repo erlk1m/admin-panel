@@ -498,6 +498,34 @@ export default function AdminPanel() {
           <div className="max-w-4xl mx-auto space-y-6 md:space-y-8 pb-12">
             {activeTab === "overview" && (
               <>
+              {/* KPI Metrics Grid */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                <div className="bg-white/5 backdrop-blur-xl border border-white/10 p-4 rounded-3xl flex flex-col justify-center items-center text-center shadow-lg shadow-purple-900/10 transition-transform hover:scale-105">
+                  <span className="text-gray-400 text-[10px] md:text-xs uppercase tracking-wider mb-1">Token Aktif</span>
+                  <span className="text-2xl font-bold text-white">
+                    {tokens.filter(t => !t.expiresAt || t.expiresAt > Date.now()).length} 
+                    <span className="text-sm text-gray-500 font-normal"> / {tokens.length}</span>
+                  </span>
+                </div>
+                <div className="bg-white/5 backdrop-blur-xl border border-white/10 p-4 rounded-3xl flex flex-col justify-center items-center text-center shadow-lg shadow-purple-900/10 transition-transform hover:scale-105">
+                  <span className="text-gray-400 text-[10px] md:text-xs uppercase tracking-wider mb-1">Slot TV Terpakai</span>
+                  <span className="text-2xl font-bold text-purple-400">
+                    {tokens.reduce((sum, t) => sum + (t.deviceIds?.length || (t.deviceId ? 1 : 0)), 0)} 
+                    <span className="text-sm text-gray-500 font-normal"> / {tokens.reduce((sum, t) => sum + (t.maxDevices || 1), 0)}</span>
+                  </span>
+                </div>
+                <div className="bg-white/5 backdrop-blur-xl border border-white/10 p-4 rounded-3xl flex flex-col justify-center items-center text-center shadow-lg shadow-purple-900/10 transition-transform hover:scale-105">
+                  <span className="text-gray-400 text-[10px] md:text-xs uppercase tracking-wider mb-1">User Online</span>
+                  <div className="flex items-center gap-2">
+                    <div className="w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse shadow-[0_0_8px_#22c55e]"></div>
+                    <span className="text-2xl font-bold text-white">{activeUsersCount}</span>
+                  </div>
+                </div>
+                <div className="bg-white/5 backdrop-blur-xl border border-white/10 p-4 rounded-3xl flex flex-col justify-center items-center text-center shadow-lg shadow-purple-900/10 transition-transform hover:scale-105">
+                  <span className="text-gray-400 text-[10px] md:text-xs uppercase tracking-wider mb-1">Versi App</span>
+                  <span className="text-2xl font-bold text-blue-400">v{latestVersionCode}</span>
+                </div>
+              </div>
               {/* Card: Top Channels */}
               <div className="bg-white/5 backdrop-blur-xl border-r border-white/10 p-6 rounded-3xl border border-white/5 space-y-4 mb-8">
                 <div className="flex items-center gap-3 border-b border-white/10 pb-4">
