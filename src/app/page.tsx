@@ -57,6 +57,7 @@ export default function AdminPanel() {
   const [welcomeBannerUrl, setWelcomeBannerUrl] = useState("");
   const [latestVersionCode, setLatestVersionCode] = useState(1);
   const [apkUpdateUrl, setApkUpdateUrl] = useState("");
+  const [adminContactUrl, setAdminContactUrl] = useState("");
   const [isMaintenance, setIsMaintenance] = useState(false);
 
   const [prerollAdUrl, setPrerollAdUrl] = useState("");
@@ -124,6 +125,7 @@ export default function AdminPanel() {
           setWelcomeBannerUrl(data.welcomeBannerUrl || "");
           setLatestVersionCode(data.latestVersionCode || 1);
           setApkUpdateUrl(data.apkUpdateUrl || "");
+          setAdminContactUrl(data.adminContactUrl || "");
           setIsMaintenance(data.isMaintenance || false);
           setPrerollAdUrl(data.prerollAdUrl || "");
           setPrerollAdEnabled(data.prerollAdEnabled || false);
@@ -372,6 +374,7 @@ export default function AdminPanel() {
           welcomeBannerUrl,
           latestVersionCode,
           apkUpdateUrl,
+          adminContactUrl,
           isMaintenance,
           chatEnabled,
           prerollAdUrl,
@@ -1224,6 +1227,51 @@ export default function AdminPanel() {
                   placeholder="KIMTV"
                   className="w-full bg-black/50 border border-white/10 text-white rounded-xl p-3 focus:outline-none focus:border-purple-500 transition-colors"
                 />
+              </div>
+            </div>
+          </div>
+
+          {/* Card: Konfigurasi Update & Kontak */}
+          <div className="bg-white/5 backdrop-blur-xl border-r border-white/10 p-6 rounded-3xl border border-white/5 space-y-6 mt-6">
+            <div className="flex items-center gap-3 border-b border-white/10 pb-4">
+              <Globe className="text-blue-500" />
+              <h2 className="text-lg font-semibold">Konfigurasi Sistem TV</h2>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm text-gray-400 mb-2">URL Kontak Admin (WhatsApp/Telegram)</label>
+                <input
+                  type="text"
+                  value={adminContactUrl}
+                  onChange={(e) => setAdminContactUrl(e.target.value)}
+                  placeholder="https://wa.me/..."
+                  className="w-full bg-black/50 border border-white/10 text-white rounded-xl p-3 focus:outline-none focus:border-blue-500 transition-colors"
+                />
+                <p className="text-xs text-gray-500 mt-2">Ditampilkan sebagai QR Code di layar Profil aplikasi TV.</p>
+              </div>
+              <div>
+                <label className="block text-sm text-gray-400 mb-2">URL Update APK</label>
+                <input
+                  type="text"
+                  value={apkUpdateUrl}
+                  onChange={(e) => setApkUpdateUrl(e.target.value)}
+                  placeholder="https://example.com/app.apk"
+                  className="w-full bg-black/50 border border-white/10 text-white rounded-xl p-3 focus:outline-none focus:border-blue-500 transition-colors"
+                />
+                <p className="text-xs text-gray-500 mt-2">Aplikasi akan mengunduh dari link ini jika ada update.</p>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
+              <div>
+                <label className="block text-sm text-gray-400 mb-2">Versi Aplikasi Terbaru (Version Code)</label>
+                <input
+                  type="number"
+                  value={latestVersionCode}
+                  onChange={(e) => setLatestVersionCode(parseInt(e.target.value) || 1)}
+                  placeholder="6"
+                  className="w-full bg-black/50 border border-white/10 text-white rounded-xl p-3 focus:outline-none focus:border-blue-500 transition-colors"
+                />
+                <p className="text-xs text-gray-500 mt-2">Isikan angka versi (Contoh: Aplikasi Anda saat ini versi 5.1 dengan Version Code = 6).</p>
               </div>
             </div>
           </div>
