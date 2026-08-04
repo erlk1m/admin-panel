@@ -33,6 +33,9 @@ export async function GET() {
             token: token,
             channel: userPresence.activity || userPresence.channel || "Lainnya",
             country: userPresence.country || "ID",
+            deviceBrand: userPresence.deviceBrand || "Unknown",
+            deviceModel: userPresence.deviceModel || "Unknown",
+            isTv: userPresence.isTv || false,
             lastSeen: lastSeenTime
           });
         }

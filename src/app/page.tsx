@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Tv, ShieldAlert, Key, Save, Globe, RefreshCcw, Bell, AlertTriangle, Image as ImageIcon, MessageSquare, Trash2, Send, Activity, Users, PlaySquare, TrendingUp } from "lucide-react";
+import { Tv, ShieldAlert, Key, Save, Globe, RefreshCcw, Bell, AlertTriangle, Image as ImageIcon, MessageSquare, Trash2, Send, Activity, Users, PlaySquare, TrendingUp, PieChart } from "lucide-react";
 
 export default function AdminPanel() {
   const [adminPassword, setAdminPassword] = useState("");
@@ -79,7 +79,7 @@ export default function AdminPanel() {
   const [tokenMaxDevices, setTokenMaxDevices] = useState(1);
   const [editingTokenCode, setEditingTokenCode] = useState<string | null>(null);
 
-  const [activeUsers, setActiveUsers] = useState<{ token: string; channel: string; country?: string; lastSeen: number }[]>([]);
+  const [activeUsers, setActiveUsers] = useState<{ token: string; channel: string; country?: string; deviceBrand?: string; deviceModel?: string; isTv?: boolean; lastSeen: number }[]>([]);
   const [activeUsersCount, setActiveUsersCount] = useState(0);
   const [channelStats, setChannelStats] = useState<{name: string, count: number}[]>([]);
   const [now, setNow] = useState<number | null>(null);
@@ -462,6 +462,7 @@ export default function AdminPanel() {
         <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
           {[
             { id: "overview", label: "Overview", icon: Activity },
+            { id: "analytics", label: "Analisis", icon: PieChart },
             { id: "playlist", label: "Playlist M3U", icon: Globe },
             { id: "tokens", label: "Akses & Token", icon: Key },
             { id: "chat", label: "Live Chat", icon: MessageSquare },
@@ -499,6 +500,7 @@ export default function AdminPanel() {
           <div className="flex-1 overflow-hidden">
             <h2 className="text-base md:text-xl font-bold capitalize truncate">
               {activeTab === "overview" && "Dashboard Analytics"}
+              {activeTab === "analytics" && "Analisis Perangkat"}
               {activeTab === "playlist" && "M3U Playlist Configuration"}
               {activeTab === "tokens" && "Access & Token Management"}
               {activeTab === "chat" && "Live Chat Moderation"}
@@ -662,6 +664,81 @@ export default function AdminPanel() {
             </div>
           </div>
               </>
+            )}
+            {activeTab === "analytics" && (
+              <div className="space-y-6">
+                <div className="bg-white/5 backdrop-blur-xl border border-white/10 p-6 rounded-3xl">
+                  <div className="flex items-center gap-3 border-b border-white/10 pb-4 mb-4">
+                    <PieChart className="text-blue-500" />
+                    <h2 className="text-lg font-semibold">Distribusi Tipe Perangkat</h2>
+                  </div>
+                  <div className="flex flex-col gap-4">
+                    {(() => {
+                       const tvCount = activeUsers.filter(u => u.isTv).length;
+                       const mobileCount = activeUsers.length - tvCount;
+                       const tvPercent = activeUsers.length > 0 ? (tvCount / activeUsers.length) * 100 : 0;
+                       return (
+                         <div className="w-full">
+                           <div className="flex justify-between mb-2 font-medium">
+                             <span className="text-blue-400">Smart TV / STB ({tvCount})</span>
+                             <span className="text-green-400">Mobile / HP ({mobileCount})</span>
+                           </div>
+                           <div className="w-full bg-white/10 rounded-full h-4 overflow-hidden flex">
+                             <div className="bg-blue-500 h-full transition-all" style={{ width: `${tvPercent}%` }}></div>
+                             <div className="bg-green-500 h-full transition-all" style={{ width: `${100 - tvPercent}%` }}></div>
+                           </div>
+                         </div>
+                       )
+                    })()}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="bg-white/5 backdrop-blur-xl border border-white/10 p-6 rounded-3xl">
+                    <h3 className="text-md font-medium text-gray-400 mb-4 border-b border-white/5 pb-2">Peringkat Merek (Top Brands)</h3>
+                    <div className="space-y-3">
+                      {(() => {
+                         const brands: Record<string, number> = {};
+                         activeUsers.forEach(u => {
+                           const brand = u.deviceBrand || "Unknown";
+                           brands[brand] = (brands[brand] || 0) + 1;
+                         });
+                         return Object.entries(brands)
+                           .sort((a,b) => b[1] - a[1])
+                           .slice(0, 5)
+                           .map(([brand, count], idx) => (
+                             <div key={idx} className="flex justify-between items-center bg-white/5 p-3 rounded-lg border border-white/5 hover:bg-white/10 transition-colors">
+                               <span className="capitalize">{brand}</span>
+                               <span className="bg-blue-500/20 border border-blue-500/30 text-blue-400 px-3 py-1 rounded-full text-xs font-bold">{count} User</span>
+                             </div>
+                           ));
+                      })()}
+                    </div>
+                  </div>
+
+                  <div className="bg-white/5 backdrop-blur-xl border border-white/10 p-6 rounded-3xl">
+                    <h3 className="text-md font-medium text-gray-400 mb-4 border-b border-white/5 pb-2">Peringkat Model (Top Models)</h3>
+                    <div className="space-y-3">
+                      {(() => {
+                         const models: Record<string, number> = {};
+                         activeUsers.forEach(u => {
+                           const model = u.deviceModel || "Unknown";
+                           models[model] = (models[model] || 0) + 1;
+                         });
+                         return Object.entries(models)
+                           .sort((a,b) => b[1] - a[1])
+                           .slice(0, 5)
+                           .map(([model, count], idx) => (
+                             <div key={idx} className="flex justify-between items-center bg-white/5 p-3 rounded-lg border border-white/5 hover:bg-white/10 transition-colors">
+                               <span className="uppercase">{model}</span>
+                               <span className="bg-purple-500/20 border border-purple-500/30 text-purple-400 px-3 py-1 rounded-full text-xs font-bold">{count} User</span>
+                             </div>
+                           ));
+                      })()}
+                    </div>
+                  </div>
+                </div>
+              </div>
             )}
             {activeTab === "playlist" && (
               <>
@@ -1425,6 +1502,7 @@ export default function AdminPanel() {
       <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white/5 backdrop-blur-xl border-r border-white/10 border-t border-white/10 flex justify-around p-2 z-50 pb-[env(safe-area-inset-bottom)]">
         {[
           { id: "overview", label: "Beranda", icon: Activity },
+          { id: "analytics", label: "Analisis", icon: PieChart },
           { id: "playlist", label: "M3U", icon: Globe },
           { id: "tokens", label: "Token", icon: Key },
           { id: "chat", label: "Chat", icon: MessageSquare },
