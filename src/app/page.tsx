@@ -404,41 +404,41 @@ export default function AdminPanel() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-transparent flex items-center justify-center text-white">
-        <RefreshCcw className="animate-spin w-8 h-8 text-purple-400" />
+      <div className="min-h-screen bg-background flex items-center justify-center text-foreground">
+        <RefreshCcw className="animate-spin w-8 h-8 text-primary" />
       </div>
     );
   }
 
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-transparent to-transparent flex items-center justify-center p-4">
-        <div className="bg-black/40 backdrop-blur-3xl border border-white/10 shadow-[0_0_40px_rgba(139,92,246,0.15)] backdrop-blur-xl p-8 rounded-3xl border border-white/10 w-full max-w-md shadow-2xl">
+      <div className="min-h-screen bg-card flex items-center justify-center p-4">
+        <div className="bg-muted  border border-border shadow-sm  p-8 rounded-xl border border-border w-full max-w-md shadow-md">
           <div className="flex justify-center mb-6">
-            <div className="bg-purple-600/20 p-4 rounded-full">
-              <Tv className="w-10 h-10 text-purple-400" />
+            <div className="bg-accent p-4 rounded-full">
+              <Tv className="w-10 h-10 text-primary" />
             </div>
           </div>
-          <h1 className="text-2xl font-bold text-center text-white mb-2">KIMTV Admin Panel</h1>
-          <p className="text-gray-400 text-center text-sm mb-8">Silakan masukkan password admin untuk melanjutkan.</p>
+          <h1 className="text-2xl font-bold text-center text-foreground mb-2">KIMTV Admin Panel</h1>
+          <p className="text-muted-foreground text-center text-sm mb-8">Silakan masukkan password admin untuk melanjutkan.</p>
           
           <form onSubmit={handleLogin} className="space-y-6">
             <div>
               <div className="relative">
-                <ShieldAlert className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <ShieldAlert className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                 <input
                   type="password"
                   required
                   placeholder="Admin Password"
                   value={adminPassword}
                   onChange={(e) => setAdminPassword(e.target.value)}
-                  className="w-full bg-black/50 border border-white/10 text-white rounded-xl py-3 pl-12 pr-4 focus:outline-none focus:border-purple-500 transition-colors"
+                  className="w-full bg-background border border-border text-foreground rounded-xl py-3 pl-12 pr-4 focus:outline-none focus:border-purple-500 transition-colors"
                 />
               </div>
             </div>
             <button
               type="submit"
-              className="w-full bg-gradient-to-r from-purple-600 to-blue-600 text-white font-bold py-3 rounded-xl hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
+              className="w-full bg-primary text-primary-foreground font-bold py-3 rounded-xl hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
             >
               <Key className="w-5 h-5" /> Masuk Panel
             </button>
@@ -449,14 +449,14 @@ export default function AdminPanel() {
   }
 
   return (
-    <div className="flex h-screen bg-transparent text-white overflow-hidden">
+    <div className="flex h-screen bg-background text-foreground overflow-hidden">
       {/* Sidebar */}
-      <aside className="w-64 bg-white/5 backdrop-blur-xl border-r border-white/10 border-r border-white/5 flex flex-col hidden md:flex">
-        <div className="p-6 flex items-center gap-4 border-b border-white/5">
-          <div className="bg-purple-600 p-2 rounded-xl">
-            <Tv className="w-6 h-6 text-white" />
+      <aside className="w-64 bg-card border-r border-border flex flex-col hidden md:flex">
+        <div className="p-6 flex items-center gap-4 border-b border-border">
+          <div className="bg-primary text-primary-foreground p-2 rounded-xl">
+            <Tv className="w-6 h-6 text-foreground" />
           </div>
-          <h1 className="text-xl font-bold tracking-tight">{appName}<span className="text-purple-400">.</span></h1>
+          <h1 className="text-xl font-bold tracking-tight">{appName}<span className="text-primary">.</span></h1>
         </div>
         
         <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
@@ -473,8 +473,8 @@ export default function AdminPanel() {
               onClick={() => setActiveTab(tab.id)}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-medium ${
                 activeTab === tab.id 
-                  ? "bg-purple-600/20 text-purple-400 border border-purple-500/30 shadow-[0_0_15px_rgba(139,92,246,0.2)]" 
-                  : "text-gray-400 hover:text-white hover:bg-white/5"
+                  ? "bg-accent text-accent-foreground font-semibold border border-border shadow-sm" 
+                  : "text-muted-foreground hover:text-foreground hover:bg-card"
               }`}
             >
               <tab.icon className="w-5 h-5" />
@@ -483,10 +483,10 @@ export default function AdminPanel() {
           ))}
         </nav>
         
-        <div className="p-4 border-t border-white/5">
+        <div className="p-4 border-t border-border">
           <button 
             onClick={() => setIsAuthenticated(false)}
-            className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-white/5 hover:bg-white/10 text-gray-300 hover:text-white rounded-xl transition-colors font-medium"
+            className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-card hover:bg-accent text-card-foreground hover:text-foreground rounded-xl transition-colors font-medium"
           >
             Logout
           </button>
@@ -496,7 +496,7 @@ export default function AdminPanel() {
       {/* Main Content Area */}
       <main className="flex-1 flex flex-col h-screen overflow-hidden relative">
         {/* Top Header */}
-        <header className="h-16 md:h-20 bg-white/5 backdrop-blur-xl border-r border-white/10/80 backdrop-blur-md border-b border-white/5 flex items-center justify-between px-4 md:px-8 sticky top-0 z-10 gap-2">
+        <header className="h-16 md:h-20 bg-card  border-b border-border flex items-center justify-between px-4 md:px-8 sticky top-0 z-10 gap-2">
           <div className="flex-1 overflow-hidden">
             <h2 className="text-base md:text-xl font-bold capitalize truncate">
               {activeTab === "overview" && "Dashboard Analytics"}
@@ -506,13 +506,13 @@ export default function AdminPanel() {
               {activeTab === "chat" && "Live Chat Moderation"}
               {activeTab === "settings" && "Global App Settings"}
             </h2>
-            <p className="text-sm text-gray-500 hidden md:block">Kelola pengaturan aplikasi secara real-time</p>
+            <p className="text-sm text-muted-foreground hidden md:block">Kelola pengaturan aplikasi secara real-time</p>
           </div>
           
           <button
             onClick={handleSave}
             disabled={saving}
-            className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 md:py-2.5 md:px-6 rounded-xl transition-all flex items-center gap-1 md:gap-2 disabled:opacity-50 shadow-lg shadow-purple-900/20 flex-shrink-0"
+            className="bg-primary text-primary-foreground hover:bg-purple-700 text-foreground font-bold py-2 px-4 md:py-2.5 md:px-6 rounded-xl transition-all flex items-center gap-1 md:gap-2 disabled:opacity-50 shadow-sm flex-shrink-0"
           >
             {saving ? <RefreshCcw className="animate-spin w-4 h-4 md:w-5 md:h-5" /> : <Save className="w-4 h-4 md:w-5 md:h-5" />}
             <span className="text-sm md:text-base hidden md:inline">{saving ? "Menyimpan..." : "Simpan Perubahan"}</span>
@@ -527,29 +527,29 @@ export default function AdminPanel() {
               <>
               {/* KPI Metrics Grid */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-                <div className="bg-white/5 backdrop-blur-xl border border-white/10 p-4 rounded-3xl flex flex-col justify-center items-center text-center shadow-lg shadow-purple-900/10 transition-transform hover:scale-105">
-                  <span className="text-gray-400 text-[10px] md:text-xs uppercase tracking-wider mb-1">Token Aktif</span>
-                  <span className="text-2xl font-bold text-white">
+                <div className="bg-card  border border-border p-4 rounded-xl flex flex-col justify-center items-center text-center shadow-sm transition-transform hover:scale-105">
+                  <span className="text-muted-foreground text-[10px] md:text-xs uppercase tracking-wider mb-1">Token Aktif</span>
+                  <span className="text-2xl font-bold text-foreground">
                     {tokens.filter(t => !t.expiresAt || t.expiresAt > Date.now()).length} 
-                    <span className="text-sm text-gray-500 font-normal"> / {tokens.length}</span>
+                    <span className="text-sm text-muted-foreground font-normal"> / {tokens.length}</span>
                   </span>
                 </div>
-                <div className="bg-white/5 backdrop-blur-xl border border-white/10 p-4 rounded-3xl flex flex-col justify-center items-center text-center shadow-lg shadow-purple-900/10 transition-transform hover:scale-105">
-                  <span className="text-gray-400 text-[10px] md:text-xs uppercase tracking-wider mb-1">Slot TV Terpakai</span>
-                  <span className="text-2xl font-bold text-purple-400">
+                <div className="bg-card  border border-border p-4 rounded-xl flex flex-col justify-center items-center text-center shadow-sm transition-transform hover:scale-105">
+                  <span className="text-muted-foreground text-[10px] md:text-xs uppercase tracking-wider mb-1">Slot TV Terpakai</span>
+                  <span className="text-2xl font-bold text-primary">
                     {tokens.reduce((sum, t) => sum + (t.deviceIds?.length || (t.deviceId ? 1 : 0)), 0)} 
-                    <span className="text-sm text-gray-500 font-normal"> / {tokens.reduce((sum, t) => sum + (t.maxDevices || 1), 0)}</span>
+                    <span className="text-sm text-muted-foreground font-normal"> / {tokens.reduce((sum, t) => sum + (t.maxDevices || 1), 0)}</span>
                   </span>
                 </div>
-                <div className="bg-white/5 backdrop-blur-xl border border-white/10 p-4 rounded-3xl flex flex-col justify-center items-center text-center shadow-lg shadow-purple-900/10 transition-transform hover:scale-105">
-                  <span className="text-gray-400 text-[10px] md:text-xs uppercase tracking-wider mb-1">User Online</span>
+                <div className="bg-card  border border-border p-4 rounded-xl flex flex-col justify-center items-center text-center shadow-sm transition-transform hover:scale-105">
+                  <span className="text-muted-foreground text-[10px] md:text-xs uppercase tracking-wider mb-1">User Online</span>
                   <div className="flex items-center gap-2">
-                    <div className="w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse shadow-[0_0_8px_#22c55e]"></div>
-                    <span className="text-2xl font-bold text-white">{activeUsersCount}</span>
+                    <div className="w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse shadow-sm"></div>
+                    <span className="text-2xl font-bold text-foreground">{activeUsersCount}</span>
                   </div>
                 </div>
-                <div className="bg-white/5 backdrop-blur-xl border border-white/10 p-4 rounded-3xl flex flex-col justify-center items-center text-center shadow-lg shadow-purple-900/10 transition-transform hover:scale-105">
-                  <span className="text-gray-400 text-[10px] md:text-xs uppercase tracking-wider mb-1">Versi App</span>
+                <div className="bg-card  border border-border p-4 rounded-xl flex flex-col justify-center items-center text-center shadow-sm transition-transform hover:scale-105">
+                  <span className="text-muted-foreground text-[10px] md:text-xs uppercase tracking-wider mb-1">Versi App</span>
                   <span className="text-2xl font-bold text-blue-400">v{latestVersionCode}</span>
                 </div>
               </div>
@@ -568,24 +568,24 @@ export default function AdminPanel() {
                 };
 
                 return (
-                  <div className="bg-white/5 backdrop-blur-xl border-r border-white/10 p-6 rounded-3xl border border-white/5 space-y-4 mb-8">
-                    <div className="flex items-center gap-3 border-b border-white/10 pb-4">
+                  <div className="bg-card  border-r border-border p-6 rounded-xl border border-border space-y-4 mb-8">
+                    <div className="flex items-center gap-3 border-b border-border pb-4">
                       <Globe className="text-blue-500" />
                       <h2 className="text-lg font-semibold">Distribusi Lokasi Penonton</h2>
                     </div>
                     {sortedCountries.length === 0 ? (
-                      <div className="text-center text-gray-500 py-4 text-sm bg-white/5 rounded-xl">Belum ada data lokasi (user offline).</div>
+                      <div className="text-center text-muted-foreground py-4 text-sm bg-card rounded-xl">Belum ada data lokasi (user offline).</div>
                     ) : (
                       <div className="space-y-3">
                         {sortedCountries.map(([code, count], i) => (
-                          <div key={code} className="flex items-center justify-between bg-white/5 p-3 rounded-xl border border-white/5">
+                          <div key={code} className="flex items-center justify-between bg-card p-3 rounded-xl border border-border">
                             <div className="flex items-center gap-3">
-                              <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold ${i === 0 ? 'bg-blue-500/20 text-blue-400' : i === 1 ? 'bg-gray-400/20 text-gray-400' : i === 2 ? 'bg-orange-600/20 text-orange-500' : 'bg-white/10 text-gray-400'}`}>
+                              <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold ${i === 0 ? 'bg-blue-500/20 text-blue-400' : i === 1 ? 'bg-gray-400/20 text-muted-foreground' : i === 2 ? 'bg-orange-600/20 text-orange-500' : 'bg-accent text-muted-foreground'}`}>
                                 #{i + 1}
                               </div>
-                              <span className="font-medium text-gray-200">{getCountryName(code)}</span>
+                              <span className="font-medium text-card-foreground">{getCountryName(code)}</span>
                             </div>
-                            <div className="text-sm font-bold bg-white/10 px-3 py-1 rounded-lg text-gray-300">
+                            <div className="text-sm font-bold bg-accent px-3 py-1 rounded-lg text-card-foreground">
                               {count} Perangkat
                             </div>
                           </div>
@@ -597,26 +597,26 @@ export default function AdminPanel() {
               })()}
 
               {/* Card: Top Channels */}
-              <div className="bg-white/5 backdrop-blur-xl border-r border-white/10 p-6 rounded-3xl border border-white/5 space-y-4 mb-8">
-                <div className="flex items-center gap-3 border-b border-white/10 pb-4">
-                  <TrendingUp className="text-purple-500" />
+              <div className="bg-card  border-r border-border p-6 rounded-xl border border-border space-y-4 mb-8">
+                <div className="flex items-center gap-3 border-b border-border pb-4">
+                  <TrendingUp className="text-primary" />
                   <h2 className="text-lg font-semibold">Top 5 Channel Terpopuler</h2>
                 </div>
                 {channelStats.length === 0 ? (
-                  <div className="text-center text-gray-500 py-4 text-sm bg-white/5 rounded-xl">
+                  <div className="text-center text-muted-foreground py-4 text-sm bg-card rounded-xl">
                     Belum ada data statistik channel.
                   </div>
                 ) : (
                   <div className="space-y-3">
                     {channelStats.map((stat, i) => (
-                      <div key={stat.name} className="flex items-center justify-between bg-white/5 p-3 rounded-xl border border-white/5">
+                      <div key={stat.name} className="flex items-center justify-between bg-card p-3 rounded-xl border border-border">
                         <div className="flex items-center gap-3">
-                          <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold ${i === 0 ? 'bg-yellow-500/20 text-yellow-500' : i === 1 ? 'bg-gray-400/20 text-gray-400' : i === 2 ? 'bg-orange-600/20 text-orange-500' : 'bg-white/10 text-gray-400'}`}>
+                          <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold ${i === 0 ? 'bg-yellow-500/20 text-yellow-500' : i === 1 ? 'bg-gray-400/20 text-muted-foreground' : i === 2 ? 'bg-orange-600/20 text-orange-500' : 'bg-accent text-muted-foreground'}`}>
                             #{i + 1}
                           </div>
-                          <span className="font-medium text-gray-200">{stat.name}</span>
+                          <span className="font-medium text-card-foreground">{stat.name}</span>
                         </div>
-                        <div className="text-sm font-bold bg-white/10 px-3 py-1 rounded-lg">
+                        <div className="text-sm font-bold bg-accent px-3 py-1 rounded-lg">
                           {stat.count} klik
                         </div>
                       </div>
@@ -626,11 +626,11 @@ export default function AdminPanel() {
               </div>
 
               {/* Card 0: Analytics Dashboard */}
-          <div className="bg-gradient-to-br from-blue-900/40 to-blue-900/10 p-6 rounded-3xl border border-blue-500/20 space-y-4">
-            <div className="flex items-center justify-between border-b border-white/10 pb-4">
+          <div className="bg-card p-6 rounded-xl border border-border space-y-4">
+            <div className="flex items-center justify-between border-b border-border pb-4">
               <div className="flex items-center gap-3">
                 <Activity className="text-blue-400" />
-                <h2 className="text-lg font-semibold text-blue-100">Analitik Pengguna Aktif</h2>
+                <h2 className="text-lg font-semibold text-card-foreground">Analitik Pengguna Aktif</h2>
               </div>
               <div className="flex items-center gap-2 bg-blue-500/20 text-blue-300 px-3 py-1.5 rounded-xl font-bold">
                 <Users className="w-4 h-4" />
@@ -638,30 +638,30 @@ export default function AdminPanel() {
               </div>
             </div>
             
-            <div className="bg-black/40 rounded-xl p-4 min-h-[100px] max-h-64 overflow-y-auto">
+            <div className="bg-muted rounded-xl p-4 min-h-[100px] max-h-64 overflow-y-auto">
               {activeUsers.length === 0 ? (
-                <div className="text-center text-gray-500 py-6">Belum ada perangkat TV yang terhubung saat ini.</div>
+                <div className="text-center text-muted-foreground py-6">Belum ada perangkat TV yang terhubung saat ini.</div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {activeUsers.map((user, idx) => (
-                    <div key={idx} className="flex items-center justify-between bg-white/5 p-3 rounded-lg border border-white/5">
+                    <div key={idx} className="flex items-center justify-between bg-card p-3 rounded-lg border border-border">
                       <div>
                         <div className="flex items-center gap-2">
                           <div className="font-mono text-sm text-yellow-400 font-bold">{user.token}</div>
                           {user.isTv ? (
-                            <span className="text-[10px] bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded border border-blue-500/20">📺 TV</span>
+                            <span className="text-[10px] bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded border border-border">📺 TV</span>
                           ) : (
                             <span className="text-[10px] bg-green-500/20 text-green-400 px-2 py-0.5 rounded border border-green-500/20">📱 Mobile</span>
                           )}
                         </div>
-                        <div className="text-xs text-gray-400 mt-1">📺 Menonton: <span className="text-white">{user.channel}</span></div>
-                        <div className="text-[10px] text-gray-500 mt-1 capitalize">{user.deviceBrand || "Unknown"} • {user.deviceModel || "Unknown"}</div>
+                        <div className="text-xs text-muted-foreground mt-1">📺 Menonton: <span className="text-foreground">{user.channel}</span></div>
+                        <div className="text-[10px] text-muted-foreground mt-1 capitalize">{user.deviceBrand || "Unknown"} • {user.deviceModel || "Unknown"}</div>
                       </div>
                       <div className="flex gap-2 items-center">
-                        <div className="text-xs font-bold text-gray-500">
+                        <div className="text-xs font-bold text-muted-foreground">
                           {now ? Math.floor((now - user.lastSeen) / 1000) : 0}s lalu
                         </div>
-                        <button onClick={() => handleKick(user.token)} className="text-purple-400 hover:text-white bg-purple-500/10 hover:bg-purple-500/50 p-1.5 rounded-lg text-xs font-bold transition-colors">
+                        <button onClick={() => handleKick(user.token)} className="text-primary hover:text-foreground bg-purple-500/10 hover:bg-purple-500/50 p-1.5 rounded-lg text-xs font-bold transition-colors">
                           KICK
                         </button>
                       </div>
@@ -675,8 +675,8 @@ export default function AdminPanel() {
             )}
             {activeTab === "analytics" && (
               <div className="space-y-6">
-                <div className="bg-white/5 backdrop-blur-xl border border-white/10 p-6 rounded-3xl">
-                  <div className="flex items-center gap-3 border-b border-white/10 pb-4 mb-4">
+                <div className="bg-card  border border-border p-6 rounded-xl">
+                  <div className="flex items-center gap-3 border-b border-border pb-4 mb-4">
                     <PieChart className="text-blue-500" />
                     <h2 className="text-lg font-semibold">Distribusi Tipe Perangkat</h2>
                   </div>
@@ -691,7 +691,7 @@ export default function AdminPanel() {
                              <span className="text-blue-400">Smart TV / STB ({tvCount})</span>
                              <span className="text-green-400">Mobile / HP ({mobileCount})</span>
                            </div>
-                           <div className="w-full bg-white/10 rounded-full h-4 overflow-hidden flex">
+                           <div className="w-full bg-accent rounded-full h-4 overflow-hidden flex">
                              <div className="bg-blue-500 h-full transition-all" style={{ width: `${tvPercent}%` }}></div>
                              <div className="bg-green-500 h-full transition-all" style={{ width: `${100 - tvPercent}%` }}></div>
                            </div>
@@ -702,8 +702,8 @@ export default function AdminPanel() {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="bg-white/5 backdrop-blur-xl border border-white/10 p-6 rounded-3xl">
-                    <h3 className="text-md font-medium text-gray-400 mb-4 border-b border-white/5 pb-2">Peringkat Merek (Top Brands)</h3>
+                  <div className="bg-card  border border-border p-6 rounded-xl">
+                    <h3 className="text-md font-medium text-muted-foreground mb-4 border-b border-border pb-2">Peringkat Merek (Top Brands)</h3>
                     <div className="space-y-3">
                       {(() => {
                          const brands: Record<string, number> = {};
@@ -715,7 +715,7 @@ export default function AdminPanel() {
                            .sort((a,b) => b[1] - a[1])
                            .slice(0, 5)
                            .map(([brand, count], idx) => (
-                             <div key={idx} className="flex justify-between items-center bg-white/5 p-3 rounded-lg border border-white/5 hover:bg-white/10 transition-colors">
+                             <div key={idx} className="flex justify-between items-center bg-card p-3 rounded-lg border border-border hover:bg-accent transition-colors">
                                <span className="capitalize">{brand}</span>
                                <span className="bg-blue-500/20 border border-blue-500/30 text-blue-400 px-3 py-1 rounded-full text-xs font-bold">{count} User</span>
                              </div>
@@ -724,8 +724,8 @@ export default function AdminPanel() {
                     </div>
                   </div>
 
-                  <div className="bg-white/5 backdrop-blur-xl border border-white/10 p-6 rounded-3xl">
-                    <h3 className="text-md font-medium text-gray-400 mb-4 border-b border-white/5 pb-2">Peringkat Model (Top Models)</h3>
+                  <div className="bg-card  border border-border p-6 rounded-xl">
+                    <h3 className="text-md font-medium text-muted-foreground mb-4 border-b border-border pb-2">Peringkat Model (Top Models)</h3>
                     <div className="space-y-3">
                       {(() => {
                          const models: Record<string, number> = {};
@@ -737,9 +737,9 @@ export default function AdminPanel() {
                            .sort((a,b) => b[1] - a[1])
                            .slice(0, 5)
                            .map(([model, count], idx) => (
-                             <div key={idx} className="flex justify-between items-center bg-white/5 p-3 rounded-lg border border-white/5 hover:bg-white/10 transition-colors">
+                             <div key={idx} className="flex justify-between items-center bg-card p-3 rounded-lg border border-border hover:bg-accent transition-colors">
                                <span className="uppercase">{model}</span>
-                               <span className="bg-purple-500/20 border border-purple-500/30 text-purple-400 px-3 py-1 rounded-full text-xs font-bold">{count} User</span>
+                               <span className="bg-purple-500/20 border border-border text-primary px-3 py-1 rounded-full text-xs font-bold">{count} User</span>
                              </div>
                            ));
                       })()}
@@ -747,11 +747,11 @@ export default function AdminPanel() {
                   </div>
                 </div>
 
-                <div className="bg-white/5 backdrop-blur-xl border border-white/10 p-6 rounded-3xl overflow-hidden flex flex-col">
-                  <h3 className="text-md font-medium text-gray-400 mb-4 border-b border-white/5 pb-2">Detail Perangkat Pengguna Aktif</h3>
+                <div className="bg-card  border border-border p-6 rounded-xl overflow-hidden flex flex-col">
+                  <h3 className="text-md font-medium text-muted-foreground mb-4 border-b border-border pb-2">Detail Perangkat Pengguna Aktif</h3>
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm text-left">
-                      <thead className="text-xs text-gray-400 uppercase bg-white/5">
+                      <thead className="text-xs text-muted-foreground uppercase bg-card">
                         <tr>
                           <th className="px-4 py-3 rounded-tl-lg">Token</th>
                           <th className="px-4 py-3">Tipe</th>
@@ -761,7 +761,7 @@ export default function AdminPanel() {
                       </thead>
                       <tbody>
                         {activeUsers.map((u, idx) => (
-                          <tr key={idx} className="border-b border-white/5 hover:bg-white/5">
+                          <tr key={idx} className="border-b border-border hover:bg-card">
                             <td className="px-4 py-3 font-mono text-yellow-400 font-bold">{u.token}</td>
                             <td className="px-4 py-3">
                               {u.isTv ? (
@@ -771,15 +771,15 @@ export default function AdminPanel() {
                               )}
                             </td>
                             <td className="px-4 py-3 capitalize">
-                              <div className="font-semibold text-gray-300">{u.deviceBrand || "-"}</div>
-                              <div className="text-xs text-gray-500 uppercase">{u.deviceModel || "-"}</div>
+                              <div className="font-semibold text-card-foreground">{u.deviceBrand || "-"}</div>
+                              <div className="text-xs text-muted-foreground uppercase">{u.deviceModel || "-"}</div>
                             </td>
-                            <td className="px-4 py-3 text-gray-300">{u.channel}</td>
+                            <td className="px-4 py-3 text-card-foreground">{u.channel}</td>
                           </tr>
                         ))}
                         {activeUsers.length === 0 && (
                           <tr>
-                            <td colSpan={4} className="text-center py-6 text-gray-500">Belum ada pengguna aktif</td>
+                            <td colSpan={4} className="text-center py-6 text-muted-foreground">Belum ada pengguna aktif</td>
                           </tr>
                         )}
                       </tbody>
@@ -791,8 +791,8 @@ export default function AdminPanel() {
             {activeTab === "playlist" && (
               <>
               {/* Card 1: Playlist M3U Multi-Server */}
-          <div className="bg-white/5 backdrop-blur-xl border-r border-white/10 p-6 rounded-3xl border border-white/5 space-y-4">
-            <div className="flex items-center gap-3 border-b border-white/10 pb-4 mb-4">
+          <div className="bg-card  border-r border-border p-6 rounded-xl border border-border space-y-4">
+            <div className="flex items-center gap-3 border-b border-border pb-4 mb-4">
               <Globe className="text-blue-500" />
               <h2 className="text-lg font-semibold">Multi-Server Playlist (M3U)</h2>
             </div>
@@ -804,93 +804,93 @@ export default function AdminPanel() {
                   value={m3uName}
                   onChange={(e) => setM3uName(e.target.value)}
                   placeholder="Nama (opsional, cth: VIP Server)"
-                  className="w-full bg-black/50 border border-blue-500/30 text-white rounded-xl p-3 mb-2 focus:outline-none focus:border-blue-500 transition-colors"
+                  className="w-full bg-background border border-blue-500/30 text-foreground rounded-xl p-3 mb-2 focus:outline-none focus:border-blue-500 transition-colors"
                 />
                 <input
                   type="url"
                   value={m3uUrl}
                   onChange={(e) => setM3uUrl(e.target.value)}
                   placeholder="https://server1.com/list.m3u"
-                  className="w-full bg-black/50 border border-blue-500/30 text-white rounded-xl p-3 focus:outline-none focus:border-blue-500 transition-colors"
+                  className="w-full bg-background border border-blue-500/30 text-foreground rounded-xl p-3 focus:outline-none focus:border-blue-500 transition-colors"
                 />
               </div>
               <div>
-                <label className="block text-sm text-gray-400 mb-2">Server Cadangan 1</label>
+                <label className="block text-sm text-muted-foreground mb-2">Server Cadangan 1</label>
                 <input
                   type="text"
                   value={m3uName2}
                   onChange={(e) => setM3uName2(e.target.value)}
                   placeholder="Nama (opsional, cth: Server Cadangan)"
-                  className="w-full bg-black/50 border border-white/10 text-white rounded-xl p-3 mb-2 focus:outline-none focus:border-blue-500 transition-colors"
+                  className="w-full bg-background border border-border text-foreground rounded-xl p-3 mb-2 focus:outline-none focus:border-blue-500 transition-colors"
                 />
                 <input
                   type="url"
                   value={m3uUrl2}
                   onChange={(e) => setM3uUrl2(e.target.value)}
                   placeholder="https://server2.com/list.m3u"
-                  className="w-full bg-black/50 border border-white/10 text-white rounded-xl p-3 focus:outline-none focus:border-blue-500 transition-colors"
+                  className="w-full bg-background border border-border text-foreground rounded-xl p-3 focus:outline-none focus:border-blue-500 transition-colors"
                 />
               </div>
               <div>
-                <label className="block text-sm text-gray-400 mb-2">Server Cadangan 2</label>
+                <label className="block text-sm text-muted-foreground mb-2">Server Cadangan 2</label>
                 <input
                   type="text"
                   value={m3uName3}
                   onChange={(e) => setM3uName3(e.target.value)}
                   placeholder="Nama (opsional, cth: Server 3)"
-                  className="w-full bg-black/50 border border-white/10 text-white rounded-xl p-3 mb-2 focus:outline-none focus:border-blue-500 transition-colors"
+                  className="w-full bg-background border border-border text-foreground rounded-xl p-3 mb-2 focus:outline-none focus:border-blue-500 transition-colors"
                 />
                 <input
                   type="url"
                   value={m3uUrl3}
                   onChange={(e) => setM3uUrl3(e.target.value)}
                   placeholder="https://server3.com/list.m3u"
-                  className="w-full bg-black/50 border border-white/10 text-white rounded-xl p-3 focus:outline-none focus:border-blue-500 transition-colors"
+                  className="w-full bg-background border border-border text-foreground rounded-xl p-3 focus:outline-none focus:border-blue-500 transition-colors"
                 />
               </div>
             </div>
-            <p className="text-xs text-gray-500 mt-2 mb-6">Jika Server Utama gagal dimuat, aplikasi akan otomatis mencoba Server Cadangan tanpa sepengetahuan pengguna.</p>
+            <p className="text-xs text-muted-foreground mt-2 mb-6">Jika Server Utama gagal dimuat, aplikasi akan otomatis mencoba Server Cadangan tanpa sepengetahuan pengguna.</p>
             
-            <div className="border-t border-white/10 pt-4 mt-2">
+            <div className="border-t border-border pt-4 mt-2">
               <label className="block text-sm font-bold text-green-400 mb-2">Global EPG URL (Jadwal Tayangan XMLTV)</label>
               <input
                 type="url"
                 value={epgUrl}
                 onChange={(e) => setEpgUrl(e.target.value)}
                 placeholder="https://example.com/epg.xml"
-                className="w-full bg-black/50 border border-green-500/30 text-white rounded-xl p-3 focus:outline-none focus:border-green-500 transition-colors"
+                className="w-full bg-background border border-green-500/30 text-foreground rounded-xl p-3 focus:outline-none focus:border-green-500 transition-colors"
               />
-              <p className="text-xs text-gray-500 mt-2">Opsional. Jika diisi, semua aplikasi TV akan otomatis menggunakan jadwal (EPG) dari URL ini dan menimpa pengaturan EPG manual di dalam aplikasi TV.</p>
+              <p className="text-xs text-muted-foreground mt-2">Opsional. Jika diisi, semua aplikasi TV akan otomatis menggunakan jadwal (EPG) dari URL ini dan menimpa pengaturan EPG manual di dalam aplikasi TV.</p>
             </div>
 
-            <div className="border-t border-white/10 pt-4 mt-2">
-              <label className="block text-sm font-bold text-purple-400 mb-2">Global Stream Proxy URL (Cloudflare Worker)</label>
+            <div className="border-t border-border pt-4 mt-2">
+              <label className="block text-sm font-bold text-primary mb-2">Global Stream Proxy URL (Cloudflare Worker)</label>
               <input
                 type="url"
                 value={proxyUrl}
                 onChange={(e) => setProxyUrl(e.target.value)}
                 placeholder="https://proxy.namakamu.workers.dev/"
-                className="w-full bg-black/50 border border-purple-500/30 text-white rounded-xl p-3 focus:outline-none focus:border-purple-500 transition-colors"
+                className="w-full bg-background border border-border text-foreground rounded-xl p-3 focus:outline-none focus:border-purple-500 transition-colors"
               />
-              <p className="text-xs text-gray-500 mt-2">Opsional. Jika diisi, channel dengan DRM atau Referer akan otomatis dirutekan melalui proxy ini untuk melewati pemblokiran.</p>
+              <p className="text-xs text-muted-foreground mt-2">Opsional. Jika diisi, channel dengan DRM atau Referer akan otomatis dirutekan melalui proxy ini untuk melewati pemblokiran.</p>
             </div>
 
-            <div className="border-t border-white/10 pt-4 mt-6">
+            <div className="border-t border-border pt-4 mt-6">
               <div className="flex items-center gap-3 mb-4">
                 <Tv className="text-orange-500" />
                 <h2 className="text-lg font-semibold">Custom Channels (Manual)</h2>
               </div>
-              <p className="text-xs text-gray-500 mb-4">Tambahkan channel sendiri tanpa perlu mengedit file M3U. Channel ini akan digabungkan otomatis ke daftar tayangan di TV.</p>
+              <p className="text-xs text-muted-foreground mb-4">Tambahkan channel sendiri tanpa perlu mengedit file M3U. Channel ini akan digabungkan otomatis ke daftar tayangan di TV.</p>
               
-              <div className="bg-black/30 p-4 rounded-xl border border-white/5 space-y-3 mb-4">
+              <div className="bg-black/30 p-4 rounded-xl border border-border space-y-3 mb-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <input type="text" placeholder="Nama Channel (Wajib)" className="bg-black/50 border border-white/10 rounded-lg p-2 text-sm text-white focus:border-orange-500"
+                  <input type="text" placeholder="Nama Channel (Wajib)" className="bg-background border border-border rounded-lg p-2 text-sm text-foreground focus:border-orange-500"
                     value={editingCustomChannel?.name || ""}
                     onChange={(e) => setEditingCustomChannel({...editingCustomChannel, name: e.target.value})} />
                   <select 
                     value={editingCustomChannel?.type || "direct"} 
                     onChange={(e) => setEditingCustomChannel({...editingCustomChannel, type: e.target.value})}
-                    className="bg-black/50 border border-white/10 rounded-lg p-2 text-sm text-white focus:border-orange-500">
+                    className="bg-background border border-border rounded-lg p-2 text-sm text-foreground focus:border-orange-500">
                     <option value="direct">Direct Stream (m3u8/mp4)</option>
                     <option value="embed">Embed Code / Iframe</option>
                   </select>
@@ -898,36 +898,36 @@ export default function AdminPanel() {
                   {editingCustomChannel?.type === "embed" ? (
                     <textarea 
                       placeholder="Masukkan kode Iframe HTML atau URL webpage di sini (Wajib)" 
-                      className="bg-black/50 border border-white/10 rounded-lg p-2 text-sm text-white focus:border-orange-500 md:col-span-2 min-h-[100px]"
+                      className="bg-background border border-border rounded-lg p-2 text-sm text-foreground focus:border-orange-500 md:col-span-2 min-h-[100px]"
                       value={editingCustomChannel?.streamUrl || ""}
                       onChange={(e) => setEditingCustomChannel({...editingCustomChannel, streamUrl: e.target.value})}
                     />
                   ) : (
-                    <input type="url" placeholder="Stream URL (Wajib)" className="bg-black/50 border border-white/10 rounded-lg p-2 text-sm text-white focus:border-orange-500"
+                    <input type="url" placeholder="Stream URL (Wajib)" className="bg-background border border-border rounded-lg p-2 text-sm text-foreground focus:border-orange-500"
                       value={editingCustomChannel?.streamUrl || ""}
                       onChange={(e) => setEditingCustomChannel({...editingCustomChannel, streamUrl: e.target.value})} />
                   )}
 
-                  <input type="text" placeholder="Grup (Cth: VIP)" className="bg-black/50 border border-white/10 rounded-lg p-2 text-sm text-white focus:border-orange-500"
+                  <input type="text" placeholder="Grup (Cth: VIP)" className="bg-background border border-border rounded-lg p-2 text-sm text-foreground focus:border-orange-500"
                     value={editingCustomChannel?.group || ""}
                     onChange={(e) => setEditingCustomChannel({...editingCustomChannel, group: e.target.value})} />
-                  <input type="url" placeholder="Logo URL" className="bg-black/50 border border-white/10 rounded-lg p-2 text-sm text-white focus:border-orange-500"
+                  <input type="url" placeholder="Logo URL" className="bg-background border border-border rounded-lg p-2 text-sm text-foreground focus:border-orange-500"
                     value={editingCustomChannel?.logoUrl || ""}
                     onChange={(e) => setEditingCustomChannel({...editingCustomChannel, logoUrl: e.target.value})} />
                   
                   {editingCustomChannel?.type !== "embed" && (
                     <>
-                      <input type="text" placeholder="License Key (opsional)" className="bg-black/50 border border-white/10 rounded-lg p-2 text-sm text-white focus:border-orange-500"
+                      <input type="text" placeholder="License Key (opsional)" className="bg-background border border-border rounded-lg p-2 text-sm text-foreground focus:border-orange-500"
                         value={editingCustomChannel?.licenseKey || ""}
                         onChange={(e) => setEditingCustomChannel({...editingCustomChannel, licenseKey: e.target.value})} />
-                      <input type="text" placeholder="User-Agent (opsional)" className="bg-black/50 border border-white/10 rounded-lg p-2 text-sm text-white focus:border-orange-500"
+                      <input type="text" placeholder="User-Agent (opsional)" className="bg-background border border-border rounded-lg p-2 text-sm text-foreground focus:border-orange-500"
                         value={editingCustomChannel?.userAgent || ""}
                         onChange={(e) => setEditingCustomChannel({...editingCustomChannel, userAgent: e.target.value})} />
                     </>
                   )}
                 </div>
                 <div className="flex gap-2 justify-end mt-2">
-                  <button onClick={() => setEditingCustomChannel(null)} className="px-3 py-1.5 text-xs rounded-lg bg-gray-500/20 text-white">Batal</button>
+                  <button onClick={() => setEditingCustomChannel(null)} className="px-3 py-1.5 text-xs rounded-lg bg-gray-500/20 text-foreground">Batal</button>
                   <button onClick={() => {
                     if (!editingCustomChannel?.name || !editingCustomChannel?.streamUrl) return alert("Nama dan Stream URL wajib diisi!");
                     const isNew = !editingCustomChannel.id;
@@ -939,7 +939,7 @@ export default function AdminPanel() {
                       setCustomChannels(customChannels.map(c => c.id === id ? newChannel : c));
                     }
                     setEditingCustomChannel(null);
-                  }} className="px-3 py-1.5 text-xs rounded-lg bg-orange-500 text-white font-bold">
+                  }} className="px-3 py-1.5 text-xs rounded-lg bg-orange-500 text-foreground font-bold">
                     {editingCustomChannel?.id ? "Simpan Perubahan" : "Tambah Channel"}
                   </button>
                 </div>
@@ -947,14 +947,14 @@ export default function AdminPanel() {
 
               <div className="space-y-2 max-h-60 overflow-y-auto pr-2">
                 {customChannels.length === 0 ? (
-                  <p className="text-xs text-gray-500 text-center py-4">Belum ada custom channel.</p>
+                  <p className="text-xs text-muted-foreground text-center py-4">Belum ada custom channel.</p>
                 ) : (
                   customChannels.map((c) => (
-                    <div key={c.id} className="flex justify-between items-center bg-black/40 p-3 rounded-lg border border-white/5">
+                    <div key={c.id} className="flex justify-between items-center bg-muted p-3 rounded-lg border border-border">
                       <div>
                         <div className="font-bold text-orange-400 text-sm">{c.name} {c.type === 'embed' && <span className="text-[10px] bg-blue-500/20 text-blue-300 px-1 ml-1 rounded">EMBED</span>}</div>
-                        <div className="text-xs text-gray-400 truncate max-w-[200px] md:max-w-[400px]">{c.streamUrl}</div>
-                        {c.group && <div className="text-[10px] bg-white/10 inline-block px-1.5 rounded mt-1">{c.group}</div>}
+                        <div className="text-xs text-muted-foreground truncate max-w-[200px] md:max-w-[400px]">{c.streamUrl}</div>
+                        {c.group && <div className="text-[10px] bg-accent inline-block px-1.5 rounded mt-1">{c.group}</div>}
                       </div>
                       <div className="flex gap-2">
                         <button onClick={() => setEditingCustomChannel(c)} className="text-xs px-2 py-1 bg-blue-500/20 text-blue-400 rounded hover:bg-blue-500/40">Edit</button>
@@ -971,8 +971,8 @@ export default function AdminPanel() {
             {activeTab === "tokens" && (
               <>
               {/* Card 2: Keamanan Akses (Multi-Token) */}
-          <div className="bg-white/5 backdrop-blur-xl border-r border-white/10 p-6 rounded-3xl border border-white/5 space-y-6">
-            <div className="flex items-center justify-between border-b border-white/10 pb-4">
+          <div className="bg-card  border-r border-border p-6 rounded-xl border border-border space-y-6">
+            <div className="flex items-center justify-between border-b border-border pb-4">
               <div className="flex items-center gap-3">
                 <Key className="text-yellow-500" />
                 <h2 className="text-lg font-semibold">Manajemen Token Akses</h2>
@@ -985,12 +985,12 @@ export default function AdminPanel() {
             <div className="space-y-4">
               {/* Tambah Token Baru */}
               <div className="flex flex-col gap-2">
-                <label className="block text-sm text-gray-400">Buat Token Custom</label>
+                <label className="block text-sm text-muted-foreground">Buat Token Custom</label>
                 <div className="flex flex-wrap gap-2">
                   <select
                     value={tokenDuration}
                     onChange={(e) => setTokenDuration(e.target.value)}
-                    className="bg-black/50 border border-white/10 text-white rounded-xl px-3 py-3 focus:outline-none focus:border-yellow-500 text-sm"
+                    className="bg-background border border-border text-foreground rounded-xl px-3 py-3 focus:outline-none focus:border-yellow-500 text-sm"
                   >
                     <option value="lifetime">Lifetime</option>
                     <option value="1h">1 Jam</option>
@@ -1003,14 +1003,14 @@ export default function AdminPanel() {
                     value={customTokenInput}
                     onChange={(e) => setCustomTokenInput(e.target.value)}
                     placeholder="Misal: VIP-BUDI"
-                    className="flex-1 bg-black/50 border border-white/10 text-white rounded-xl p-3 focus:outline-none focus:border-yellow-500 transition-colors min-w-[150px]"
+                    className="flex-1 bg-background border border-border text-foreground rounded-xl p-3 focus:outline-none focus:border-yellow-500 transition-colors min-w-[150px]"
                   />
                   <input
                     type="text"
                     value={tokenBadgeIcon}
                     onChange={(e) => setTokenBadgeIcon(e.target.value)}
                     placeholder="Badge (cth: 👑)"
-                    className="w-32 bg-black/50 border border-white/10 text-white rounded-xl p-3 focus:outline-none focus:border-yellow-500 transition-colors"
+                    className="w-32 bg-background border border-border text-foreground rounded-xl p-3 focus:outline-none focus:border-yellow-500 transition-colors"
                   />
                   <div className="flex flex-col">
                     <input
@@ -1018,16 +1018,16 @@ export default function AdminPanel() {
                       min="1"
                       value={tokenMaxDevices}
                       onChange={(e) => setTokenMaxDevices(parseInt(e.target.value) || 1)}
-                      className="w-20 bg-black/50 border border-white/10 text-white rounded-xl p-3 focus:outline-none focus:border-yellow-500 transition-colors"
+                      className="w-20 bg-background border border-border text-foreground rounded-xl p-3 focus:outline-none focus:border-yellow-500 transition-colors"
                       title="Max Device"
                     />
-                    <span className="text-[10px] text-gray-500 text-center mt-1">Max Device</span>
+                    <span className="text-[10px] text-muted-foreground text-center mt-1">Max Device</span>
                   </div>
                   <input
                     type="color"
                     value={tokenBadgeColor}
                     onChange={(e) => setTokenBadgeColor(e.target.value)}
-                    className="w-12 h-12 p-1 bg-black/50 border border-white/10 rounded-xl cursor-pointer"
+                    className="w-12 h-12 p-1 bg-background border border-border rounded-xl cursor-pointer"
                     title="Warna Chat"
                   />
                   <div className="flex flex-col gap-2">
@@ -1040,7 +1040,7 @@ export default function AdminPanel() {
                           setTokenNameEffect(e.target.value);
                         }
                       }}
-                      className="bg-black/50 border border-white/10 text-white rounded-xl px-3 py-3 focus:outline-none focus:border-yellow-500 text-sm"
+                      className="bg-background border border-border text-foreground rounded-xl px-3 py-3 focus:outline-none focus:border-yellow-500 text-sm"
                       title="Efek Nama (Glitch/Sparkle)"
                     >
                       <option value="NONE">Normal</option>
@@ -1057,13 +1057,13 @@ export default function AdminPanel() {
                         value={tokenNameEffect}
                         onChange={(e) => setTokenNameEffect(e.target.value)}
                         placeholder="https://...gif"
-                        className="bg-black/50 border border-white/10 text-white rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-yellow-500 w-full max-w-[200px]"
+                        className="bg-background border border-border text-foreground rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-yellow-500 w-full max-w-[200px]"
                       />
                     )}
                   </div>
                   <button 
                     onClick={addCustomToken}
-                    className="bg-yellow-600 hover:bg-yellow-700 text-white font-bold px-4 py-3 rounded-xl transition-colors"
+                    className="bg-yellow-600 hover:bg-yellow-700 text-foreground font-bold px-4 py-3 rounded-xl transition-colors"
                   >
                     {editingTokenCode ? "Simpan" : "Tambah"}
                   </button>
@@ -1073,7 +1073,7 @@ export default function AdminPanel() {
                         setEditingTokenCode(null);
                         setCustomTokenInput("");
                       }}
-                      className="bg-gray-600 hover:bg-gray-700 text-white font-bold px-4 py-3 rounded-xl transition-colors"
+                      className="bg-gray-600 hover:bg-gray-700 text-foreground font-bold px-4 py-3 rounded-xl transition-colors"
                     >
                       Batal
                     </button>
@@ -1083,22 +1083,22 @@ export default function AdminPanel() {
 
               <button 
                 onClick={generateRandomToken}
-                className="w-full bg-white/5 hover:bg-white/10 text-white border border-white/10 font-medium py-3 rounded-xl transition-colors text-sm"
+                className="w-full bg-card hover:bg-accent text-foreground border border-border font-medium py-3 rounded-xl transition-colors text-sm"
               >
                 + Generate Token Acak
               </button>
 
               {/* Token Sub Tabs */}
-              <div className="flex gap-2 border-b border-white/10 pb-2">
+              <div className="flex gap-2 border-b border-border pb-2">
                 <button 
                   onClick={() => setTokenSubTab("premium")}
-                  className={`px-4 py-2 rounded-t-xl text-sm font-semibold transition-colors ${tokenSubTab === "premium" ? "bg-white/10 text-white" : "text-gray-400 hover:text-gray-200"}`}
+                  className={`px-4 py-2 rounded-t-xl text-sm font-semibold transition-colors ${tokenSubTab === "premium" ? "bg-accent text-foreground" : "text-muted-foreground hover:text-card-foreground"}`}
                 >
                   Premium Tokens
                 </button>
                 <button 
                   onClick={() => setTokenSubTab("trial")}
-                  className={`px-4 py-2 rounded-t-xl text-sm font-semibold transition-colors ${tokenSubTab === "trial" ? "bg-white/10 text-white" : "text-gray-400 hover:text-gray-200"}`}
+                  className={`px-4 py-2 rounded-t-xl text-sm font-semibold transition-colors ${tokenSubTab === "trial" ? "bg-accent text-foreground" : "text-muted-foreground hover:text-card-foreground"}`}
                 >
                   Trial Users
                 </button>
@@ -1107,13 +1107,13 @@ export default function AdminPanel() {
               {/* Daftar Token Aktif */}
               <div className="mt-4 pt-4 max-h-48 overflow-y-auto pr-2 space-y-2">
                 {tokens.filter(t => tokenSubTab === "premium" ? !t.isTrial : t.isTrial).length === 0 ? (
-                  <p className="text-sm text-gray-500 text-center py-4">Belum ada {tokenSubTab === "premium" ? "token premium" : "pengguna trial"}.</p>
+                  <p className="text-sm text-muted-foreground text-center py-4">Belum ada {tokenSubTab === "premium" ? "token premium" : "pengguna trial"}.</p>
                 ) : (
                   tokens.filter(t => tokenSubTab === "premium" ? !t.isTrial : t.isTrial).map((tokenObj, idx) => (
-                    <div key={idx} className="flex items-center justify-between bg-black/40 p-3 rounded-xl border border-white/5">
+                    <div key={idx} className="flex items-center justify-between bg-muted p-3 rounded-xl border border-border">
                       <div>
                         <span className="font-mono text-yellow-400 font-bold block">{tokenObj.code}</span>
-                        <span className="text-xs text-gray-400">
+                        <span className="text-xs text-muted-foreground">
                           Durasi: {tokenObj.label} 
                           {tokenObj.expiresAt && ` (Exp: ${new Date(tokenObj.expiresAt).toLocaleString('id-ID')})`}
                         </span>
@@ -1171,7 +1171,7 @@ export default function AdminPanel() {
                         )}
                         <button 
                           onClick={() => removeToken(tokenObj.code)}
-                          className="text-purple-400 hover:text-purple-300 text-sm font-bold bg-purple-500/10 hover:bg-purple-500/20 px-3 py-1 rounded-lg transition-colors"
+                          className="text-primary hover:text-purple-300 text-sm font-bold bg-purple-500/10 hover:bg-purple-500/20 px-3 py-1 rounded-lg transition-colors"
                         >
                           Hapus
                         </button>
@@ -1180,7 +1180,7 @@ export default function AdminPanel() {
                   ))
                 )}
               </div>
-              <p className="text-xs text-gray-500 mt-2">Hapus token untuk mengeluarkan pengguna (logout) dari TV mereka. Gunakan <b>Reset TV</b> jika pengguna membeli TV baru.</p>
+              <p className="text-xs text-muted-foreground mt-2">Hapus token untuk mengeluarkan pengguna (logout) dari TV mereka. Gunakan <b>Reset TV</b> jika pengguna membeli TV baru.</p>
             </div>
           </div>
               </>
@@ -1188,13 +1188,13 @@ export default function AdminPanel() {
             {activeTab === "chat" && (
               <>
               {/* Card: Chat Moderation */}
-          <div className="bg-white/5 backdrop-blur-xl border-r border-white/10 p-6 rounded-3xl border border-white/5 space-y-6">
-            <div className="flex items-center justify-between border-b border-white/10 pb-4">
+          <div className="bg-card  border-r border-border p-6 rounded-xl border border-border space-y-6">
+            <div className="flex items-center justify-between border-b border-border pb-4">
               <div className="flex items-center gap-3">
                 <MessageSquare className="text-pink-500" />
                 <h2 className="text-lg font-semibold">Moderasi Live Chat</h2>
               </div>
-              <label className="flex items-center gap-3 cursor-pointer p-2 bg-black/50 rounded-xl border border-white/10">
+              <label className="flex items-center gap-3 cursor-pointer p-2 bg-background rounded-xl border border-border">
                 <span className="text-sm font-medium">{chatEnabled ? 'Chat Aktif' : 'Chat Dimatikan'}</span>
                 <div className="relative">
                   <input 
@@ -1210,27 +1210,27 @@ export default function AdminPanel() {
             </div>
             
             <div className="flex flex-col gap-4">
-              <div className="flex items-center gap-4 bg-black/50 p-4 rounded-xl border border-white/10">
+              <div className="flex items-center gap-4 bg-background p-4 rounded-xl border border-border">
                 <div>
-                  <label className="block text-xs text-gray-400 mb-1">Badge Admin</label>
+                  <label className="block text-xs text-muted-foreground mb-1">Badge Admin</label>
                   <input
                     type="text"
                     value={adminBadgeIcon}
                     onChange={(e) => setAdminBadgeIcon(e.target.value)}
-                    className="w-20 bg-black/50 border border-white/10 text-white rounded-lg p-2 focus:outline-none focus:border-pink-500 text-sm"
+                    className="w-20 bg-background border border-border text-foreground rounded-lg p-2 focus:outline-none focus:border-pink-500 text-sm"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs text-gray-400 mb-1">Warna</label>
+                  <label className="block text-xs text-muted-foreground mb-1">Warna</label>
                   <input
                     type="color"
                     value={adminBadgeColor}
                     onChange={(e) => setAdminBadgeColor(e.target.value)}
-                    className="w-10 h-10 p-1 bg-black/50 border border-white/10 rounded-lg cursor-pointer"
+                    className="w-10 h-10 p-1 bg-background border border-border rounded-lg cursor-pointer"
                   />
                 </div>
                 <div className="flex flex-col gap-1">
-                  <label className="block text-xs text-gray-400 mb-1">Efek Animasi</label>
+                  <label className="block text-xs text-muted-foreground mb-1">Efek Animasi</label>
                   <select
                     value={adminNameEffect.startsWith('http') ? 'CUSTOM' : adminNameEffect}
                     onChange={(e) => {
@@ -1240,7 +1240,7 @@ export default function AdminPanel() {
                         setAdminNameEffect(e.target.value);
                       }
                     }}
-                    className="h-10 bg-black/50 border border-white/10 text-white rounded-lg px-2 focus:outline-none focus:border-pink-500 text-sm"
+                    className="h-10 bg-background border border-border text-foreground rounded-lg px-2 focus:outline-none focus:border-pink-500 text-sm"
                   >
                     <option value="NONE">Normal</option>
                     <option value="GLITCH">⚡ Glitch</option>
@@ -1256,24 +1256,24 @@ export default function AdminPanel() {
                       value={adminNameEffect}
                       onChange={(e) => setAdminNameEffect(e.target.value)}
                       placeholder="https://..."
-                      className="bg-black/50 border border-white/10 text-white rounded-lg px-2 py-1 text-xs focus:outline-none focus:border-pink-500 w-32"
+                      className="bg-background border border-border text-foreground rounded-lg px-2 py-1 text-xs focus:outline-none focus:border-pink-500 w-32"
                     />
                   )}
                 </div>
               </div>
 
-              <div className="bg-black/50 border border-white/10 rounded-xl p-4 h-64 overflow-y-auto flex flex-col gap-2">
+              <div className="bg-background border border-border rounded-xl p-4 h-64 overflow-y-auto flex flex-col gap-2">
                 {chatMessages.length === 0 ? (
-                  <div className="text-gray-500 text-center m-auto">Belum ada pesan chat</div>
+                  <div className="text-muted-foreground text-center m-auto">Belum ada pesan chat</div>
                 ) : (
                   chatMessages.map((msg) => (
-                    <div key={msg.id} className="flex justify-between items-start group hover:bg-white/5 p-2 rounded-lg transition-colors">
+                    <div key={msg.id} className="flex justify-between items-start group hover:bg-card p-2 rounded-lg transition-colors">
                       <div>
                         <span className="font-bold text-sm text-blue-400 mr-2">{msg.sender.split('|')[0]}</span>
-                        <span className="text-sm text-gray-300">{msg.message}</span>
+                        <span className="text-sm text-card-foreground">{msg.message}</span>
                         <div className="text-xs text-gray-600 mt-1">{new Date(msg.timestamp).toLocaleString()}</div>
                       </div>
-                      <button onClick={() => handleDeleteChat(msg.id)} className="text-purple-400 opacity-50 group-hover:opacity-100 hover:text-purple-300 p-2">
+                      <button onClick={() => handleDeleteChat(msg.id)} className="text-primary opacity-50 group-hover:opacity-100 hover:text-purple-300 p-2">
                         <Trash2 className="w-4 h-4" />
                       </button>
                     </div>
@@ -1282,7 +1282,7 @@ export default function AdminPanel() {
               </div>
               
               <div className="flex gap-2">
-                <button onClick={() => handleDeleteChat('all')} className="bg-purple-500/20 hover:bg-purple-500/30 text-purple-400 p-3 rounded-xl transition-colors" title="Hapus Semua Chat">
+                <button onClick={() => handleDeleteChat('all')} className="bg-purple-500/20 hover:bg-purple-500/30 text-primary p-3 rounded-xl transition-colors" title="Hapus Semua Chat">
                   <Trash2 className="w-5 h-5" />
                 </button>
                 <form onSubmit={handleSendChat} className="flex-1 flex gap-2">
@@ -1291,9 +1291,9 @@ export default function AdminPanel() {
                     value={chatInput}
                     onChange={(e) => setChatInput(e.target.value)}
                     placeholder="Kirim pesan sebagai Admin..."
-                    className="flex-1 bg-black/50 border border-white/10 text-white rounded-xl p-3 focus:outline-none focus:border-pink-500 transition-colors"
+                    className="flex-1 bg-background border border-border text-foreground rounded-xl p-3 focus:outline-none focus:border-pink-500 transition-colors"
                   />
-                  <button type="submit" className="bg-pink-600 hover:bg-pink-700 text-white px-4 rounded-xl transition-colors">
+                  <button type="submit" className="bg-pink-600 hover:bg-pink-700 text-foreground px-4 rounded-xl transition-colors">
                     <Send className="w-5 h-5" />
                   </button>
                 </form>
@@ -1305,45 +1305,45 @@ export default function AdminPanel() {
             {activeTab === "settings" && (
               <div className="space-y-8">
                 {/* Card 4: Notifikasi / Marquee */}
-          <div className="bg-white/5 backdrop-blur-xl border-r border-white/10 p-6 rounded-3xl border border-white/5 space-y-6">
-            <div className="flex items-center gap-3 border-b border-white/10 pb-4">
+          <div className="bg-card  border-r border-border p-6 rounded-xl border border-border space-y-6">
+            <div className="flex items-center gap-3 border-b border-border pb-4">
               <Bell className="text-green-500" />
               <h2 className="text-lg font-semibold">Teks Berjalan (Marquee)</h2>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
               <div className="md:col-span-3">
-                <label className="block text-sm text-gray-400 mb-2">Isi Pesan (Pengumuman / Marquee)</label>
+                <label className="block text-sm text-muted-foreground mb-2">Isi Pesan (Pengumuman / Marquee)</label>
                 <input
                   type="text"
                   value={notificationText}
                   onChange={(e) => setNotificationText(e.target.value)}
                   placeholder="Contoh: Selamat datang di KIMTV..."
-                  className="w-full bg-black/50 border border-white/10 text-white rounded-xl p-3 focus:outline-none focus:border-green-500 transition-colors"
+                  className="w-full bg-background border border-border text-foreground rounded-xl p-3 focus:outline-none focus:border-green-500 transition-colors"
                 />
               </div>
 
               <div>
-                <label className="block text-sm text-gray-400 mb-2">Warna Teks Marquee</label>
+                <label className="block text-sm text-muted-foreground mb-2">Warna Teks Marquee</label>
                 <div className="flex gap-4">
                   <input
                     type="color"
                     value={notificationColor}
                     onChange={(e) => setNotificationColor(e.target.value)}
-                    className="w-14 h-12 rounded cursor-pointer bg-transparent border-0 p-0"
+                    className="w-14 h-12 rounded cursor-pointer bg-background border-0 p-0"
                   />
                   <input
                     type="text"
                     value={notificationColor}
                     onChange={(e) => setNotificationColor(e.target.value)}
-                    className="flex-1 bg-black/50 border border-white/10 text-white rounded-xl p-3 focus:outline-none focus:border-green-500 transition-colors uppercase"
+                    className="flex-1 bg-background border border-border text-foreground rounded-xl p-3 focus:outline-none focus:border-green-500 transition-colors uppercase"
                     placeholder="#FFFFFF"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm text-gray-400 mb-2">Tampilkan Marquee?</label>
-                <label className="flex items-center gap-3 cursor-pointer p-3 bg-black/50 rounded-xl border border-white/10">
+                <label className="block text-sm text-muted-foreground mb-2">Tampilkan Marquee?</label>
+                <label className="flex items-center gap-3 cursor-pointer p-3 bg-background rounded-xl border border-border">
                   <div className="relative">
                     <input 
                       type="checkbox" 
@@ -1361,79 +1361,79 @@ export default function AdminPanel() {
           </div>
 
           {/* Card: Konfigurasi Teks Aplikasi */}
-          <div className="bg-white/5 backdrop-blur-xl border-r border-white/10 p-6 rounded-3xl border border-white/5 space-y-6 mt-6">
-            <div className="flex items-center gap-3 border-b border-white/10 pb-4">
-              <Tv className="text-purple-500" />
+          <div className="bg-card  border-r border-border p-6 rounded-xl border border-border space-y-6 mt-6">
+            <div className="flex items-center gap-3 border-b border-border pb-4">
+              <Tv className="text-primary" />
               <h2 className="text-lg font-semibold">Teks Logo Aplikasi</h2>
             </div>
             <div className="grid grid-cols-1 gap-6">
               <div>
-                <label className="block text-sm text-gray-400 mb-2">Nama Aplikasi (Tampil di Menu Utama & Settings)</label>
+                <label className="block text-sm text-muted-foreground mb-2">Nama Aplikasi (Tampil di Menu Utama & Settings)</label>
                 <input
                   type="text"
                   value={appName}
                   onChange={(e) => setAppName(e.target.value)}
                   placeholder="KIMTV"
-                  className="w-full bg-black/50 border border-white/10 text-white rounded-xl p-3 focus:outline-none focus:border-purple-500 transition-colors"
+                  className="w-full bg-background border border-border text-foreground rounded-xl p-3 focus:outline-none focus:border-purple-500 transition-colors"
                 />
               </div>
             </div>
           </div>
 
           {/* Card: Konfigurasi Update & Kontak */}
-          <div className="bg-white/5 backdrop-blur-xl border-r border-white/10 p-6 rounded-3xl border border-white/5 space-y-6 mt-6">
-            <div className="flex items-center gap-3 border-b border-white/10 pb-4">
+          <div className="bg-card  border-r border-border p-6 rounded-xl border border-border space-y-6 mt-6">
+            <div className="flex items-center gap-3 border-b border-border pb-4">
               <Globe className="text-blue-500" />
               <h2 className="text-lg font-semibold">Konfigurasi Sistem TV</h2>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label className="block text-sm text-gray-400 mb-2">URL Kontak Admin (WhatsApp/Telegram)</label>
+                <label className="block text-sm text-muted-foreground mb-2">URL Kontak Admin (WhatsApp/Telegram)</label>
                 <input
                   type="text"
                   value={adminContactUrl}
                   onChange={(e) => setAdminContactUrl(e.target.value)}
                   placeholder="https://wa.me/..."
-                  className="w-full bg-black/50 border border-white/10 text-white rounded-xl p-3 focus:outline-none focus:border-blue-500 transition-colors"
+                  className="w-full bg-background border border-border text-foreground rounded-xl p-3 focus:outline-none focus:border-blue-500 transition-colors"
                 />
-                <p className="text-xs text-gray-500 mt-2">Ditampilkan sebagai QR Code di layar Profil aplikasi TV.</p>
+                <p className="text-xs text-muted-foreground mt-2">Ditampilkan sebagai QR Code di layar Profil aplikasi TV.</p>
               </div>
               <div>
-                <label className="block text-sm text-gray-400 mb-2">URL Update APK</label>
+                <label className="block text-sm text-muted-foreground mb-2">URL Update APK</label>
                 <input
                   type="text"
                   value={apkUpdateUrl}
                   onChange={(e) => setApkUpdateUrl(e.target.value)}
                   placeholder="https://example.com/app.apk"
-                  className="w-full bg-black/50 border border-white/10 text-white rounded-xl p-3 focus:outline-none focus:border-blue-500 transition-colors"
+                  className="w-full bg-background border border-border text-foreground rounded-xl p-3 focus:outline-none focus:border-blue-500 transition-colors"
                 />
-                <p className="text-xs text-gray-500 mt-2">Aplikasi akan mengunduh dari link ini jika ada update.</p>
+                <p className="text-xs text-muted-foreground mt-2">Aplikasi akan mengunduh dari link ini jika ada update.</p>
               </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
               <div>
-                <label className="block text-sm text-gray-400 mb-2">Versi Aplikasi Terbaru (Version Code)</label>
+                <label className="block text-sm text-muted-foreground mb-2">Versi Aplikasi Terbaru (Version Code)</label>
                 <input
                   type="number"
                   value={latestVersionCode}
                   onChange={(e) => setLatestVersionCode(parseInt(e.target.value) || 1)}
                   placeholder="6"
-                  className="w-full bg-black/50 border border-white/10 text-white rounded-xl p-3 focus:outline-none focus:border-blue-500 transition-colors"
+                  className="w-full bg-background border border-border text-foreground rounded-xl p-3 focus:outline-none focus:border-blue-500 transition-colors"
                 />
-                <p className="text-xs text-gray-500 mt-2">Isikan angka versi (Contoh: Aplikasi Anda saat ini versi 5.1 dengan Version Code = 6).</p>
+                <p className="text-xs text-muted-foreground mt-2">Isikan angka versi (Contoh: Aplikasi Anda saat ini versi 5.1 dengan Version Code = 6).</p>
               </div>
             </div>
           </div>
 
               {/* Pre-roll Ads Settings */}
-              <div className="bg-white/5 backdrop-blur-xl border-r border-white/10 p-6 rounded-3xl border border-white/5 space-y-6">
-                <div className="flex items-center gap-3 border-b border-white/10 pb-4">
+              <div className="bg-card  border-r border-border p-6 rounded-xl border border-border space-y-6">
+                <div className="flex items-center gap-3 border-b border-border pb-4">
                   <PlaySquare className="text-green-500" />
                   <h2 className="text-lg font-semibold">Iklan Pembuka (Pre-roll Ad)</h2>
                 </div>
                 
                 <div className="flex items-center gap-4">
-                  <label className="text-sm text-gray-400 font-medium">Aktifkan Iklan Video?</label>
+                  <label className="text-sm text-muted-foreground font-medium">Aktifkan Iklan Video?</label>
                   <button
                     onClick={() => setPrerollAdEnabled(!prerollAdEnabled)}
                     className={`w-12 h-6 rounded-full transition-colors relative ${prerollAdEnabled ? 'bg-green-600' : 'bg-gray-700'}`}
@@ -1443,85 +1443,85 @@ export default function AdminPanel() {
                 </div>
 
                 <div className="space-y-2 mt-4">
-                  <label className="block text-sm text-gray-400 mb-2">URL Video Iklan (MP4/HLS)</label>
+                  <label className="block text-sm text-muted-foreground mb-2">URL Video Iklan (MP4/HLS)</label>
                   <input 
                     type="url"
                     value={prerollAdUrl}
                     onChange={(e) => setPrerollAdUrl(e.target.value)}
                     placeholder="https://example.com/ad.mp4"
-                    className="w-full bg-black/50 border border-white/10 text-white rounded-xl p-3 focus:outline-none focus:border-green-500 transition-colors"
+                    className="w-full bg-background border border-border text-foreground rounded-xl p-3 focus:outline-none focus:border-green-500 transition-colors"
                   />
-                  <p className="text-xs text-gray-500 mt-2">Video iklan akan diputar sebelum tayangan TV dimulai.</p>
+                  <p className="text-xs text-muted-foreground mt-2">Video iklan akan diputar sebelum tayangan TV dimulai.</p>
                 </div>
               </div>
 
                 {/* Card 3: Wallpaper TV */}
-          <div className="bg-white/5 backdrop-blur-xl border-r border-white/10 p-6 rounded-3xl border border-white/5 space-y-6">
-            <div className="flex items-center gap-3 border-b border-white/10 pb-4">
-              <ImageIcon className="text-purple-500" />
+          <div className="bg-card  border-r border-border p-6 rounded-xl border border-border space-y-6">
+            <div className="flex items-center gap-3 border-b border-border pb-4">
+              <ImageIcon className="text-primary" />
               <h2 className="text-lg font-semibold">Wallpaper TV (Background)</h2>
             </div>
             <div>
-              <label className="block text-sm text-gray-400 mb-2">URL Gambar Latar Belakang</label>
+              <label className="block text-sm text-muted-foreground mb-2">URL Gambar Latar Belakang</label>
               <input
                 type="url"
                 value={backgroundUrl}
                 onChange={(e) => setBackgroundUrl(e.target.value)}
                 placeholder="https://contoh.com/gambar-bagus.jpg"
-                className="w-full bg-black/50 border border-white/10 text-white rounded-xl p-3 focus:outline-none focus:border-purple-500 transition-colors"
+                className="w-full bg-background border border-border text-foreground rounded-xl p-3 focus:outline-none focus:border-purple-500 transition-colors"
               />
-              <p className="text-xs text-gray-500 mt-2 mb-4">Kosongkan kolom ini jika ingin menggunakan wallpaper bawaan aplikasi.</p>
+              <p className="text-xs text-muted-foreground mt-2 mb-4">Kosongkan kolom ini jika ingin menggunakan wallpaper bawaan aplikasi.</p>
 
-              <label className="block text-sm text-gray-400 mb-2 border-t border-white/10 pt-4">URL Banner Promo (Pop-up Sambutan)</label>
+              <label className="block text-sm text-muted-foreground mb-2 border-t border-border pt-4">URL Banner Promo (Pop-up Sambutan)</label>
               <input
                 type="url"
                 value={welcomeBannerUrl}
                 onChange={(e) => setWelcomeBannerUrl(e.target.value)}
                 placeholder="https://contoh.com/promo-diskon.jpg"
-                className="w-full bg-black/50 border border-white/10 text-white rounded-xl p-3 focus:outline-none focus:border-purple-500 transition-colors"
+                className="w-full bg-background border border-border text-foreground rounded-xl p-3 focus:outline-none focus:border-purple-500 transition-colors"
               />
-              <p className="text-xs text-gray-500 mt-2">Gambar akan muncul sekali setiap pengguna membuka aplikasi TV. Kosongkan untuk mematikan.</p>
+              <p className="text-xs text-muted-foreground mt-2">Gambar akan muncul sekali setiap pengguna membuka aplikasi TV. Kosongkan untuk mematikan.</p>
             </div>
           </div>
 
           
                 {/* Card: Auto Update */}
-          <div className="bg-white/5 backdrop-blur-xl border-r border-white/10 p-6 rounded-3xl border border-white/5 space-y-6">
-            <div className="flex items-center gap-3 border-b border-white/10 pb-4">
+          <div className="bg-card  border-r border-border p-6 rounded-xl border border-border space-y-6">
+            <div className="flex items-center gap-3 border-b border-border pb-4">
               <RefreshCcw className="text-cyan-500" />
               <h2 className="text-lg font-semibold">Auto-Update Aplikasi TV</h2>
             </div>
             <div>
-              <label className="block text-sm text-gray-400 mb-2">Versi Aplikasi Terbaru (Version Code)</label>
+              <label className="block text-sm text-muted-foreground mb-2">Versi Aplikasi Terbaru (Version Code)</label>
               <input
                 type="number"
                 value={latestVersionCode}
                 onChange={(e) => setLatestVersionCode(parseInt(e.target.value) || 1)}
-                className="w-full bg-black/50 border border-white/10 text-white rounded-xl p-3 focus:outline-none focus:border-cyan-500 transition-colors mb-4"
+                className="w-full bg-background border border-border text-foreground rounded-xl p-3 focus:outline-none focus:border-cyan-500 transition-colors mb-4"
               />
-              <label className="block text-sm text-gray-400 mb-2">URL Download APK Terbaru</label>
+              <label className="block text-sm text-muted-foreground mb-2">URL Download APK Terbaru</label>
               <input
                 type="url"
                 value={apkUpdateUrl}
                 onChange={(e) => setApkUpdateUrl(e.target.value)}
                 placeholder="https://contoh.com/KIMTV_v2.apk"
-                className="w-full bg-black/50 border border-white/10 text-white rounded-xl p-3 focus:outline-none focus:border-cyan-500 transition-colors"
+                className="w-full bg-background border border-border text-foreground rounded-xl p-3 focus:outline-none focus:border-cyan-500 transition-colors"
               />
-              <p className="text-xs text-gray-500 mt-2">Ubah version code lebih tinggi dari aplikasi TV (saat ini biasanya 1) agar TV menampilkan popup Update.</p>
+              <p className="text-xs text-muted-foreground mt-2">Ubah version code lebih tinggi dari aplikasi TV (saat ini biasanya 1) agar TV menampilkan popup Update.</p>
             </div>
           </div>
 
           
                 {/* Card 5: Maintenance Mode */}
-          <div className={`p-6 rounded-3xl border transition-all ${isMaintenance ? 'bg-purple-900/30 border-purple-500' : 'bg-white/5 backdrop-blur-xl border-r border-white/10 border-white/5'}`}>
+          <div className={`p-6 rounded-xl border transition-all ${isMaintenance ? 'bg-purple-900/30 border-purple-500' : 'bg-card  border-r border-border'}`}>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
-                <div className={`p-3 rounded-2xl ${isMaintenance ? 'bg-purple-600' : 'bg-gray-800'}`}>
-                  <AlertTriangle className={`w-8 h-8 ${isMaintenance ? 'text-white' : 'text-gray-500'}`} />
+                <div className={`p-3 rounded-lg ${isMaintenance ? 'bg-primary text-primary-foreground' : 'bg-gray-800'}`}>
+                  <AlertTriangle className={`w-8 h-8 ${isMaintenance ? 'text-foreground' : 'text-muted-foreground'}`} />
                 </div>
                 <div>
-                  <h2 className="text-xl font-bold text-white mb-1">MODE PERBAIKAN (MAINTENANCE)</h2>
-                  <p className="text-gray-400 text-sm">Kunci semua aplikasi TV pengguna jika server sedang mati atau diperbaiki.</p>
+                  <h2 className="text-xl font-bold text-foreground mb-1">MODE PERBAIKAN (MAINTENANCE)</h2>
+                  <p className="text-muted-foreground text-sm">Kunci semua aplikasi TV pengguna jika server sedang mati atau diperbaiki.</p>
                 </div>
               </div>
               <label className="flex items-center cursor-pointer">
@@ -1532,7 +1532,7 @@ export default function AdminPanel() {
                     checked={isMaintenance}
                     onChange={(e) => setIsMaintenance(e.target.checked)}
                   />
-                  <div className={`block w-16 h-8 rounded-full transition-colors ${isMaintenance ? 'bg-purple-600' : 'bg-gray-700'}`}></div>
+                  <div className={`block w-16 h-8 rounded-full transition-colors ${isMaintenance ? 'bg-primary text-primary-foreground' : 'bg-gray-700'}`}></div>
                   <div className={`dot absolute left-1 top-1 bg-white w-6 h-6 rounded-full transition-transform ${isMaintenance ? 'transform translate-x-8' : ''}`}></div>
                 </div>
               </label>
@@ -1547,7 +1547,7 @@ export default function AdminPanel() {
       </main>
 
       {/* Mobile Bottom Navigation */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white/5 backdrop-blur-xl border-r border-white/10 border-t border-white/10 flex justify-around p-2 z-50 pb-[env(safe-area-inset-bottom)]">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-card  border-r border-border border-t border-border flex justify-around p-2 z-50 pb-[env(safe-area-inset-bottom)]">
         {[
           { id: "overview", label: "Beranda", icon: Activity },
           { id: "analytics", label: "Analisis", icon: PieChart },
@@ -1561,8 +1561,8 @@ export default function AdminPanel() {
             onClick={() => setActiveTab(tab.id)}
             className={`flex flex-col items-center justify-center w-16 h-12 rounded-xl transition-colors ${
               activeTab === tab.id 
-                ? "text-purple-400" 
-                : "text-gray-500 hover:text-gray-300"
+                ? "text-primary" 
+                : "text-muted-foreground hover:text-card-foreground"
             }`}
           >
             <tab.icon className="w-5 h-5 mb-1" />
