@@ -52,6 +52,7 @@ export default function AdminPanel() {
   const [customTokenInput, setCustomTokenInput] = useState(""); // Input untuk token custom
   const [tokenDuration, setTokenDuration] = useState("lifetime");
   const [notificationText, setNotificationText] = useState("");
+  const [notificationColor, setNotificationColor] = useState("#FFFFFF");
   const [notificationEnabled, setNotificationEnabled] = useState(false);
   const [backgroundUrl, setBackgroundUrl] = useState("");
   const [welcomeBannerUrl, setWelcomeBannerUrl] = useState("");
@@ -120,6 +121,7 @@ export default function AdminPanel() {
           }
 
           setNotificationText(data.notificationText || "");
+          setNotificationColor(data.notificationColor || "#FFFFFF");
           setNotificationEnabled(data.notificationEnabled || false);
           setBackgroundUrl(data.backgroundUrl || "");
           setWelcomeBannerUrl(data.welcomeBannerUrl || "");
@@ -369,6 +371,7 @@ export default function AdminPanel() {
           customChannels,
           tokens, // Kirim array tokens
           notificationText,
+          notificationColor,
           notificationEnabled,
           backgroundUrl,
           welcomeBannerUrl,
@@ -1184,7 +1187,7 @@ export default function AdminPanel() {
             </div>
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
               <div className="md:col-span-3">
-                <label className="block text-sm text-gray-400 mb-2">Teks Pengumuman</label>
+                <label className="block text-sm text-gray-400 mb-2">Isi Pesan (Pengumuman / Marquee)</label>
                 <input
                   type="text"
                   value={notificationText}
@@ -1193,7 +1196,28 @@ export default function AdminPanel() {
                   className="w-full bg-black/50 border border-white/10 text-white rounded-xl p-3 focus:outline-none focus:border-green-500 transition-colors"
                 />
               </div>
-              <div className="flex flex-col justify-end">
+
+              <div>
+                <label className="block text-sm text-gray-400 mb-2">Warna Teks Marquee</label>
+                <div className="flex gap-4">
+                  <input
+                    type="color"
+                    value={notificationColor}
+                    onChange={(e) => setNotificationColor(e.target.value)}
+                    className="w-14 h-12 rounded cursor-pointer bg-transparent border-0 p-0"
+                  />
+                  <input
+                    type="text"
+                    value={notificationColor}
+                    onChange={(e) => setNotificationColor(e.target.value)}
+                    className="flex-1 bg-black/50 border border-white/10 text-white rounded-xl p-3 focus:outline-none focus:border-green-500 transition-colors uppercase"
+                    placeholder="#FFFFFF"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm text-gray-400 mb-2">Tampilkan Marquee?</label>
                 <label className="flex items-center gap-3 cursor-pointer p-3 bg-black/50 rounded-xl border border-white/10">
                   <div className="relative">
                     <input 
