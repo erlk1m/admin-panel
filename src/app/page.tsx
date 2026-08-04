@@ -451,44 +451,100 @@ export default function AdminPanel() {
   return (
     <div className="flex h-screen bg-background text-foreground overflow-hidden">
       {/* Sidebar */}
-      <aside className="w-64 bg-card border-r border-border flex flex-col hidden md:flex">
-        <div className="p-6 flex items-center gap-4 border-b border-border">
-          <div className="bg-primary text-primary-foreground p-2 rounded-xl">
-            <Tv className="w-6 h-6 text-foreground" />
+      <aside className="w-64 bg-background border-r border-border flex flex-col hidden md:flex">
+        <div className="p-4 flex items-center gap-3">
+          <div className="bg-foreground text-background p-1.5 rounded-md flex items-center justify-center">
+            <Tv className="w-5 h-5" />
           </div>
-          <h1 className="text-xl font-bold tracking-tight">{appName}<span className="text-primary">.</span></h1>
+          <div>
+            <h1 className="text-sm font-bold leading-none">{appName}</h1>
+            <p className="text-xs text-muted-foreground mt-1">Admin Panel</p>
+          </div>
         </div>
         
-        <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
-          {[
-            { id: "overview", label: "Overview", icon: Activity },
-            { id: "analytics", label: "Analisis", icon: PieChart },
-            { id: "playlist", label: "Playlist M3U", icon: Globe },
-            { id: "tokens", label: "Akses & Token", icon: Key },
-            { id: "chat", label: "Live Chat", icon: MessageSquare },
-            { id: "settings", label: "Pengaturan", icon: ShieldAlert }
-          ].map(tab => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-medium ${
-                activeTab === tab.id 
-                  ? "bg-accent text-accent-foreground font-semibold border border-border shadow-sm" 
-                  : "text-muted-foreground hover:text-foreground hover:bg-card"
-              }`}
-            >
-              <tab.icon className="w-5 h-5" />
-              {tab.label}
-            </button>
-          ))}
+        <nav className="flex-1 px-4 py-2 space-y-6 overflow-y-auto">
+          <div>
+            <p className="text-xs font-semibold text-muted-foreground mb-2 px-2">General</p>
+            <div className="space-y-1">
+              {[
+                { id: "overview", label: "Dashboard", icon: Activity },
+                { id: "analytics", label: "Analytics", icon: PieChart },
+                { id: "chat", label: "Chats", icon: MessageSquare },
+                { id: "tokens", label: "Users", icon: Users },
+              ].map(tab => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-md transition-all text-sm font-medium ${
+                    activeTab === tab.id 
+                      ? "bg-accent text-accent-foreground" 
+                      : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
+                  }`}
+                >
+                  <tab.icon className="w-4 h-4" />
+                  <span className="flex-1 text-left">{tab.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <p className="text-xs font-semibold text-muted-foreground mb-2 px-2">Configuration</p>
+            <div className="space-y-1">
+              {[
+                { id: "playlist", label: "M3U Playlist", icon: Globe },
+              ].map(tab => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-md transition-all text-sm font-medium ${
+                    activeTab === tab.id 
+                      ? "bg-accent text-accent-foreground" 
+                      : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
+                  }`}
+                >
+                  <tab.icon className="w-4 h-4" />
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <p className="text-xs font-semibold text-muted-foreground mb-2 px-2">Other</p>
+            <div className="space-y-1">
+              {[
+                { id: "settings", label: "Settings", icon: ShieldAlert }
+              ].map(tab => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-md transition-all text-sm font-medium ${
+                    activeTab === tab.id 
+                      ? "bg-accent text-accent-foreground" 
+                      : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
+                  }`}
+                >
+                  <tab.icon className="w-4 h-4" />
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+          </div>
         </nav>
         
-        <div className="p-4 border-t border-border">
+        <div className="p-4 mt-auto">
           <button 
             onClick={() => setIsAuthenticated(false)}
-            className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-card hover:bg-accent text-card-foreground hover:text-foreground rounded-xl transition-colors font-medium"
+            className="w-full flex items-center gap-3 px-3 py-2 hover:bg-accent text-muted-foreground hover:text-foreground rounded-md transition-colors text-sm font-medium"
           >
-            Logout
+            <div className="w-8 h-8 rounded-full bg-accent flex items-center justify-center text-foreground font-bold text-xs border border-border">
+              AD
+            </div>
+            <div className="flex-1 text-left">
+              <div className="text-foreground leading-none font-bold">Admin</div>
+              <div className="text-xs text-muted-foreground mt-1 truncate">Logout Panel</div>
+            </div>
           </button>
         </div>
       </aside>
@@ -496,65 +552,192 @@ export default function AdminPanel() {
       {/* Main Content Area */}
       <main className="flex-1 flex flex-col h-screen overflow-hidden relative">
         {/* Top Header */}
-        <header className="h-16 md:h-20 bg-card  border-b border-border flex items-center justify-between px-4 md:px-8 sticky top-0 z-10 gap-2">
-          <div className="flex-1 overflow-hidden">
-            <h2 className="text-base md:text-xl font-bold capitalize truncate">
-              {activeTab === "overview" && "Dashboard Analytics"}
-              {activeTab === "analytics" && "Analisis Perangkat"}
-              {activeTab === "playlist" && "M3U Playlist Configuration"}
-              {activeTab === "tokens" && "Access & Token Management"}
-              {activeTab === "chat" && "Live Chat Moderation"}
-              {activeTab === "settings" && "Global App Settings"}
-            </h2>
-            <p className="text-sm text-muted-foreground hidden md:block">Kelola pengaturan aplikasi secara real-time</p>
+        <header className="h-14 bg-background border-b border-border flex items-center justify-between px-4 sticky top-0 z-10 gap-4">
+          <div className="flex items-center gap-4 flex-1">
+            <button className="md:hidden text-muted-foreground hover:text-foreground">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+            </button>
+            <div className="hidden md:flex items-center text-sm text-muted-foreground gap-2">
+              <span className="hover:text-foreground cursor-pointer transition-colors">General</span>
+              <span className="text-border">/</span>
+              <span className="text-foreground font-medium capitalize">{activeTab}</span>
+            </div>
           </div>
           
-          <button
-            onClick={handleSave}
-            disabled={saving}
-            className="bg-primary text-primary-foreground hover:bg-purple-700 text-foreground font-bold py-2 px-4 md:py-2.5 md:px-6 rounded-xl transition-all flex items-center gap-1 md:gap-2 disabled:opacity-50 shadow-sm flex-shrink-0"
-          >
-            {saving ? <RefreshCcw className="animate-spin w-4 h-4 md:w-5 md:h-5" /> : <Save className="w-4 h-4 md:w-5 md:h-5" />}
-            <span className="text-sm md:text-base hidden md:inline">{saving ? "Menyimpan..." : "Simpan Perubahan"}</span>
-            <span className="text-sm md:hidden">{saving ? "Simpan..." : "Simpan"}</span>
-          </button>
+          <div className="flex items-center gap-3">
+            <div className="hidden md:flex items-center relative">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="absolute left-3 top-2.5 text-muted-foreground"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+              <input type="text" placeholder="Search..." className="h-9 w-64 bg-accent/50 border border-transparent rounded-md pl-9 pr-12 text-sm focus:outline-none focus:border-border transition-colors" />
+              <div className="absolute right-1.5 top-1.5 flex items-center gap-1">
+                <span className="bg-background border border-border text-[10px] text-muted-foreground px-1.5 py-0.5 rounded shadow-sm">⌘K</span>
+              </div>
+            </div>
+
+            <button
+              onClick={handleSave}
+              disabled={saving}
+              className="h-9 px-4 bg-primary text-primary-foreground hover:bg-primary/90 rounded-md transition-colors text-sm font-medium flex items-center gap-2 disabled:opacity-50"
+            >
+              {saving ? <RefreshCcw className="animate-spin w-4 h-4" /> : <Save className="w-4 h-4" />}
+              <span className="hidden md:inline">{saving ? "Menyimpan..." : "Save"}</span>
+            </button>
+
+            <button className="w-8 h-8 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-accent rounded-md transition-colors">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"></path></svg>
+            </button>
+
+            <div className="w-8 h-8 rounded-full bg-accent border border-border flex items-center justify-center text-xs font-bold text-foreground overflow-hidden">
+              AD
+            </div>
+          </div>
         </header>
 
         {/* Scrollable Content */}
         <div className="flex-1 overflow-y-auto p-4 md:p-8 pb-24 md:pb-8">
-          <div className="max-w-4xl mx-auto space-y-6 md:space-y-8 pb-12">
+          <div className="max-w-6xl mx-auto space-y-4 md:space-y-6 pb-12">
             {activeTab === "overview" && (
               <>
+              <div className="flex items-center justify-between space-y-2">
+                <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
+                <div className="flex items-center space-x-2">
+                  <button className="bg-foreground text-background hover:bg-foreground/90 h-9 px-4 py-2 inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors">
+                    Download
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex items-center space-x-2 pb-2">
+                <div className="bg-muted text-muted-foreground h-9 items-center justify-center rounded-lg p-1 space-x-1 inline-flex">
+                  <button className="inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1 text-sm font-medium bg-background text-foreground shadow shadow-sm transition-all">Overview</button>
+                  <button className="inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1 text-sm font-medium transition-all hover:text-foreground">Analytics</button>
+                  <button className="hidden sm:inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1 text-sm font-medium transition-all hover:text-foreground">Reports</button>
+                  <button className="hidden sm:inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1 text-sm font-medium transition-all hover:text-foreground">Notifications</button>
+                </div>
+              </div>
+
               {/* KPI Metrics Grid */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-                <div className="bg-card  border border-border p-4 rounded-xl flex flex-col justify-center items-center text-center shadow-sm transition-transform hover:scale-105">
-                  <span className="text-muted-foreground text-[10px] md:text-xs uppercase tracking-wider mb-1">Token Aktif</span>
-                  <span className="text-2xl font-bold text-foreground">
-                    {tokens.filter(t => !t.expiresAt || t.expiresAt > Date.now()).length} 
-                    <span className="text-sm text-muted-foreground font-normal"> / {tokens.length}</span>
-                  </span>
-                </div>
-                <div className="bg-card  border border-border p-4 rounded-xl flex flex-col justify-center items-center text-center shadow-sm transition-transform hover:scale-105">
-                  <span className="text-muted-foreground text-[10px] md:text-xs uppercase tracking-wider mb-1">Slot TV Terpakai</span>
-                  <span className="text-2xl font-bold text-primary">
-                    {tokens.reduce((sum, t) => sum + (t.deviceIds?.length || (t.deviceId ? 1 : 0)), 0)} 
-                    <span className="text-sm text-muted-foreground font-normal"> / {tokens.reduce((sum, t) => sum + (t.maxDevices || 1), 0)}</span>
-                  </span>
-                </div>
-                <div className="bg-card  border border-border p-4 rounded-xl flex flex-col justify-center items-center text-center shadow-sm transition-transform hover:scale-105">
-                  <span className="text-muted-foreground text-[10px] md:text-xs uppercase tracking-wider mb-1">User Online</span>
-                  <div className="flex items-center gap-2">
-                    <div className="w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse shadow-sm"></div>
-                    <span className="text-2xl font-bold text-foreground">{activeUsersCount}</span>
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+                <div className="bg-card border border-border text-card-foreground rounded-xl shadow-sm">
+                  <div className="p-6 flex flex-row items-center justify-between space-y-0 pb-2">
+                    <h3 className="tracking-tight text-sm font-medium">Total Token Aktif</h3>
+                    <Key className="h-4 w-4 text-muted-foreground" />
+                  </div>
+                  <div className="p-6 pt-0">
+                    <div className="text-2xl font-bold">
+                      +{tokens.filter(t => !t.expiresAt || t.expiresAt > Date.now()).length}
+                    </div>
+                    <p className="text-xs text-muted-foreground">Dari total {tokens.length} token</p>
                   </div>
                 </div>
-                <div className="bg-card  border border-border p-4 rounded-xl flex flex-col justify-center items-center text-center shadow-sm transition-transform hover:scale-105">
-                  <span className="text-muted-foreground text-[10px] md:text-xs uppercase tracking-wider mb-1">Versi App</span>
-                  <span className="text-2xl font-bold text-blue-400">v{latestVersionCode}</span>
+
+                <div className="bg-card border border-border text-card-foreground rounded-xl shadow-sm">
+                  <div className="p-6 flex flex-row items-center justify-between space-y-0 pb-2">
+                    <h3 className="tracking-tight text-sm font-medium">Slot Terpakai</h3>
+                    <Tv className="h-4 w-4 text-muted-foreground" />
+                  </div>
+                  <div className="p-6 pt-0">
+                    <div className="text-2xl font-bold">
+                      +{tokens.reduce((sum, t) => sum + (t.deviceIds?.length || (t.deviceId ? 1 : 0)), 0)}
+                    </div>
+                    <p className="text-xs text-muted-foreground">Dari {tokens.reduce((sum, t) => sum + (t.maxDevices || 1), 0)} max perangkat</p>
+                  </div>
+                </div>
+
+                <div className="bg-card border border-border text-card-foreground rounded-xl shadow-sm">
+                  <div className="p-6 flex flex-row items-center justify-between space-y-0 pb-2">
+                    <h3 className="tracking-tight text-sm font-medium">User Online</h3>
+                    <Activity className="h-4 w-4 text-muted-foreground" />
+                  </div>
+                  <div className="p-6 pt-0">
+                    <div className="text-2xl font-bold flex items-center gap-2">
+                      +{activeUsersCount}
+                      <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse shadow-sm"></div>
+                    </div>
+                    <p className="text-xs text-muted-foreground">Sedang streaming saat ini</p>
+                  </div>
+                </div>
+
+                <div className="bg-card border border-border text-card-foreground rounded-xl shadow-sm">
+                  <div className="p-6 flex flex-row items-center justify-between space-y-0 pb-2">
+                    <h3 className="tracking-tight text-sm font-medium">Versi Aplikasi</h3>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4 text-muted-foreground"><path d="M22 12h-4l-3 9L9 3l-3 9H2"></path></svg>
+                  </div>
+                  <div className="p-6 pt-0">
+                    <div className="text-2xl font-bold">v{latestVersionCode}</div>
+                    <p className="text-xs text-muted-foreground">Pembaruan TV otomatis aktif</p>
+                  </div>
                 </div>
               </div>
               
-              {/* Geo Analytics Card */}
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7 mb-4">
+                {/* Card: Top Channels (col-span-4) */}
+                <div className="col-span-4 bg-card border border-border rounded-xl shadow-sm">
+                  <div className="p-6 pb-4">
+                    <h3 className="tracking-tight text-lg font-medium">Overview</h3>
+                  </div>
+                  <div className="p-6 pt-0">
+                    {channelStats.length === 0 ? (
+                      <div className="text-center text-muted-foreground py-10 text-sm">
+                        Belum ada data statistik channel.
+                      </div>
+                    ) : (
+                      <div className="space-y-6">
+                        {channelStats.map((stat, i) => (
+                          <div key={stat.name} className="flex items-center">
+                            <div className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold bg-accent text-muted-foreground mr-4">
+                              {i + 1}
+                            </div>
+                            <div className="flex-1 space-y-1">
+                              <p className="text-sm font-medium leading-none">{stat.name}</p>
+                              <p className="text-sm text-muted-foreground">Channel TV</p>
+                            </div>
+                            <div className="font-medium text-sm">
+                              +{stat.count} views
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Card: Analytics Dashboard / Active Users (col-span-3) */}
+                <div className="col-span-3 bg-card border border-border rounded-xl shadow-sm">
+                  <div className="p-6 pb-4">
+                    <h3 className="tracking-tight text-lg font-medium">Recent Users</h3>
+                    <p className="text-sm text-muted-foreground mt-1.5">Ada {activeUsersCount} perangkat sedang streaming saat ini.</p>
+                  </div>
+                  <div className="p-6 pt-0">
+                    <div className="space-y-6 max-h-[350px] overflow-y-auto pr-2">
+                      {activeUsers.length === 0 ? (
+                        <div className="text-center text-muted-foreground py-6 text-sm">Belum ada perangkat terhubung.</div>
+                      ) : (
+                        activeUsers.map((user, idx) => (
+                          <div key={idx} className="flex items-center">
+                            <span className="relative flex h-9 w-9 shrink-0 overflow-hidden rounded-full bg-accent items-center justify-center mr-4">
+                              <span className="font-semibold text-muted-foreground text-xs">{user.token ? user.token.substring(0, 2).toUpperCase() : "U"}</span>
+                            </span>
+                            <div className="flex-1 space-y-1 overflow-hidden">
+                              <p className="text-sm font-medium leading-none truncate">{user.token}</p>
+                              <p className="text-sm text-muted-foreground truncate">{user.channel}</p>
+                            </div>
+                            <div className="flex items-center gap-3">
+                              <div className="font-medium text-xs text-muted-foreground">
+                                {now ? Math.floor((now - user.lastSeen) / 1000) : 0}s
+                              </div>
+                              <button onClick={() => handleKick(user.token)} className="text-primary hover:text-foreground text-xs font-bold transition-colors">
+                                KICK
+                              </button>
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Geo Analytics Card (Full width below) */}
               {(() => {
                 const countryCounts: Record<string, number> = {};
                 activeUsers.forEach(u => {
@@ -568,109 +751,27 @@ export default function AdminPanel() {
                 };
 
                 return (
-                  <div className="bg-card  border-r border-border p-6 rounded-xl border border-border space-y-4 mb-8">
-                    <div className="flex items-center gap-3 border-b border-border pb-4">
-                      <Globe className="text-blue-500" />
-                      <h2 className="text-lg font-semibold">Distribusi Lokasi Penonton</h2>
+                  <div className="bg-card rounded-xl border border-border shadow-sm mb-8 mt-4">
+                    <div className="p-6 pb-4">
+                      <h3 className="tracking-tight text-lg font-medium">Distribusi Lokasi</h3>
                     </div>
-                    {sortedCountries.length === 0 ? (
-                      <div className="text-center text-muted-foreground py-4 text-sm bg-card rounded-xl">Belum ada data lokasi (user offline).</div>
-                    ) : (
-                      <div className="space-y-3">
-                        {sortedCountries.map(([code, count], i) => (
-                          <div key={code} className="flex items-center justify-between bg-card p-3 rounded-xl border border-border">
-                            <div className="flex items-center gap-3">
-                              <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold ${i === 0 ? 'bg-blue-500/20 text-blue-400' : i === 1 ? 'bg-gray-400/20 text-muted-foreground' : i === 2 ? 'bg-orange-600/20 text-orange-500' : 'bg-accent text-muted-foreground'}`}>
-                                #{i + 1}
-                              </div>
-                              <span className="font-medium text-card-foreground">{getCountryName(code)}</span>
+                    <div className="p-6 pt-0">
+                      {sortedCountries.length === 0 ? (
+                        <div className="text-center text-muted-foreground py-4 text-sm">Belum ada data lokasi.</div>
+                      ) : (
+                        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                          {sortedCountries.map(([code, count], i) => (
+                            <div key={code} className="flex flex-col items-center justify-center bg-accent/50 py-4 px-2 rounded-xl border border-border">
+                              <span className="font-bold text-card-foreground text-md text-center">{getCountryName(code)}</span>
+                              <span className="text-xs text-muted-foreground mt-1">{count} Perangkat</span>
                             </div>
-                            <div className="text-sm font-bold bg-accent px-3 py-1 rounded-lg text-card-foreground">
-                              {count} Perangkat
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 );
               })()}
-
-              {/* Card: Top Channels */}
-              <div className="bg-card  border-r border-border p-6 rounded-xl border border-border space-y-4 mb-8">
-                <div className="flex items-center gap-3 border-b border-border pb-4">
-                  <TrendingUp className="text-primary" />
-                  <h2 className="text-lg font-semibold">Top 5 Channel Terpopuler</h2>
-                </div>
-                {channelStats.length === 0 ? (
-                  <div className="text-center text-muted-foreground py-4 text-sm bg-card rounded-xl">
-                    Belum ada data statistik channel.
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    {channelStats.map((stat, i) => (
-                      <div key={stat.name} className="flex items-center justify-between bg-card p-3 rounded-xl border border-border">
-                        <div className="flex items-center gap-3">
-                          <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold ${i === 0 ? 'bg-yellow-500/20 text-yellow-500' : i === 1 ? 'bg-gray-400/20 text-muted-foreground' : i === 2 ? 'bg-orange-600/20 text-orange-500' : 'bg-accent text-muted-foreground'}`}>
-                            #{i + 1}
-                          </div>
-                          <span className="font-medium text-card-foreground">{stat.name}</span>
-                        </div>
-                        <div className="text-sm font-bold bg-accent px-3 py-1 rounded-lg">
-                          {stat.count} klik
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Card 0: Analytics Dashboard */}
-          <div className="bg-card p-6 rounded-xl border border-border space-y-4">
-            <div className="flex items-center justify-between border-b border-border pb-4">
-              <div className="flex items-center gap-3">
-                <Activity className="text-blue-400" />
-                <h2 className="text-lg font-semibold text-card-foreground">Analitik Pengguna Aktif</h2>
-              </div>
-              <div className="flex items-center gap-2 bg-blue-500/20 text-blue-300 px-3 py-1.5 rounded-xl font-bold">
-                <Users className="w-4 h-4" />
-                <span>{activeUsersCount} Online</span>
-              </div>
-            </div>
-            
-            <div className="bg-muted rounded-xl p-4 min-h-[100px] max-h-64 overflow-y-auto">
-              {activeUsers.length === 0 ? (
-                <div className="text-center text-muted-foreground py-6">Belum ada perangkat TV yang terhubung saat ini.</div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {activeUsers.map((user, idx) => (
-                    <div key={idx} className="flex items-center justify-between bg-card p-3 rounded-lg border border-border">
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <div className="font-mono text-sm text-yellow-400 font-bold">{user.token}</div>
-                          {user.isTv ? (
-                            <span className="text-[10px] bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded border border-border">📺 TV</span>
-                          ) : (
-                            <span className="text-[10px] bg-green-500/20 text-green-400 px-2 py-0.5 rounded border border-green-500/20">📱 Mobile</span>
-                          )}
-                        </div>
-                        <div className="text-xs text-muted-foreground mt-1">📺 Menonton: <span className="text-foreground">{user.channel}</span></div>
-                        <div className="text-[10px] text-muted-foreground mt-1 capitalize">{user.deviceBrand || "Unknown"} • {user.deviceModel || "Unknown"}</div>
-                      </div>
-                      <div className="flex gap-2 items-center">
-                        <div className="text-xs font-bold text-muted-foreground">
-                          {now ? Math.floor((now - user.lastSeen) / 1000) : 0}s lalu
-                        </div>
-                        <button onClick={() => handleKick(user.token)} className="text-primary hover:text-foreground bg-purple-500/10 hover:bg-purple-500/50 p-1.5 rounded-lg text-xs font-bold transition-colors">
-                          KICK
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
               </>
             )}
             {activeTab === "analytics" && (
