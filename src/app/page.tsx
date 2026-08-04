@@ -646,8 +646,16 @@ export default function AdminPanel() {
                   {activeUsers.map((user, idx) => (
                     <div key={idx} className="flex items-center justify-between bg-white/5 p-3 rounded-lg border border-white/5">
                       <div>
-                        <div className="font-mono text-sm text-yellow-400 font-bold">{user.token}</div>
+                        <div className="flex items-center gap-2">
+                          <div className="font-mono text-sm text-yellow-400 font-bold">{user.token}</div>
+                          {user.isTv ? (
+                            <span className="text-[10px] bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded border border-blue-500/20">📺 TV</span>
+                          ) : (
+                            <span className="text-[10px] bg-green-500/20 text-green-400 px-2 py-0.5 rounded border border-green-500/20">📱 Mobile</span>
+                          )}
+                        </div>
                         <div className="text-xs text-gray-400 mt-1">📺 Menonton: <span className="text-white">{user.channel}</span></div>
+                        <div className="text-[10px] text-gray-500 mt-1 capitalize">{user.deviceBrand || "Unknown"} • {user.deviceModel || "Unknown"}</div>
                       </div>
                       <div className="flex gap-2 items-center">
                         <div className="text-xs font-bold text-gray-500">
@@ -736,6 +744,46 @@ export default function AdminPanel() {
                            ));
                       })()}
                     </div>
+                  </div>
+                </div>
+
+                <div className="bg-white/5 backdrop-blur-xl border border-white/10 p-6 rounded-3xl overflow-hidden flex flex-col">
+                  <h3 className="text-md font-medium text-gray-400 mb-4 border-b border-white/5 pb-2">Detail Perangkat Pengguna Aktif</h3>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm text-left">
+                      <thead className="text-xs text-gray-400 uppercase bg-white/5">
+                        <tr>
+                          <th className="px-4 py-3 rounded-tl-lg">Token</th>
+                          <th className="px-4 py-3">Tipe</th>
+                          <th className="px-4 py-3">Merek & Model</th>
+                          <th className="px-4 py-3 rounded-tr-lg">Aktivitas</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {activeUsers.map((u, idx) => (
+                          <tr key={idx} className="border-b border-white/5 hover:bg-white/5">
+                            <td className="px-4 py-3 font-mono text-yellow-400 font-bold">{u.token}</td>
+                            <td className="px-4 py-3">
+                              {u.isTv ? (
+                                <span className="text-xs bg-blue-500/20 text-blue-400 px-2 py-1 rounded-full">Smart TV</span>
+                              ) : (
+                                <span className="text-xs bg-green-500/20 text-green-400 px-2 py-1 rounded-full">Mobile</span>
+                              )}
+                            </td>
+                            <td className="px-4 py-3 capitalize">
+                              <div className="font-semibold text-gray-300">{u.deviceBrand || "-"}</div>
+                              <div className="text-xs text-gray-500 uppercase">{u.deviceModel || "-"}</div>
+                            </td>
+                            <td className="px-4 py-3 text-gray-300">{u.channel}</td>
+                          </tr>
+                        ))}
+                        {activeUsers.length === 0 && (
+                          <tr>
+                            <td colSpan={4} className="text-center py-6 text-gray-500">Belum ada pengguna aktif</td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
                   </div>
                 </div>
               </div>
