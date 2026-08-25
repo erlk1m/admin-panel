@@ -19,12 +19,30 @@ export async function GET() {
     const messages = [];
     if (data && typeof data === 'object') {
       for (const key in data) {
-        messages.push({ id: key, ...data[key] });
+        const item = data[key];
+        if (item && typeof item === 'object') {
+          const rawSender = item.sender || "User|ID|👤|#FFFFFF|USER";
+          const rawMessage = item.message;
+          messages.push({
+            id: String(key),
+            ...item,
+            sender: typeof rawSender === 'string' ? rawSender : (typeof rawSender === 'object' ? JSON.stringify(rawSender) : String(rawSender || 'User')),
+            message: typeof rawMessage === 'string' ? rawMessage : (typeof rawMessage === 'object' && rawMessage !== null ? ((rawMessage as any).text || (rawMessage as any).msg || JSON.stringify(rawMessage)) : String(rawMessage || '')),
+            timestamp: typeof item.timestamp === 'number' ? item.timestamp : (Number(item.timestamp) || Date.now())
+          });
+        } else if (typeof item === 'string') {
+          messages.push({
+            id: String(key),
+            sender: "User|ID|👤|#FFFFFF|USER",
+            message: item,
+            timestamp: Date.now()
+          });
+        }
       }
     }
     
     // Sort by timestamp
-    messages.sort((a, b) => a.timestamp - b.timestamp);
+    messages.sort((a, b) => (Number(a.timestamp) || 0) - (Number(b.timestamp) || 0));
     
     return NextResponse.json(messages, {
       headers: {

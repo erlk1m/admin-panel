@@ -24,6 +24,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Database tidak ditemukan" }, { status: 404 });
     }
 
+    if (data.tokens && !Array.isArray(data.tokens) && typeof data.tokens === 'object') {
+      data.tokens = Object.values(data.tokens);
+    }
+
     if (!data.tokens || !Array.isArray(data.tokens)) {
       data.tokens = [];
     }

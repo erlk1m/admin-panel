@@ -23,7 +23,15 @@ export async function POST(request: Request) {
     });
     const data = await getRes.json();
 
-    if (!data || !data.tokens || !Array.isArray(data.tokens)) {
+    if (!data) {
+      return NextResponse.json({ error: "Token tidak ditemukan" }, { status: 404 });
+    }
+
+    if (data.tokens && !Array.isArray(data.tokens) && typeof data.tokens === 'object') {
+      data.tokens = Object.values(data.tokens);
+    }
+
+    if (!data.tokens || !Array.isArray(data.tokens)) {
       return NextResponse.json({ error: "Token tidak ditemukan" }, { status: 404 });
     }
 

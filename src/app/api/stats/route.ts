@@ -53,7 +53,23 @@ export async function GET() {
       return NextResponse.json({ error: "Failed to fetch stats" }, { status: 500 });
     }
     const data = await res.json();
-    return NextResponse.json(data || {});
+    
+    const cleanStats: Record<string, number> = {};
+    if (data && typeof data === 'object') {
+      for (const key in data) {
+        const val = data[key];
+        if (typeof val === 'number') {
+          cleanStats[key] = val;
+        } else if (typeof val === 'string') {
+          cleanStats[key] = Number(val) || 0;
+        } else if (typeof val === 'object' && val !== null) {
+          cleanStats[key] = Number((val as any).count || (val as any).views || (val as any).total || 0) || 0;
+        } else {
+          cleanStats[key] = 0;
+        }
+      }
+    }
+    return NextResponse.json(cleanStats);
   } catch (error) {
     console.error("Stats GET API Error:", error);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });

@@ -26,16 +26,22 @@ export async function GET() {
     if (data && typeof data === 'object') {
       for (const token in data) {
         const userPresence = data[token];
-        const lastSeenTime = userPresence.lastActive || userPresence.lastSeen;
+        if (!userPresence || typeof userPresence !== 'object') continue;
+        const lastSeenTime = Number(userPresence.lastActive || userPresence.lastSeen || 0);
         // Cek apakah lastActive masih dalam rentang 60 detik terakhir
         if (lastSeenTime && (now - lastSeenTime) <= threshold) {
+          const rawChannel = userPresence.activity || userPresence.channel || "Lainnya";
+          const rawCountry = userPresence.country || "ID";
+          const rawBrand = userPresence.deviceBrand || "Unknown";
+          const rawModel = userPresence.deviceModel || "Unknown";
+
           activeUsers.push({
-            token: token,
-            channel: userPresence.activity || userPresence.channel || "Lainnya",
-            country: userPresence.country || "ID",
-            deviceBrand: userPresence.deviceBrand || "Unknown",
-            deviceModel: userPresence.deviceModel || "Unknown",
-            isTv: userPresence.isTv || false,
+            token: String(token),
+            channel: typeof rawChannel === 'string' ? rawChannel : (typeof rawChannel === 'object' && rawChannel !== null ? ((rawChannel as any).name || (rawChannel as any).title || JSON.stringify(rawChannel)) : String(rawChannel)),
+            country: typeof rawCountry === 'string' ? rawCountry : String(rawCountry || "ID"),
+            deviceBrand: typeof rawBrand === 'string' ? rawBrand : String(rawBrand || "Unknown"),
+            deviceModel: typeof rawModel === 'string' ? rawModel : String(rawModel || "Unknown"),
+            isTv: Boolean(userPresence.isTv),
             lastSeen: lastSeenTime
           });
         }

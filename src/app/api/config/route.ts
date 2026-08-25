@@ -14,8 +14,31 @@ export async function GET() {
       headers: { 'Cache-Control': 'no-cache, no-store, must-revalidate' }
     });
     const data = await res.json();
+    const configData = data && typeof data === 'object' ? { ...data } : {};
+
+    // Normalize tokens if object
+    if (configData.tokens && !Array.isArray(configData.tokens) && typeof configData.tokens === 'object') {
+      configData.tokens = Object.entries(configData.tokens).map(([key, val]: [string, any]) => {
+        if (typeof val === 'string') {
+          return { code: val || key, expiresAt: null, label: "Lifetime" };
+        } else if (typeof val === 'object' && val !== null) {
+          return {
+            ...val,
+            code: typeof val.code === 'string' ? val.code : key,
+            label: typeof val.label === 'string' ? val.label : "Lifetime",
+            expiresAt: typeof val.expiresAt === 'number' ? val.expiresAt : (Number(val.expiresAt) || null)
+          };
+        }
+        return { code: key, expiresAt: null, label: "Lifetime" };
+      });
+    }
+
+    // Normalize customChannels if object
+    if (configData.customChannels && !Array.isArray(configData.customChannels) && typeof configData.customChannels === 'object') {
+      configData.customChannels = Object.values(configData.customChannels);
+    }
     
-    return NextResponse.json(data || {}, {
+    return NextResponse.json(configData, {
       headers: {
         'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
         'Pragma': 'no-cache',

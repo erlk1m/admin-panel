@@ -1,7 +1,77 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Component, ErrorInfo, ReactNode } from "react";
 import { Tv, ShieldAlert, Key, Save, Globe, RefreshCcw, Bell, AlertTriangle, Image as ImageIcon, MessageSquare, Trash2, Send, Activity, Users, PlaySquare, TrendingUp, PieChart } from "lucide-react";
+
+interface ErrorBoundaryProps {
+  children: ReactNode;
+}
+
+interface ErrorBoundaryState {
+  hasError: boolean;
+  error: Error | null;
+}
+
+class DashboardErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
+  constructor(props: ErrorBoundaryProps) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error: Error): ErrorBoundaryState {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    console.error("Dashboard Error caught:", error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="p-8 bg-card rounded-xl border border-red-500/50 text-foreground my-4 space-y-4">
+          <div className="flex items-center gap-3 text-red-400">
+            <AlertTriangle className="w-6 h-6" />
+            <h3 className="text-lg font-bold">Terjadi Kesalahan Tampilan Data</h3>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            {this.state.error?.message || "Data dari Firebase sedang tidak sinkron. Klik tombol di bawah untuk memuat ulang."}
+          </p>
+          <button
+            onClick={() => this.setState({ hasError: false, error: null })}
+            className="px-4 py-2 bg-primary text-primary-foreground text-sm font-medium rounded-lg hover:opacity-90 transition-opacity"
+          >
+            Muat Ulang Tampilan
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+const safeDecode = (str: string) => {
+  try {
+    return decodeURIComponent(str);
+  } catch {
+    return String(str || '');
+  }
+};
+
+const formatDateSafe = (timestamp: any) => {
+  if (!timestamp) return "";
+  const num = Number(timestamp);
+  if (isNaN(num) || num <= 0) return "";
+  try {
+    const d = new Date(num);
+    if (isNaN(d.getTime())) return "";
+    return d.toLocaleString('id-ID');
+  } catch {
+    return "";
+  }
+};
+
+const isCustomEffect = (effect: any) => typeof effect === 'string' && effect.startsWith('http');
 
 export default function AdminPanel() {
   const [adminPassword, setAdminPassword] = useState("");
@@ -94,48 +164,94 @@ export default function AdminPanel() {
     fetch("/api/config")
       .then((res) => res.json())
       .then((data) => {
-        if (data) {
-          setM3uUrl(data.m3uUrl || "");
-          setM3uUrl2(data.m3uUrl2 || "");
-          setM3uUrl3(data.m3uUrl3 || "");
-          setM3uName(data.m3uName || "");
-          setM3uName2(data.m3uName2 || "");
-          setM3uName3(data.m3uName3 || "");
-          setEpgUrl(data.epgUrl || "");
-          setProxyUrl(data.proxyUrl || "");
-          setCustomChannels(data.customChannels || []);
+        if (data && typeof data === 'object') {
+          setM3uUrl(typeof data.m3uUrl === 'string' ? data.m3uUrl : "");
+          setM3uUrl2(typeof data.m3uUrl2 === 'string' ? data.m3uUrl2 : "");
+          setM3uUrl3(typeof data.m3uUrl3 === 'string' ? data.m3uUrl3 : "");
+          setM3uName(typeof data.m3uName === 'string' ? data.m3uName : "");
+          setM3uName2(typeof data.m3uName2 === 'string' ? data.m3uName2 : "");
+          setM3uName3(typeof data.m3uName3 === 'string' ? data.m3uName3 : "");
+          setEpgUrl(typeof data.epgUrl === 'string' ? data.epgUrl : "");
+          setProxyUrl(typeof data.proxyUrl === 'string' ? data.proxyUrl : "");
+
+          let rawChannels: any[] = [];
+          if (data.customChannels) {
+            if (Array.isArray(data.customChannels)) {
+              rawChannels = data.customChannels;
+            } else if (typeof data.customChannels === 'object') {
+              rawChannels = Object.values(data.customChannels);
+            }
+          }
+          const safeChannels: CustomChannel[] = rawChannels.map((c: any) => ({
+            id: String(c.id || "cc_" + Math.random()),
+            name: typeof c.name === 'string' ? c.name : (typeof c.name === 'object' ? JSON.stringify(c.name) : String(c.name || '')),
+            type: typeof c.type === 'string' ? c.type : 'direct',
+            streamUrl: typeof c.streamUrl === 'string' ? c.streamUrl : (typeof c.streamUrl === 'object' ? JSON.stringify(c.streamUrl) : String(c.streamUrl || '')),
+            group: typeof c.group === 'string' ? c.group : (c.group ? String(c.group) : undefined),
+            logoUrl: typeof c.logoUrl === 'string' ? c.logoUrl : undefined,
+            licenseKey: typeof c.licenseKey === 'string' ? c.licenseKey : undefined,
+            licenseType: typeof c.licenseType === 'string' ? c.licenseType : undefined,
+            userAgent: typeof c.userAgent === 'string' ? c.userAgent : undefined,
+            referer: typeof c.referer === 'string' ? c.referer : undefined,
+            tvgId: typeof c.tvgId === 'string' ? c.tvgId : undefined,
+          }));
+          setCustomChannels(safeChannels);
           
           // Migrasi otomatis jika masih pakai accessCode lama
-          if (data.tokens && Array.isArray(data.tokens)) {
-            const mappedTokens = data.tokens.map((t: TokenObject | string) => {
-              if (typeof t === 'string') {
-                return { code: t, expiresAt: null, label: "Lifetime" };
-              }
-              return t;
-            });
-            setTokens(mappedTokens);
+          let rawTokens: any[] = [];
+          if (data.tokens) {
+            if (Array.isArray(data.tokens)) {
+              rawTokens = data.tokens;
+            } else if (typeof data.tokens === 'object') {
+              rawTokens = Object.entries(data.tokens).map(([key, val]: [string, any]) => {
+                if (typeof val === 'string') return { code: val || key, expiresAt: null, label: "Lifetime" };
+                if (typeof val === 'object' && val !== null) return { ...val, code: typeof val.code === 'string' ? val.code : key };
+                return { code: key, expiresAt: null, label: "Lifetime" };
+              });
+            }
           } else if (data.accessCode) {
-            setTokens([{ code: data.accessCode, expiresAt: null, label: "Lifetime" }]);
-          } else {
-            setTokens([]);
+            rawTokens = [{ code: typeof data.accessCode === 'string' ? data.accessCode : String(data.accessCode), expiresAt: null, label: "Lifetime" }];
           }
 
-          setNotificationText(data.notificationText || "");
-          setNotificationColor(data.notificationColor || "#FFFFFF");
-          setNotificationEnabled(data.notificationEnabled || false);
-          setBackgroundUrl(data.backgroundUrl || "");
-          setWelcomeBannerUrl(data.welcomeBannerUrl || "");
-          setLatestVersionCode(data.latestVersionCode || 1);
-          setApkUpdateUrl(data.apkUpdateUrl || "");
-          setAdminContactUrl(data.adminContactUrl || "");
-          setIsMaintenance(data.isMaintenance || false);
-          setPrerollAdUrl(data.prerollAdUrl || "");
-          setPrerollAdEnabled(data.prerollAdEnabled || false);
+          const mappedTokens: TokenObject[] = rawTokens.map((t: any) => {
+            if (typeof t === 'string') {
+              return { code: t, expiresAt: null, label: "Lifetime" };
+            }
+            if (t && typeof t === 'object') {
+              return {
+                ...t,
+                code: typeof t.code === 'string' ? t.code : String(t.code || ''),
+                label: typeof t.label === 'string' ? t.label : (typeof t.label === 'object' ? JSON.stringify(t.label) : String(t.label || 'Lifetime')),
+                expiresAt: typeof t.expiresAt === 'number' ? t.expiresAt : (Number(t.expiresAt) || null),
+                maxDevices: typeof t.maxDevices === 'number' ? t.maxDevices : (Number(t.maxDevices) || 1),
+                deviceId: typeof t.deviceId === 'string' ? t.deviceId : String(t.deviceId || ''),
+                deviceIds: Array.isArray(t.deviceIds) ? t.deviceIds.map(String) : [],
+                isTrial: Boolean(t.isTrial),
+                badgeIcon: typeof t.badgeIcon === 'string' ? t.badgeIcon : String(t.badgeIcon || ''),
+                badgeColor: typeof t.badgeColor === 'string' ? t.badgeColor : String(t.badgeColor || '#FFD700'),
+                nameEffect: typeof t.nameEffect === 'string' ? t.nameEffect : String(t.nameEffect || 'NONE'),
+              };
+            }
+            return { code: String(t || ''), expiresAt: null, label: "Lifetime" };
+          });
+          setTokens(mappedTokens);
+
+          setNotificationText(typeof data.notificationText === 'string' ? data.notificationText : (typeof data.notificationText === 'object' ? JSON.stringify(data.notificationText) : String(data.notificationText || "")));
+          setNotificationColor(typeof data.notificationColor === 'string' ? data.notificationColor : "#FFFFFF");
+          setNotificationEnabled(Boolean(data.notificationEnabled));
+          setBackgroundUrl(typeof data.backgroundUrl === 'string' ? data.backgroundUrl : "");
+          setWelcomeBannerUrl(typeof data.welcomeBannerUrl === 'string' ? data.welcomeBannerUrl : "");
+          setLatestVersionCode(typeof data.latestVersionCode === 'number' ? data.latestVersionCode : (Number(data.latestVersionCode) || 1));
+          setApkUpdateUrl(typeof data.apkUpdateUrl === 'string' ? data.apkUpdateUrl : "");
+          setAdminContactUrl(typeof data.adminContactUrl === 'string' ? data.adminContactUrl : "");
+          setIsMaintenance(Boolean(data.isMaintenance));
+          setPrerollAdUrl(typeof data.prerollAdUrl === 'string' ? data.prerollAdUrl : "");
+          setPrerollAdEnabled(Boolean(data.prerollAdEnabled));
           setChatEnabled(data.chatEnabled !== false); // default true if not set
-          setAdminBadgeIcon(data.adminBadgeIcon || "🔧");
-          setAdminBadgeColor(data.adminBadgeColor || "#FF00FF");
-          setAdminNameEffect(data.adminNameEffect || "NONE");
-          setAppName(data.appName || "KIMTV");
+          setAdminBadgeIcon(typeof data.adminBadgeIcon === 'string' ? data.adminBadgeIcon : "🔧");
+          setAdminBadgeColor(typeof data.adminBadgeColor === 'string' ? data.adminBadgeColor : "#FF00FF");
+          setAdminNameEffect(typeof data.adminNameEffect === 'string' ? data.adminNameEffect : "NONE");
+          setAppName(typeof data.appName === 'string' ? data.appName : (typeof data.appName === 'object' ? JSON.stringify(data.appName) : String(data.appName || "KIMTV")));
         }
         setLoading(false);
       })
@@ -170,7 +286,15 @@ export default function AdminPanel() {
         fetch("/api/chats")
           .then(res => res.json())
           .then(data => {
-            if (Array.isArray(data)) setChatMessages(data);
+            if (Array.isArray(data)) {
+              const safeMessages = data.map((msg: any) => ({
+                id: String(msg.id || Math.random()),
+                sender: typeof msg.sender === 'string' ? msg.sender : (typeof msg.sender === 'object' ? JSON.stringify(msg.sender) : String(msg.sender || 'User')),
+                message: typeof msg.message === 'string' ? msg.message : (typeof msg.message === 'object' && msg.message !== null ? (msg.message.text || msg.message.msg || JSON.stringify(msg.message)) : String(msg.message || '')),
+                timestamp: typeof msg.timestamp === 'number' ? msg.timestamp : (Number(msg.timestamp) || Date.now())
+              }));
+              setChatMessages(safeMessages);
+            }
           })
           .catch(() => {});
       };
@@ -178,9 +302,18 @@ export default function AdminPanel() {
         fetch("/api/presence")
           .then(res => res.json())
           .then(data => {
-            if (data.users) {
-              setActiveUsers(data.users);
-              setActiveUsersCount(data.count);
+            if (data && data.users && Array.isArray(data.users)) {
+              const safeUsers = data.users.map((u: any) => ({
+                token: String(u.token || ''),
+                channel: typeof u.channel === 'string' ? u.channel : (typeof u.channel === 'object' && u.channel !== null ? (u.channel.name || u.channel.title || JSON.stringify(u.channel)) : String(u.channel || 'Lainnya')),
+                country: typeof u.country === 'string' ? u.country : String(u.country || 'ID'),
+                deviceBrand: typeof u.deviceBrand === 'string' ? u.deviceBrand : String(u.deviceBrand || 'Unknown'),
+                deviceModel: typeof u.deviceModel === 'string' ? u.deviceModel : String(u.deviceModel || 'Unknown'),
+                isTv: Boolean(u.isTv),
+                lastSeen: typeof u.lastSeen === 'number' ? u.lastSeen : (Number(u.lastSeen) || Date.now())
+              }));
+              setActiveUsers(safeUsers);
+              setActiveUsersCount(typeof data.count === 'number' ? data.count : safeUsers.length);
             }
           })
           .catch(() => {});
@@ -189,11 +322,22 @@ export default function AdminPanel() {
         fetch("/api/stats")
           .then(res => res.json())
           .then(data => {
-            if (data && !data.error) {
-              const statsArray = Object.keys(data).map(key => ({
-                name: decodeURIComponent(key),
-                count: data[key]
-              }));
+            if (data && !data.error && typeof data === 'object') {
+              const statsArray = Object.keys(data).map(key => {
+                const val = data[key];
+                let count = 0;
+                if (typeof val === 'number') {
+                  count = val;
+                } else if (typeof val === 'string') {
+                  count = Number(val) || 0;
+                } else if (typeof val === 'object' && val !== null) {
+                  count = Number(val.count || val.views || val.total || 0) || 0;
+                }
+                return {
+                  name: typeof key === 'string' ? safeDecode(key) : String(key || ''),
+                  count: count
+                };
+              });
               statsArray.sort((a, b) => b.count - a.count);
               setChannelStats(statsArray.slice(0, 5));
             }
@@ -594,8 +738,9 @@ export default function AdminPanel() {
 
         {/* Scrollable Content */}
         <div className="flex-1 overflow-y-auto p-4 md:p-8 pb-24 md:pb-8">
-          <div className="max-w-6xl mx-auto space-y-4 md:space-y-6 pb-12">
-            {activeTab === "overview" && (
+          <DashboardErrorBoundary>
+            <div className="max-w-6xl mx-auto space-y-4 md:space-y-6 pb-12">
+              {activeTab === "overview" && (
               <>
               <div className="flex items-center justify-between space-y-2">
                 <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
@@ -637,9 +782,9 @@ export default function AdminPanel() {
                   </div>
                   <div className="p-6 pt-0">
                     <div className="text-2xl font-bold">
-                      +{tokens.reduce((sum, t) => sum + (t.deviceIds?.length || (t.deviceId ? 1 : 0)), 0)}
+                      +{tokens.reduce((sum, t) => sum + (Array.isArray(t.deviceIds) ? t.deviceIds.length : (t.deviceId ? 1 : 0)), 0)}
                     </div>
-                    <p className="text-xs text-muted-foreground">Dari {tokens.reduce((sum, t) => sum + (t.maxDevices || 1), 0)} max perangkat</p>
+                    <p className="text-xs text-muted-foreground">Dari {tokens.reduce((sum, t) => sum + (Number(t.maxDevices) || 1), 0)} max perangkat</p>
                   </div>
                 </div>
 
@@ -663,7 +808,7 @@ export default function AdminPanel() {
                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4 text-muted-foreground"><path d="M22 12h-4l-3 9L9 3l-3 9H2"></path></svg>
                   </div>
                   <div className="p-6 pt-0">
-                    <div className="text-2xl font-bold">v{latestVersionCode}</div>
+                    <div className="text-2xl font-bold">v{typeof latestVersionCode === 'number' || typeof latestVersionCode === 'string' ? latestVersionCode : 1}</div>
                     <p className="text-xs text-muted-foreground">Pembaruan TV otomatis aktif</p>
                   </div>
                 </div>
@@ -683,16 +828,16 @@ export default function AdminPanel() {
                     ) : (
                       <div className="space-y-6">
                         {channelStats.map((stat, i) => (
-                          <div key={stat.name} className="flex items-center">
+                          <div key={stat.name || i} className="flex items-center">
                             <div className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold bg-accent text-muted-foreground mr-4">
                               {i + 1}
                             </div>
                             <div className="flex-1 space-y-1">
-                              <p className="text-sm font-medium leading-none">{stat.name}</p>
+                              <p className="text-sm font-medium leading-none">{typeof stat.name === 'string' ? stat.name : String(stat.name || '')}</p>
                               <p className="text-sm text-muted-foreground">Channel TV</p>
                             </div>
                             <div className="font-medium text-sm">
-                              +{stat.count} views
+                              +{typeof stat.count === 'number' ? stat.count : (Number(stat.count) || 0)} views
                             </div>
                           </div>
                         ))}
@@ -715,15 +860,15 @@ export default function AdminPanel() {
                         activeUsers.map((user, idx) => (
                           <div key={idx} className="flex items-center">
                             <span className="relative flex h-9 w-9 shrink-0 overflow-hidden rounded-full bg-accent items-center justify-center mr-4">
-                              <span className="font-semibold text-muted-foreground text-xs">{user.token ? user.token.substring(0, 2).toUpperCase() : "U"}</span>
+                              <span className="font-semibold text-muted-foreground text-xs">{typeof user.token === 'string' && user.token ? user.token.substring(0, 2).toUpperCase() : "U"}</span>
                             </span>
                             <div className="flex-1 space-y-1 overflow-hidden">
-                              <p className="text-sm font-medium leading-none truncate">{user.token}</p>
-                              <p className="text-sm text-muted-foreground truncate">{user.channel}</p>
+                              <p className="text-sm font-medium leading-none truncate">{typeof user.token === 'string' ? user.token : String(user.token || '')}</p>
+                              <p className="text-sm text-muted-foreground truncate">{typeof user.channel === 'string' ? user.channel : (typeof user.channel === 'object' ? JSON.stringify(user.channel) : String(user.channel || ''))}</p>
                             </div>
                             <div className="flex items-center gap-3">
                               <div className="font-medium text-xs text-muted-foreground">
-                                {now ? Math.floor((now - user.lastSeen) / 1000) : 0}s
+                                {now ? Math.floor((now - (Number(user.lastSeen) || 0)) / 1000) : 0}s
                               </div>
                               <button onClick={() => handleKick(user.token)} className="text-primary hover:text-foreground text-xs font-bold transition-colors">
                                 KICK
@@ -741,13 +886,15 @@ export default function AdminPanel() {
               {(() => {
                 const countryCounts: Record<string, number> = {};
                 activeUsers.forEach(u => {
-                  const code = u.country || "ID";
+                  const rawCode = typeof u.country === 'string' ? u.country : String(u.country || "ID");
+                  const code = rawCode.toUpperCase();
                   countryCounts[code] = (countryCounts[code] || 0) + 1;
                 });
                 const sortedCountries = Object.entries(countryCounts).sort((a, b) => b[1] - a[1]).slice(0, 5);
                 const getCountryName = (c: string) => {
+                  const safeCode = typeof c === 'string' ? c : String(c || '');
                   const map: Record<string, string> = { ID: "Indonesia", MY: "Malaysia", SG: "Singapura", US: "Amerika Serikat", AU: "Australia" };
-                  return map[c.toUpperCase()] || c.toUpperCase();
+                  return map[safeCode.toUpperCase()] || safeCode.toUpperCase();
                 };
 
                 return (
@@ -760,7 +907,7 @@ export default function AdminPanel() {
                         <div className="text-center text-muted-foreground py-4 text-sm">Belum ada data lokasi.</div>
                       ) : (
                         <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                          {sortedCountries.map(([code, count], i) => (
+                          {sortedCountries.map(([code, count]) => (
                             <div key={code} className="flex flex-col items-center justify-center bg-accent/50 py-4 px-2 rounded-xl border border-border">
                               <span className="font-bold text-card-foreground text-md text-center">{getCountryName(code)}</span>
                               <span className="text-xs text-muted-foreground mt-1">{count} Perangkat</span>
@@ -809,7 +956,7 @@ export default function AdminPanel() {
                       {(() => {
                          const brands: Record<string, number> = {};
                          activeUsers.forEach(u => {
-                           const brand = u.deviceBrand || "Unknown";
+                           const brand = typeof u.deviceBrand === 'string' ? u.deviceBrand : String(u.deviceBrand || "Unknown");
                            brands[brand] = (brands[brand] || 0) + 1;
                          });
                          return Object.entries(brands)
@@ -817,7 +964,7 @@ export default function AdminPanel() {
                            .slice(0, 5)
                            .map(([brand, count], idx) => (
                              <div key={idx} className="flex justify-between items-center bg-card p-3 rounded-lg border border-border hover:bg-accent transition-colors">
-                               <span className="capitalize">{brand}</span>
+                               <span className="capitalize">{String(brand)}</span>
                                <span className="bg-blue-500/20 border border-blue-500/30 text-blue-400 px-3 py-1 rounded-full text-xs font-bold">{count} User</span>
                              </div>
                            ));
@@ -831,7 +978,7 @@ export default function AdminPanel() {
                       {(() => {
                          const models: Record<string, number> = {};
                          activeUsers.forEach(u => {
-                           const model = u.deviceModel || "Unknown";
+                           const model = typeof u.deviceModel === 'string' ? u.deviceModel : String(u.deviceModel || "Unknown");
                            models[model] = (models[model] || 0) + 1;
                          });
                          return Object.entries(models)
@@ -839,7 +986,7 @@ export default function AdminPanel() {
                            .slice(0, 5)
                            .map(([model, count], idx) => (
                              <div key={idx} className="flex justify-between items-center bg-card p-3 rounded-lg border border-border hover:bg-accent transition-colors">
-                               <span className="uppercase">{model}</span>
+                               <span className="uppercase">{String(model)}</span>
                                <span className="bg-purple-500/20 border border-border text-primary px-3 py-1 rounded-full text-xs font-bold">{count} User</span>
                              </div>
                            ));
@@ -863,7 +1010,7 @@ export default function AdminPanel() {
                       <tbody>
                         {activeUsers.map((u, idx) => (
                           <tr key={idx} className="border-b border-border hover:bg-card">
-                            <td className="px-4 py-3 font-mono text-yellow-400 font-bold">{u.token}</td>
+                            <td className="px-4 py-3 font-mono text-yellow-400 font-bold">{String(u.token || '')}</td>
                             <td className="px-4 py-3">
                               {u.isTv ? (
                                 <span className="text-xs bg-blue-500/20 text-blue-400 px-2 py-1 rounded-full">Smart TV</span>
@@ -872,10 +1019,10 @@ export default function AdminPanel() {
                               )}
                             </td>
                             <td className="px-4 py-3 capitalize">
-                              <div className="font-semibold text-card-foreground">{u.deviceBrand || "-"}</div>
-                              <div className="text-xs text-muted-foreground uppercase">{u.deviceModel || "-"}</div>
+                              <div className="font-semibold text-card-foreground">{typeof u.deviceBrand === 'string' ? u.deviceBrand : String(u.deviceBrand || "-")}</div>
+                              <div className="text-xs text-muted-foreground uppercase">{typeof u.deviceModel === 'string' ? u.deviceModel : String(u.deviceModel || "-")}</div>
                             </td>
-                            <td className="px-4 py-3 text-card-foreground">{u.channel}</td>
+                            <td className="px-4 py-3 text-card-foreground">{typeof u.channel === 'string' ? u.channel : (typeof u.channel === 'object' ? JSON.stringify(u.channel) : String(u.channel || '-'))}</td>
                           </tr>
                         ))}
                         {activeUsers.length === 0 && (
@@ -1050,19 +1197,25 @@ export default function AdminPanel() {
                 {customChannels.length === 0 ? (
                   <p className="text-xs text-muted-foreground text-center py-4">Belum ada custom channel.</p>
                 ) : (
-                  customChannels.map((c) => (
-                    <div key={c.id} className="flex justify-between items-center bg-muted p-3 rounded-lg border border-border">
-                      <div>
-                        <div className="font-bold text-orange-400 text-sm">{c.name} {c.type === 'embed' && <span className="text-[10px] bg-blue-500/20 text-blue-300 px-1 ml-1 rounded">EMBED</span>}</div>
-                        <div className="text-xs text-muted-foreground truncate max-w-[200px] md:max-w-[400px]">{c.streamUrl}</div>
-                        {c.group && <div className="text-[10px] bg-accent inline-block px-1.5 rounded mt-1">{c.group}</div>}
+                  customChannels.map((c) => {
+                    const nameStr = typeof c.name === 'string' ? c.name : (typeof c.name === 'object' ? JSON.stringify(c.name) : String(c.name || ''));
+                    const streamUrlStr = typeof c.streamUrl === 'string' ? c.streamUrl : (typeof c.streamUrl === 'object' ? JSON.stringify(c.streamUrl) : String(c.streamUrl || ''));
+                    const groupStr = typeof c.group === 'string' ? c.group : (c.group ? String(c.group) : '');
+
+                    return (
+                      <div key={c.id} className="flex justify-between items-center bg-muted p-3 rounded-lg border border-border">
+                        <div>
+                          <div className="font-bold text-orange-400 text-sm">{nameStr} {c.type === 'embed' && <span className="text-[10px] bg-blue-500/20 text-blue-300 px-1 ml-1 rounded">EMBED</span>}</div>
+                          <div className="text-xs text-muted-foreground truncate max-w-[200px] md:max-w-[400px]">{streamUrlStr}</div>
+                          {groupStr && <div className="text-[10px] bg-accent inline-block px-1.5 rounded mt-1">{groupStr}</div>}
+                        </div>
+                        <div className="flex gap-2">
+                          <button onClick={() => setEditingCustomChannel(c)} className="text-xs px-2 py-1 bg-blue-500/20 text-blue-400 rounded hover:bg-blue-500/40">Edit</button>
+                          <button onClick={() => setCustomChannels(customChannels.filter(x => x.id !== c.id))} className="text-xs px-2 py-1 bg-purple-500/20 text-purple-300 rounded hover:bg-purple-500/40">Hapus</button>
+                        </div>
                       </div>
-                      <div className="flex gap-2">
-                        <button onClick={() => setEditingCustomChannel(c)} className="text-xs px-2 py-1 bg-blue-500/20 text-blue-400 rounded hover:bg-blue-500/40">Edit</button>
-                        <button onClick={() => setCustomChannels(customChannels.filter(x => x.id !== c.id))} className="text-xs px-2 py-1 bg-purple-500/20 text-purple-300 rounded hover:bg-purple-500/40">Hapus</button>
-                      </div>
-                    </div>
-                  ))
+                    );
+                  })
                 )}
               </div>
             </div>
@@ -1133,7 +1286,7 @@ export default function AdminPanel() {
                   />
                   <div className="flex flex-col gap-2">
                     <select
-                      value={tokenNameEffect.startsWith('http') ? 'CUSTOM' : tokenNameEffect}
+                      value={isCustomEffect(tokenNameEffect) ? 'CUSTOM' : (tokenNameEffect || 'NONE')}
                       onChange={(e) => {
                         if (e.target.value === 'CUSTOM') {
                           setTokenNameEffect('https://');
@@ -1152,10 +1305,10 @@ export default function AdminPanel() {
                       <option value="WAVY">🌊 Wavy Bounce</option>
                       <option value="CUSTOM">🎨 Custom GIF URL...</option>
                     </select>
-                    {tokenNameEffect.startsWith('http') && (
+                    {isCustomEffect(tokenNameEffect) && (
                       <input
                         type="url"
-                        value={tokenNameEffect}
+                        value={tokenNameEffect || ''}
                         onChange={(e) => setTokenNameEffect(e.target.value)}
                         placeholder="https://...gif"
                         className="bg-background border border-border text-foreground rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-yellow-500 w-full max-w-[200px]"
@@ -1210,75 +1363,84 @@ export default function AdminPanel() {
                 {tokens.filter(t => tokenSubTab === "premium" ? !t.isTrial : t.isTrial).length === 0 ? (
                   <p className="text-sm text-muted-foreground text-center py-4">Belum ada {tokenSubTab === "premium" ? "token premium" : "pengguna trial"}.</p>
                 ) : (
-                  tokens.filter(t => tokenSubTab === "premium" ? !t.isTrial : t.isTrial).map((tokenObj, idx) => (
-                    <div key={idx} className="flex items-center justify-between bg-muted p-3 rounded-xl border border-border">
-                      <div>
-                        <span className="font-mono text-yellow-400 font-bold block">{tokenObj.code}</span>
-                        <span className="text-xs text-muted-foreground">
-                          Durasi: {tokenObj.label} 
-                          {tokenObj.expiresAt && ` (Exp: ${new Date(tokenObj.expiresAt).toLocaleString('id-ID')})`}
-                        </span>
-                        {tokenObj.maxDevices && tokenObj.maxDevices > 1 && (
-                          <span className="text-xs text-yellow-500 block mt-1">
-                            Batas Perangkat: {tokenObj.maxDevices} TV
+                  tokens.filter(t => tokenSubTab === "premium" ? !t.isTrial : t.isTrial).map((tokenObj, idx) => {
+                    const codeStr = typeof tokenObj.code === 'string' ? tokenObj.code : String(tokenObj.code || '');
+                    const labelStr = typeof tokenObj.label === 'string' ? tokenObj.label : String(tokenObj.label || 'Lifetime');
+                    const maxDev = Number(tokenObj.maxDevices) || 1;
+                    const devIdStr = typeof tokenObj.deviceId === 'string' ? tokenObj.deviceId : String(tokenObj.deviceId || '');
+                    const devCount = Array.isArray(tokenObj.deviceIds) ? tokenObj.deviceIds.length : (devIdStr ? 1 : 0);
+                    const formattedExp = formatDateSafe(tokenObj.expiresAt);
+
+                    return (
+                      <div key={idx} className="flex items-center justify-between bg-muted p-3 rounded-xl border border-border">
+                        <div>
+                          <span className="font-mono text-yellow-400 font-bold block">{codeStr}</span>
+                          <span className="text-xs text-muted-foreground">
+                            Durasi: {labelStr} 
+                            {formattedExp ? ` (Exp: ${formattedExp})` : ''}
                           </span>
-                        )}
-                        {((tokenObj.deviceIds && tokenObj.deviceIds.length > 0) || tokenObj.deviceId) && (
-                          <span 
-                            onClick={() => {
-                              navigator.clipboard.writeText(tokenObj.deviceId || "");
-                              alert('Device ID disalin: ' + tokenObj.deviceId);
-                            }}
-                            className="text-xs font-bold text-purple-300 mt-1 flex items-center gap-1 cursor-pointer hover:text-red-300 transition-colors w-fit"
-                            title="Klik untuk menyalin Device ID lengkap"
+                          {maxDev > 1 && (
+                            <span className="text-xs text-yellow-500 block mt-1">
+                              Batas Perangkat: {maxDev} TV
+                            </span>
+                          )}
+                          {((tokenObj.deviceIds && tokenObj.deviceIds.length > 0) || devIdStr) && (
+                            <span 
+                              onClick={() => {
+                                navigator.clipboard.writeText(devIdStr);
+                                alert('Device ID disalin: ' + devIdStr);
+                              }}
+                              className="text-xs font-bold text-purple-300 mt-1 flex items-center gap-1 cursor-pointer hover:text-red-300 transition-colors w-fit"
+                              title="Klik untuk menyalin Device ID lengkap"
+                            >
+                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+                              Terhubung ({devCount}/{maxDev})
+                              <svg className="w-3 h-3 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex gap-2">
+                          {tokenObj.isTrial && (
+                            <button 
+                              onClick={() => upgradeTrialToPremium(codeStr)}
+                              className="text-indigo-400 hover:text-indigo-300 text-sm font-bold bg-indigo-500/10 hover:bg-indigo-500/20 px-3 py-1 rounded-lg transition-colors"
+                            >
+                              Upgrade Premium
+                            </button>
+                          )}
+                          {devIdStr && (
+                            <button 
+                              onClick={() => resetTokenDevice(codeStr)}
+                              className="text-yellow-500 hover:text-yellow-400 text-sm font-bold bg-yellow-500/10 hover:bg-yellow-500/20 px-3 py-1 rounded-lg transition-colors"
+                              title="Hapus kaitan dengan TV lama"
+                            >
+                              Reset TV
+                            </button>
+                          )}
+                          <button 
+                            onClick={() => handleSendInbox(codeStr)}
+                            className="text-green-500 hover:text-green-400 text-sm font-bold bg-green-500/10 hover:bg-green-500/20 px-3 py-1 rounded-lg transition-colors"
                           >
-                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
-                            Terhubung ({tokenObj.deviceIds?.length || (tokenObj.deviceId ? 1 : 0)}/{tokenObj.maxDevices || 1})
-                            <svg className="w-3 h-3 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
-                          </span>
-                        )}
+                            Pesan
+                          </button>
+                          {!tokenObj.isTrial && (
+                            <button 
+                              onClick={() => startEditToken(tokenObj)}
+                              className="text-blue-500 hover:text-blue-400 text-sm font-bold bg-blue-500/10 hover:bg-blue-500/20 px-3 py-1 rounded-lg transition-colors"
+                            >
+                              Edit
+                            </button>
+                          )}
+                          <button 
+                            onClick={() => removeToken(codeStr)}
+                            className="text-primary hover:text-purple-300 text-sm font-bold bg-purple-500/10 hover:bg-purple-500/20 px-3 py-1 rounded-lg transition-colors"
+                          >
+                            Hapus
+                          </button>
+                        </div>
                       </div>
-                      <div className="flex gap-2">
-                        {tokenObj.isTrial && (
-                          <button 
-                            onClick={() => upgradeTrialToPremium(tokenObj.code)}
-                            className="text-indigo-400 hover:text-indigo-300 text-sm font-bold bg-indigo-500/10 hover:bg-indigo-500/20 px-3 py-1 rounded-lg transition-colors"
-                          >
-                            Upgrade Premium
-                          </button>
-                        )}
-                        {tokenObj.deviceId && (
-                          <button 
-                            onClick={() => resetTokenDevice(tokenObj.code)}
-                            className="text-yellow-500 hover:text-yellow-400 text-sm font-bold bg-yellow-500/10 hover:bg-yellow-500/20 px-3 py-1 rounded-lg transition-colors"
-                            title="Hapus kaitan dengan TV lama"
-                          >
-                            Reset TV
-                          </button>
-                        )}
-                        <button 
-                          onClick={() => handleSendInbox(tokenObj.code)}
-                          className="text-green-500 hover:text-green-400 text-sm font-bold bg-green-500/10 hover:bg-green-500/20 px-3 py-1 rounded-lg transition-colors"
-                        >
-                          Pesan
-                        </button>
-                        {!tokenObj.isTrial && (
-                          <button 
-                            onClick={() => startEditToken(tokenObj)}
-                            className="text-blue-500 hover:text-blue-400 text-sm font-bold bg-blue-500/10 hover:bg-blue-500/20 px-3 py-1 rounded-lg transition-colors"
-                          >
-                            Edit
-                          </button>
-                        )}
-                        <button 
-                          onClick={() => removeToken(tokenObj.code)}
-                          className="text-primary hover:text-purple-300 text-sm font-bold bg-purple-500/10 hover:bg-purple-500/20 px-3 py-1 rounded-lg transition-colors"
-                        >
-                          Hapus
-                        </button>
-                      </div>
-                    </div>
-                  ))
+                    );
+                  })
                 )}
               </div>
               <p className="text-xs text-muted-foreground mt-2">Hapus token untuk mengeluarkan pengguna (logout) dari TV mereka. Gunakan <b>Reset TV</b> jika pengguna membeli TV baru.</p>
@@ -1333,7 +1495,7 @@ export default function AdminPanel() {
                 <div className="flex flex-col gap-1">
                   <label className="block text-xs text-muted-foreground mb-1">Efek Animasi</label>
                   <select
-                    value={adminNameEffect.startsWith('http') ? 'CUSTOM' : adminNameEffect}
+                    value={isCustomEffect(adminNameEffect) ? 'CUSTOM' : (adminNameEffect || 'NONE')}
                     onChange={(e) => {
                       if (e.target.value === 'CUSTOM') {
                         setAdminNameEffect('https://');
@@ -1351,10 +1513,10 @@ export default function AdminPanel() {
                     <option value="WAVY">🌊 Wavy Bounce</option>
                     <option value="CUSTOM">🎨 Custom GIF URL...</option>
                   </select>
-                  {adminNameEffect.startsWith('http') && (
+                  {isCustomEffect(adminNameEffect) && (
                     <input
                       type="url"
-                      value={adminNameEffect}
+                      value={adminNameEffect || ''}
                       onChange={(e) => setAdminNameEffect(e.target.value)}
                       placeholder="https://..."
                       className="bg-background border border-border text-foreground rounded-lg px-2 py-1 text-xs focus:outline-none focus:border-pink-500 w-32"
@@ -1367,18 +1529,24 @@ export default function AdminPanel() {
                 {chatMessages.length === 0 ? (
                   <div className="text-muted-foreground text-center m-auto">Belum ada pesan chat</div>
                 ) : (
-                  chatMessages.map((msg) => (
-                    <div key={msg.id} className="flex justify-between items-start group hover:bg-card p-2 rounded-lg transition-colors">
-                      <div>
-                        <span className="font-bold text-sm text-blue-400 mr-2">{msg.sender.split('|')[0]}</span>
-                        <span className="text-sm text-card-foreground">{msg.message}</span>
-                        <div className="text-xs text-gray-600 mt-1">{new Date(msg.timestamp).toLocaleString()}</div>
+                  chatMessages.map((msg) => {
+                    const senderStr = typeof msg.sender === 'string' ? msg.sender : (typeof msg.sender === 'object' ? JSON.stringify(msg.sender) : String(msg.sender || 'User'));
+                    const messageStr = typeof msg.message === 'string' ? msg.message : (typeof msg.message === 'object' && msg.message !== null ? ((msg.message as any).text || (msg.message as any).msg || JSON.stringify(msg.message)) : String(msg.message || ''));
+                    const timestampNum = typeof msg.timestamp === 'number' ? msg.timestamp : (Number(msg.timestamp) || Date.now());
+
+                    return (
+                      <div key={msg.id} className="flex justify-between items-start group hover:bg-card p-2 rounded-lg transition-colors">
+                        <div>
+                          <span className="font-bold text-sm text-blue-400 mr-2">{senderStr.split('|')[0]}</span>
+                          <span className="text-sm text-card-foreground">{messageStr}</span>
+                          <div className="text-xs text-gray-600 mt-1">{formatDateSafe(timestampNum) || "Baru saja"}</div>
+                        </div>
+                        <button onClick={() => handleDeleteChat(msg.id)} className="text-primary opacity-50 group-hover:opacity-100 hover:text-purple-300 p-2">
+                          <Trash2 className="w-4 h-4" />
+                        </button>
                       </div>
-                      <button onClick={() => handleDeleteChat(msg.id)} className="text-primary opacity-50 group-hover:opacity-100 hover:text-purple-300 p-2">
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  ))
+                    );
+                  })
                 )}
               </div>
               
@@ -1643,7 +1811,8 @@ export default function AdminPanel() {
         
               </div>
             )}
-          </div>
+            </div>
+          </DashboardErrorBoundary>
         </div>
       </main>
 
