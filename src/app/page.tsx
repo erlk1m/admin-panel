@@ -1,7 +1,106 @@
 "use client";
 
 import { useState, useEffect, Component, ErrorInfo, ReactNode } from "react";
-import { Tv, ShieldAlert, Key, Save, Globe, RefreshCcw, Bell, AlertTriangle, Image as ImageIcon, MessageSquare, Trash2, Send, Activity, Users, PlaySquare, TrendingUp, PieChart } from "lucide-react";
+import {
+  Tv,
+  ShieldAlert,
+  Key,
+  Save,
+  Globe,
+  RefreshCcw,
+  Bell,
+  AlertTriangle,
+  Image as ImageIcon,
+  MessageSquare,
+  Trash2,
+  Send,
+  Activity,
+  Users,
+  PlaySquare,
+  PieChart,
+  Menu,
+  X,
+  Check,
+  Copy,
+  ExternalLink,
+  Smartphone,
+  Monitor,
+  Search,
+  Plus,
+  Sparkles,
+  RotateCcw,
+  MessageCircle,
+  LogOut,
+  Radio,
+  Clock,
+  Eye,
+  AlertCircle,
+  Sliders,
+  ChevronRight,
+  UserCheck,
+  Zap,
+} from "lucide-react";
+
+// ==========================================
+// Types & Interfaces
+// ==========================================
+
+interface CustomChannel {
+  id: string;
+  name: string;
+  type?: string;
+  streamUrl: string;
+  group?: string;
+  logoUrl?: string;
+  licenseKey?: string;
+  licenseType?: string;
+  userAgent?: string;
+  referer?: string;
+  tvgId?: string;
+}
+
+interface TokenObject {
+  code: string;
+  expiresAt: number | null;
+  label: string;
+  badgeIcon?: string;
+  badgeColor?: string;
+  nameEffect?: string;
+  deviceId?: string;
+  maxDevices?: number;
+  deviceIds?: string[];
+  isTrial?: boolean;
+  _resetDevice?: boolean;
+}
+
+interface ActiveUser {
+  token: string;
+  channel: string;
+  country?: string;
+  deviceBrand?: string;
+  deviceModel?: string;
+  isTv?: boolean;
+  lastSeen: number;
+}
+
+interface ToastMessage {
+  id: string;
+  type: "success" | "error" | "info";
+  message: string;
+}
+
+interface ConfirmDialogState {
+  isOpen: boolean;
+  title: string;
+  message: string;
+  confirmText?: string;
+  isDestructive?: boolean;
+  onConfirm: () => void;
+}
+
+// ==========================================
+// Error Boundary
+// ==========================================
 
 interface ErrorBoundaryProps {
   children: ReactNode;
@@ -29,17 +128,17 @@ class DashboardErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundary
   render() {
     if (this.state.hasError) {
       return (
-        <div className="p-8 bg-card rounded-xl border border-red-500/50 text-foreground my-4 space-y-4">
+        <div className="p-8 glass-card rounded-2xl border border-red-500/40 text-foreground my-6 space-y-4">
           <div className="flex items-center gap-3 text-red-400">
             <AlertTriangle className="w-6 h-6" />
             <h3 className="text-lg font-bold">Terjadi Kesalahan Tampilan Data</h3>
           </div>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm text-slate-400">
             {this.state.error?.message || "Data dari Firebase sedang tidak sinkron. Klik tombol di bawah untuk memuat ulang."}
           </p>
           <button
             onClick={() => this.setState({ hasError: false, error: null })}
-            className="px-4 py-2 bg-primary text-primary-foreground text-sm font-medium rounded-lg hover:opacity-90 transition-opacity"
+            className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium rounded-xl transition-all shadow-lg shadow-indigo-600/20"
           >
             Muat Ulang Tampilan
           </button>
@@ -50,11 +149,15 @@ class DashboardErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundary
   }
 }
 
+// ==========================================
+// Helper Functions
+// ==========================================
+
 const safeDecode = (str: string) => {
   try {
     return decodeURIComponent(str);
   } catch {
-    return String(str || '');
+    return String(str || "");
   }
 };
 
@@ -65,22 +168,42 @@ const formatDateSafe = (timestamp: any) => {
   try {
     const d = new Date(num);
     if (isNaN(d.getTime())) return "";
-    return d.toLocaleString('id-ID');
+    return d.toLocaleString("id-ID", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
   } catch {
     return "";
   }
 };
 
-const isCustomEffect = (effect: any) => typeof effect === 'string' && effect.startsWith('http');
+const isCustomEffect = (effect: any) => typeof effect === "string" && effect.startsWith("http");
+
+// ==========================================
+// Main Component
+// ==========================================
 
 export default function AdminPanel() {
+  // Auth & Navigation States
   const [adminPassword, setAdminPassword] = useState("");
   const [activeTab, setActiveTab] = useState("overview");
-  const [tokenSubTab, setTokenSubTab] = useState("premium");
+  const [tokenSubTab, setTokenSubTab] = useState<"premium" | "trial">("premium");
+  const [tokenFilter, setTokenFilter] = useState<"all" | "active" | "expired">("all");
+  const [searchQuery, setSearchQuery] = useState("");
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
+  // Dialog & Toast States
+  const [toasts, setToasts] = useState<ToastMessage[]>([]);
+  const [confirmDialog, setConfirmDialog] = useState<ConfirmDialogState | null>(null);
+  const [inboxModal, setInboxModal] = useState<{ isOpen: boolean; token: string; message: string } | null>(null);
+
+  // Config States
   const [m3uUrl, setM3uUrl] = useState("");
   const [m3uUrl2, setM3uUrl2] = useState("");
   const [m3uUrl3, setM3uUrl3] = useState("");
@@ -89,39 +212,20 @@ export default function AdminPanel() {
   const [m3uName3, setM3uName3] = useState("");
   const [epgUrl, setEpgUrl] = useState("");
   const [proxyUrl, setProxyUrl] = useState("");
-  interface CustomChannel {
-    id: string;
-    name: string;
-    type?: string;
-    streamUrl: string;
-    group?: string;
-    logoUrl?: string;
-    licenseKey?: string;
-    licenseType?: string;
-    userAgent?: string;
-    referer?: string;
-    tvgId?: string;
-  }
+
   const [customChannels, setCustomChannels] = useState<CustomChannel[]>([]);
   const [editingCustomChannel, setEditingCustomChannel] = useState<Partial<CustomChannel> | null>(null);
+  const [isChannelModalOpen, setIsChannelModalOpen] = useState(false);
 
-  interface TokenObject {
-    code: string;
-    expiresAt: number | null;
-    label: string;
-    badgeIcon?: string;
-    badgeColor?: string;
-    nameEffect?: string;
-    deviceId?: string;
-    maxDevices?: number;
-    deviceIds?: string[];
-    isTrial?: boolean;
-    _resetDevice?: boolean;
-  }
-
-  const [tokens, setTokens] = useState<TokenObject[]>([]); // Ganti accessCode jadi tokens
-  const [customTokenInput, setCustomTokenInput] = useState(""); // Input untuk token custom
+  const [tokens, setTokens] = useState<TokenObject[]>([]);
+  const [customTokenInput, setCustomTokenInput] = useState("");
   const [tokenDuration, setTokenDuration] = useState("lifetime");
+  const [tokenBadgeIcon, setTokenBadgeIcon] = useState("");
+  const [tokenBadgeColor, setTokenBadgeColor] = useState("#FFD700");
+  const [tokenNameEffect, setTokenNameEffect] = useState("NONE");
+  const [tokenMaxDevices, setTokenMaxDevices] = useState(1);
+  const [editingTokenCode, setEditingTokenCode] = useState<string | null>(null);
+
   const [notificationText, setNotificationText] = useState("");
   const [notificationColor, setNotificationColor] = useState("#FFFFFF");
   const [notificationEnabled, setNotificationEnabled] = useState(false);
@@ -139,26 +243,87 @@ export default function AdminPanel() {
   const [chatEnabled, setChatEnabled] = useState(true);
   const [chatMessages, setChatMessages] = useState<{ id: string; sender: string; message: string; timestamp: number }[]>([]);
   const [chatInput, setChatInput] = useState("");
-
   const [adminBadgeIcon, setAdminBadgeIcon] = useState("🔧");
   const [adminBadgeColor, setAdminBadgeColor] = useState("#FF00FF");
   const [adminNameEffect, setAdminNameEffect] = useState("NONE");
 
-  const [tokenBadgeIcon, setTokenBadgeIcon] = useState("");
-  const [tokenBadgeColor, setTokenBadgeColor] = useState("#FFD700");
-  const [tokenNameEffect, setTokenNameEffect] = useState("NONE");
-  const [tokenMaxDevices, setTokenMaxDevices] = useState(1);
-  const [editingTokenCode, setEditingTokenCode] = useState<string | null>(null);
-
-  const [activeUsers, setActiveUsers] = useState<{ token: string; channel: string; country?: string; deviceBrand?: string; deviceModel?: string; isTv?: boolean; lastSeen: number }[]>([]);
+  const [activeUsers, setActiveUsers] = useState<ActiveUser[]>([]);
   const [activeUsersCount, setActiveUsersCount] = useState(0);
-  const [channelStats, setChannelStats] = useState<{name: string, count: number}[]>([]);
+  const [channelStats, setChannelStats] = useState<{ name: string; count: number }[]>([]);
   const [now, setNow] = useState<number | null>(null);
+  const [copiedKey, setCopiedKey] = useState<string | null>(null);
 
+  // ==========================================
+  // Toast Helper
+  // ==========================================
+
+  const showToast = (type: "success" | "error" | "info", message: string) => {
+    const id = Math.random().toString(36).substring(2, 9);
+    setToasts((prev) => [...prev, { id, type, message }]);
+    setTimeout(() => {
+      setToasts((prev) => prev.filter((t) => t.id !== id));
+    }, 3500);
+  };
+
+  const copyToClipboard = (text: string, label = "Tersalin ke clipboard!") => {
+    navigator.clipboard.writeText(text);
+    setCopiedKey(text);
+    showToast("success", label);
+    setTimeout(() => setCopiedKey(null), 2000);
+  };
+
+  // Clock tick
   useEffect(() => {
     const timer = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(timer);
   }, []);
+
+  // Keyboard shortcut Ctrl+S / Cmd+S
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === "s") {
+        e.preventDefault();
+        if (isAuthenticated && !saving) {
+          handleSave();
+        }
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [
+    isAuthenticated,
+    saving,
+    m3uUrl,
+    m3uUrl2,
+    m3uUrl3,
+    m3uName,
+    m3uName2,
+    m3uName3,
+    epgUrl,
+    proxyUrl,
+    customChannels,
+    tokens,
+    notificationText,
+    notificationColor,
+    notificationEnabled,
+    backgroundUrl,
+    welcomeBannerUrl,
+    latestVersionCode,
+    apkUpdateUrl,
+    adminContactUrl,
+    isMaintenance,
+    chatEnabled,
+    prerollAdUrl,
+    prerollAdEnabled,
+    adminBadgeIcon,
+    adminBadgeColor,
+    adminNameEffect,
+    appName,
+  ]);
+
+  // ==========================================
+  // Load Config
+  // ==========================================
 
   const loadConfig = async (authPassword?: string) => {
     try {
@@ -168,93 +333,94 @@ export default function AdminPanel() {
       }
       const res = await fetch("/api/config", { headers, cache: "no-store" });
       const data = await res.json();
-      if (data && typeof data === 'object') {
-        setM3uUrl(typeof data.m3uUrl === 'string' ? data.m3uUrl : "");
-        setM3uUrl2(typeof data.m3uUrl2 === 'string' ? data.m3uUrl2 : "");
-        setM3uUrl3(typeof data.m3uUrl3 === 'string' ? data.m3uUrl3 : "");
-        setM3uName(typeof data.m3uName === 'string' ? data.m3uName : "");
-        setM3uName2(typeof data.m3uName2 === 'string' ? data.m3uName2 : "");
-        setM3uName3(typeof data.m3uName3 === 'string' ? data.m3uName3 : "");
-        setEpgUrl(typeof data.epgUrl === 'string' ? data.epgUrl : "");
-        setProxyUrl(typeof data.proxyUrl === 'string' ? data.proxyUrl : "");
+      if (data && typeof data === "object") {
+        setM3uUrl(typeof data.m3uUrl === "string" ? data.m3uUrl : "");
+        setM3uUrl2(typeof data.m3uUrl2 === "string" ? data.m3uUrl2 : "");
+        setM3uUrl3(typeof data.m3uUrl3 === "string" ? data.m3uUrl3 : "");
+        setM3uName(typeof data.m3uName === "string" ? data.m3uName : "");
+        setM3uName2(typeof data.m3uName2 === "string" ? data.m3uName2 : "");
+        setM3uName3(typeof data.m3uName3 === "string" ? data.m3uName3 : "");
+        setEpgUrl(typeof data.epgUrl === "string" ? data.epgUrl : "");
+        setProxyUrl(typeof data.proxyUrl === "string" ? data.proxyUrl : "");
 
         let rawChannels: any[] = [];
         if (data.customChannels) {
           if (Array.isArray(data.customChannels)) {
             rawChannels = data.customChannels;
-          } else if (typeof data.customChannels === 'object') {
+          } else if (typeof data.customChannels === "object") {
             rawChannels = Object.values(data.customChannels);
           }
         }
         const safeChannels: CustomChannel[] = rawChannels.map((c: any) => ({
           id: String(c.id || "cc_" + Math.random()),
-          name: typeof c.name === 'string' ? c.name : (typeof c.name === 'object' ? JSON.stringify(c.name) : String(c.name || '')),
-          type: typeof c.type === 'string' ? c.type : 'direct',
-          streamUrl: typeof c.streamUrl === 'string' ? c.streamUrl : (typeof c.streamUrl === 'object' ? JSON.stringify(c.streamUrl) : String(c.streamUrl || '')),
-          group: typeof c.group === 'string' ? c.group : (c.group ? String(c.group) : undefined),
-          logoUrl: typeof c.logoUrl === 'string' ? c.logoUrl : undefined,
-          licenseKey: typeof c.licenseKey === 'string' ? c.licenseKey : undefined,
-          licenseType: typeof c.licenseType === 'string' ? c.licenseType : undefined,
-          userAgent: typeof c.userAgent === 'string' ? c.userAgent : undefined,
-          referer: typeof c.referer === 'string' ? c.referer : undefined,
-          tvgId: typeof c.tvgId === 'string' ? c.tvgId : undefined,
+          name: typeof c.name === "string" ? c.name : String(c.name || ""),
+          type: typeof c.type === "string" ? c.type : "direct",
+          streamUrl: typeof c.streamUrl === "string" ? c.streamUrl : String(c.streamUrl || ""),
+          group: typeof c.group === "string" ? c.group : c.group ? String(c.group) : undefined,
+          logoUrl: typeof c.logoUrl === "string" ? c.logoUrl : undefined,
+          licenseKey: typeof c.licenseKey === "string" ? c.licenseKey : undefined,
+          licenseType: typeof c.licenseType === "string" ? c.licenseType : undefined,
+          userAgent: typeof c.userAgent === "string" ? c.userAgent : undefined,
+          referer: typeof c.referer === "string" ? c.referer : undefined,
+          tvgId: typeof c.tvgId === "string" ? c.tvgId : undefined,
         }));
         setCustomChannels(safeChannels);
-        
+
         if (data.tokens) {
           let rawTokens: any[] = [];
           if (Array.isArray(data.tokens)) {
             rawTokens = data.tokens;
-          } else if (typeof data.tokens === 'object') {
+          } else if (typeof data.tokens === "object") {
             rawTokens = Object.entries(data.tokens).map(([key, val]: [string, any]) => {
-              if (typeof val === 'string') return { code: val || key, expiresAt: null, label: "Lifetime" };
-              if (typeof val === 'object' && val !== null) return { ...val, code: typeof val.code === 'string' ? val.code : key };
+              if (typeof val === "string") return { code: val || key, expiresAt: null, label: "Lifetime" };
+              if (typeof val === "object" && val !== null) return { ...val, code: typeof val.code === "string" ? val.code : key };
               return { code: key, expiresAt: null, label: "Lifetime" };
             });
           }
           const mappedTokens: TokenObject[] = rawTokens.map((t: any) => {
-            if (typeof t === 'string') {
+            if (typeof t === "string") {
               return { code: t, expiresAt: null, label: "Lifetime" };
             }
-            if (t && typeof t === 'object') {
+            if (t && typeof t === "object") {
               return {
                 ...t,
-                code: typeof t.code === 'string' ? t.code : String(t.code || ''),
-                label: typeof t.label === 'string' ? t.label : (typeof t.label === 'object' ? JSON.stringify(t.label) : String(t.label || 'Lifetime')),
-                expiresAt: typeof t.expiresAt === 'number' ? t.expiresAt : (Number(t.expiresAt) || null),
-                maxDevices: typeof t.maxDevices === 'number' ? t.maxDevices : (Number(t.maxDevices) || 1),
-                deviceId: typeof t.deviceId === 'string' ? t.deviceId : String(t.deviceId || ''),
+                code: typeof t.code === "string" ? t.code : String(t.code || ""),
+                label: typeof t.label === "string" ? t.label : String(t.label || "Lifetime"),
+                expiresAt: typeof t.expiresAt === "number" ? t.expiresAt : Number(t.expiresAt) || null,
+                maxDevices: typeof t.maxDevices === "number" ? t.maxDevices : Number(t.maxDevices) || 1,
+                deviceId: typeof t.deviceId === "string" ? t.deviceId : String(t.deviceId || ""),
                 deviceIds: Array.isArray(t.deviceIds) ? t.deviceIds.map(String) : [],
                 isTrial: Boolean(t.isTrial),
-                badgeIcon: typeof t.badgeIcon === 'string' ? t.badgeIcon : String(t.badgeIcon || ''),
-                badgeColor: typeof t.badgeColor === 'string' ? t.badgeColor : String(t.badgeColor || '#FFD700'),
-                nameEffect: typeof t.nameEffect === 'string' ? t.nameEffect : String(t.nameEffect || 'NONE'),
+                badgeIcon: typeof t.badgeIcon === "string" ? t.badgeIcon : String(t.badgeIcon || ""),
+                badgeColor: typeof t.badgeColor === "string" ? t.badgeColor : String(t.badgeColor || "#FFD700"),
+                nameEffect: typeof t.nameEffect === "string" ? t.nameEffect : String(t.nameEffect || "NONE"),
               };
             }
-            return { code: String(t || ''), expiresAt: null, label: "Lifetime" };
+            return { code: String(t || ""), expiresAt: null, label: "Lifetime" };
           });
           setTokens(mappedTokens);
         }
 
-        setNotificationText(typeof data.notificationText === 'string' ? data.notificationText : (typeof data.notificationText === 'object' ? JSON.stringify(data.notificationText) : String(data.notificationText || "")));
-        setNotificationColor(typeof data.notificationColor === 'string' ? data.notificationColor : "#FFFFFF");
+        setNotificationText(typeof data.notificationText === "string" ? data.notificationText : String(data.notificationText || ""));
+        setNotificationColor(typeof data.notificationColor === "string" ? data.notificationColor : "#FFFFFF");
         setNotificationEnabled(Boolean(data.notificationEnabled));
-        setBackgroundUrl(typeof data.backgroundUrl === 'string' ? data.backgroundUrl : "");
-        setWelcomeBannerUrl(typeof data.welcomeBannerUrl === 'string' ? data.welcomeBannerUrl : "");
-        setLatestVersionCode(typeof data.latestVersionCode === 'number' ? data.latestVersionCode : (Number(data.latestVersionCode) || 1));
-        setApkUpdateUrl(typeof data.apkUpdateUrl === 'string' ? data.apkUpdateUrl : "");
-        setAdminContactUrl(typeof data.adminContactUrl === 'string' ? data.adminContactUrl : "");
+        setBackgroundUrl(typeof data.backgroundUrl === "string" ? data.backgroundUrl : "");
+        setWelcomeBannerUrl(typeof data.welcomeBannerUrl === "string" ? data.welcomeBannerUrl : "");
+        setLatestVersionCode(typeof data.latestVersionCode === "number" ? data.latestVersionCode : Number(data.latestVersionCode) || 1);
+        setApkUpdateUrl(typeof data.apkUpdateUrl === "string" ? data.apkUpdateUrl : "");
+        setAdminContactUrl(typeof data.adminContactUrl === "string" ? data.adminContactUrl : "");
         setIsMaintenance(Boolean(data.isMaintenance));
-        setPrerollAdUrl(typeof data.prerollAdUrl === 'string' ? data.prerollAdUrl : "");
+        setPrerollAdUrl(typeof data.prerollAdUrl === "string" ? data.prerollAdUrl : "");
         setPrerollAdEnabled(Boolean(data.prerollAdEnabled));
         setChatEnabled(data.chatEnabled !== false);
-        setAdminBadgeIcon(typeof data.adminBadgeIcon === 'string' ? data.adminBadgeIcon : "🔧");
-        setAdminBadgeColor(typeof data.adminBadgeColor === 'string' ? data.adminBadgeColor : "#FF00FF");
-        setAdminNameEffect(typeof data.adminNameEffect === 'string' ? data.adminNameEffect : "NONE");
-        setAppName(typeof data.appName === 'string' ? data.appName : (typeof data.appName === 'object' ? JSON.stringify(data.appName) : String(data.appName || "KIMTV")));
+        setAdminBadgeIcon(typeof data.adminBadgeIcon === "string" ? data.adminBadgeIcon : "🔧");
+        setAdminBadgeColor(typeof data.adminBadgeColor === "string" ? data.adminBadgeColor : "#FF00FF");
+        setAdminNameEffect(typeof data.adminNameEffect === "string" ? data.adminNameEffect : "NONE");
+        setAppName(typeof data.appName === "string" ? data.appName : String(data.appName || "KIMTV"));
       }
     } catch (e) {
       console.error("Config fetch error:", e);
+      showToast("error", "Gagal memuat konfigurasi dari server.");
     } finally {
       setLoading(false);
     }
@@ -271,78 +437,92 @@ export default function AdminPanel() {
         const res = await fetch("/api/verify-password", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ password: adminPassword })
+          body: JSON.stringify({ password: adminPassword }),
         });
-        
+
         if (res.ok) {
           setIsAuthenticated(true);
           loadConfig(adminPassword);
+          showToast("success", "Berhasil login ke Admin Console!");
         } else {
           const data = await res.json();
-          alert(data.error || "Password Admin Salah!");
+          showToast("error", data.error || "Password Admin Salah!");
         }
       } catch {
-        alert("Terjadi kesalahan jaringan.");
+        showToast("error", "Terjadi kesalahan jaringan.");
       }
     }
   };
 
+  // Real-time Polls
   useEffect(() => {
     if (isAuthenticated) {
       const fetchChats = () => {
         fetch("/api/chats")
-          .then(res => res.json())
-          .then(data => {
+          .then((res) => res.json())
+          .then((data) => {
             if (Array.isArray(data)) {
               const safeMessages = data.map((msg: any) => ({
                 id: String(msg.id || Math.random()),
-                sender: typeof msg.sender === 'string' ? msg.sender : (typeof msg.sender === 'object' ? JSON.stringify(msg.sender) : String(msg.sender || 'User')),
-                message: typeof msg.message === 'string' ? msg.message : (typeof msg.message === 'object' && msg.message !== null ? (msg.message.text || msg.message.msg || JSON.stringify(msg.message)) : String(msg.message || '')),
-                timestamp: typeof msg.timestamp === 'number' ? msg.timestamp : (Number(msg.timestamp) || Date.now())
+                sender: typeof msg.sender === "string" ? msg.sender : String(msg.sender || "User"),
+                message:
+                  typeof msg.message === "string"
+                    ? msg.message
+                    : typeof msg.message === "object" && msg.message !== null
+                    ? msg.message.text || msg.message.msg || JSON.stringify(msg.message)
+                    : String(msg.message || ""),
+                timestamp: typeof msg.timestamp === "number" ? msg.timestamp : Number(msg.timestamp) || Date.now(),
               }));
               setChatMessages(safeMessages);
             }
           })
           .catch(() => {});
       };
+
       const fetchPresence = () => {
         fetch("/api/presence")
-          .then(res => res.json())
-          .then(data => {
+          .then((res) => res.json())
+          .then((data) => {
             if (data && data.users && Array.isArray(data.users)) {
-              const safeUsers = data.users.map((u: any) => ({
-                token: String(u.token || ''),
-                channel: typeof u.channel === 'string' ? u.channel : (typeof u.channel === 'object' && u.channel !== null ? (u.channel.name || u.channel.title || JSON.stringify(u.channel)) : String(u.channel || 'Lainnya')),
-                country: typeof u.country === 'string' ? u.country : String(u.country || 'ID'),
-                deviceBrand: typeof u.deviceBrand === 'string' ? u.deviceBrand : String(u.deviceBrand || 'Unknown'),
-                deviceModel: typeof u.deviceModel === 'string' ? u.deviceModel : String(u.deviceModel || 'Unknown'),
+              const safeUsers: ActiveUser[] = data.users.map((u: any) => ({
+                token: String(u.token || ""),
+                channel:
+                  typeof u.channel === "string"
+                    ? u.channel
+                    : typeof u.channel === "object" && u.channel !== null
+                    ? u.channel.name || u.channel.title || JSON.stringify(u.channel)
+                    : String(u.channel || "Lainnya"),
+                country: typeof u.country === "string" ? u.country : String(u.country || "ID"),
+                deviceBrand: typeof u.deviceBrand === "string" ? u.deviceBrand : String(u.deviceBrand || "Unknown"),
+                deviceModel: typeof u.deviceModel === "string" ? u.deviceModel : String(u.deviceModel || "Unknown"),
                 isTv: Boolean(u.isTv),
-                lastSeen: typeof u.lastSeen === 'number' ? u.lastSeen : (Number(u.lastSeen) || Date.now())
+                lastSeen: typeof u.lastSeen === "number" ? u.lastSeen : Number(u.lastSeen) || Date.now(),
               }));
               setActiveUsers(safeUsers);
-              setActiveUsersCount(typeof data.count === 'number' ? data.count : safeUsers.length);
+              setActiveUsersCount(typeof data.count === "number" ? data.count : safeUsers.length);
             }
           })
           .catch(() => {});
       };
+
       const fetchStats = () => {
         fetch("/api/stats")
-          .then(res => res.json())
-          .then(data => {
-            if (data && !data.error && typeof data === 'object') {
-              const statsArray = Object.keys(data).map(key => {
+          .then((res) => res.json())
+          .then((data) => {
+            if (data && !data.error && typeof data === "object") {
+              const statsArray = Object.keys(data).map((key) => {
                 const val = data[key];
                 let count = 0;
-                if (typeof val === 'number') {
+                if (typeof val === "number") {
                   count = val;
-                } else if (typeof val === 'string') {
+                } else if (typeof val === "string") {
                   count = Number(val) || 0;
-                } else if (typeof val === 'object' && val !== null) {
+                } else if (typeof val === "object" && val !== null) {
                   count = Number(val.count || val.views || val.total || 0) || 0;
                 }
                 return {
-                  name: typeof key === 'string' ? safeDecode(key) : String(key || ''),
-                  count: count
+                  name: typeof key === "string" ? safeDecode(key) : String(key || ""),
+                  count,
                 };
               });
               statsArray.sort((a, b) => b.count - a.count);
@@ -351,11 +531,12 @@ export default function AdminPanel() {
           })
           .catch(() => {});
       };
+
       fetchChats();
       fetchPresence();
       fetchStats();
       const chatInterval = setInterval(fetchChats, 3000);
-      const presenceInterval = setInterval(fetchPresence, 10000);
+      const presenceInterval = setInterval(fetchPresence, 8000);
       const statsInterval = setInterval(fetchStats, 60000);
       return () => {
         clearInterval(chatInterval);
@@ -365,6 +546,10 @@ export default function AdminPanel() {
     }
   }, [isAuthenticated]);
 
+  // ==========================================
+  // Handlers
+  // ==========================================
+
   const handleSendChat = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!chatInput.trim()) return;
@@ -372,44 +557,89 @@ export default function AdminPanel() {
       await fetch("/api/chats", {
         method: "POST",
         headers: { "Content-Type": "application/json", "x-admin-password": adminPassword },
-        body: JSON.stringify({ message: chatInput.trim(), senderOverride: `Admin|ID|${adminBadgeIcon}|${adminBadgeColor}|ADMIN|${adminNameEffect}` })
+        body: JSON.stringify({
+          message: chatInput.trim(),
+          senderOverride: `Admin|ID|${adminBadgeIcon}|${adminBadgeColor}|ADMIN|${adminNameEffect}`,
+        }),
       });
       setChatInput("");
-    } catch {}
+      showToast("success", "Pesan admin terkirim ke Live Chat!");
+    } catch {
+      showToast("error", "Gagal mengirim pesan chat.");
+    }
   };
 
   const handleDeleteChat = async (id: string) => {
-    if (id === 'all' && !confirm("Yakin ingin menghapus semua pesan chat?")) return;
+    if (id === "all") {
+      setConfirmDialog({
+        isOpen: true,
+        title: "Bersihkan Semua Chat?",
+        message: "Semua riwayat obrolan pengguna dan admin di server akan dihapus secara permanen.",
+        confirmText: "Hapus Semua",
+        isDestructive: true,
+        onConfirm: async () => {
+          try {
+            await fetch(`/api/chats?id=all`, {
+              method: "DELETE",
+              headers: { "x-admin-password": adminPassword },
+            });
+            setChatMessages([]);
+            showToast("success", "Semua pesan chat berhasil dibersihkan.");
+          } catch {
+            showToast("error", "Gagal menghapus pesan chat.");
+          }
+          setConfirmDialog(null);
+        },
+      });
+      return;
+    }
+
     try {
       await fetch(`/api/chats?id=${id}`, {
         method: "DELETE",
-        headers: { "x-admin-password": adminPassword }
+        headers: { "x-admin-password": adminPassword },
       });
+      setChatMessages((prev) => prev.filter((m) => m.id !== id));
+      showToast("info", "Pesan dihapus.");
     } catch {}
   };
 
-  const handleKick = async (token: string) => {
-    if (!confirm(`Yakin ingin menendang perangkat dengan token ${token}? Aplikasi mereka akan dipaksa keluar secara real-time.`)) return;
-    try {
-      await fetch("/api/kick", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "x-admin-password": adminPassword },
-        body: JSON.stringify({ token })
-      });
-      alert(`Sinyal KICK berhasil dikirim ke ${token}!`);
-    } catch {
-      alert("Gagal mengirim sinyal KICK.");
-    }
+  const handleKick = (token: string) => {
+    setConfirmDialog({
+      isOpen: true,
+      title: "Tendang Perangkat?",
+      message: `Perangkat dengan token "${token}" akan dipaksa keluar (exit) seketika dari tayangan TV.`,
+      confirmText: "KICK SEKARANG",
+      isDestructive: true,
+      onConfirm: async () => {
+        try {
+          await fetch("/api/kick", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "x-admin-password": adminPassword },
+            body: JSON.stringify({ token }),
+          });
+          showToast("success", `Sinyal KICK terkirim ke token ${token}!`);
+        } catch {
+          showToast("error", "Gagal mengirim sinyal KICK.");
+        }
+        setConfirmDialog(null);
+      },
+    });
   };
 
   const getExpirationParams = (duration: string) => {
     const now = Date.now();
     switch (duration) {
-      case "1h": return { expiresAt: now + 3600000, label: "1 Jam" };
-      case "1d": return { expiresAt: now + 86400000, label: "1 Hari" };
-      case "1w": return { expiresAt: now + 604800000, label: "1 Minggu" };
-      case "1m": return { expiresAt: now + 2592000000, label: "1 Bulan" };
-      default: return { expiresAt: null, label: "Lifetime" };
+      case "1h":
+        return { expiresAt: now + 3600000, label: "1 Jam" };
+      case "1d":
+        return { expiresAt: now + 86400000, label: "1 Hari" };
+      case "1w":
+        return { expiresAt: now + 604800000, label: "1 Minggu" };
+      case "1m":
+        return { expiresAt: now + 2592000000, label: "1 Bulan" };
+      default:
+        return { expiresAt: null, label: "Lifetime" };
     }
   };
 
@@ -419,24 +649,68 @@ export default function AdminPanel() {
     for (let i = 0; i < 6; i++) {
       token += chars.charAt(Math.floor(Math.random() * chars.length));
     }
-    if (!tokens.some(t => t.code === token)) {
-      setTokens([...tokens, { code: token, badgeIcon: tokenBadgeIcon, badgeColor: tokenBadgeColor, nameEffect: tokenNameEffect, maxDevices: tokenMaxDevices, deviceIds: [], ...getExpirationParams(tokenDuration) }]);
+    if (!tokens.some((t) => t.code === token)) {
+      setTokens([
+        ...tokens,
+        {
+          code: token,
+          badgeIcon: tokenBadgeIcon,
+          badgeColor: tokenBadgeColor,
+          nameEffect: tokenNameEffect,
+          maxDevices: tokenMaxDevices,
+          deviceIds: [],
+          ...getExpirationParams(tokenDuration),
+        },
+      ]);
+      showToast("success", `Token acak ${token} berhasil dibuat! Tekan 'Simpan' untuk menerapkan.`);
     }
   };
 
   const addCustomToken = () => {
-    const cleanToken = customTokenInput.trim();
+    const cleanToken = customTokenInput.trim().toUpperCase();
+    if (!cleanToken) {
+      showToast("error", "Kode token tidak boleh kosong!");
+      return;
+    }
+
     if (editingTokenCode) {
-      if (cleanToken !== "") {
-        setTokens(tokens.map(t => t.code === editingTokenCode ? { ...t, code: cleanToken, badgeIcon: tokenBadgeIcon, badgeColor: tokenBadgeColor, nameEffect: tokenNameEffect, maxDevices: tokenMaxDevices } : t));
-        setEditingTokenCode(null);
-        setCustomTokenInput("");
-      }
+      setTokens(
+        tokens.map((t) =>
+          t.code === editingTokenCode
+            ? {
+                ...t,
+                code: cleanToken,
+                badgeIcon: tokenBadgeIcon,
+                badgeColor: tokenBadgeColor,
+                nameEffect: tokenNameEffect,
+                maxDevices: tokenMaxDevices,
+              }
+            : t
+        )
+      );
+      setEditingTokenCode(null);
+      setCustomTokenInput("");
+      showToast("success", `Token ${cleanToken} berhasil diperbarui!`);
     } else {
-      if (cleanToken !== "" && !tokens.some(t => t.code === cleanToken)) {
-        setTokens([...tokens, { code: cleanToken, badgeIcon: tokenBadgeIcon, badgeColor: tokenBadgeColor, nameEffect: tokenNameEffect, deviceId: "", maxDevices: tokenMaxDevices, deviceIds: [], ...getExpirationParams(tokenDuration) }]);
-        setCustomTokenInput("");
+      if (tokens.some((t) => t.code === cleanToken)) {
+        showToast("error", `Token ${cleanToken} sudah terdaftar!`);
+        return;
       }
+      setTokens([
+        ...tokens,
+        {
+          code: cleanToken,
+          badgeIcon: tokenBadgeIcon,
+          badgeColor: tokenBadgeColor,
+          nameEffect: tokenNameEffect,
+          deviceId: "",
+          maxDevices: tokenMaxDevices,
+          deviceIds: [],
+          ...getExpirationParams(tokenDuration),
+        },
+      ]);
+      setCustomTokenInput("");
+      showToast("success", `Token ${cleanToken} berhasil ditambahkan!`);
     }
   };
 
@@ -448,37 +722,54 @@ export default function AdminPanel() {
     setTokenNameEffect(token.nameEffect || "NONE");
     setTokenMaxDevices(token.maxDevices || 1);
     window.scrollTo({ top: 0, behavior: "smooth" });
+    showToast("info", `Mengedit token ${token.code}. Ubah dan klik 'Simpan Perubahan'.`);
   };
 
   const upgradeTrialToPremium = (tokenCode: string) => {
-    setTokens(tokens.map(t => {
-      if (t.code === tokenCode) {
-        return {
-          ...t,
-          isTrial: false,
-          label: "Lifetime",
-          expiresAt: null,
-          badgeIcon: "👑",
-          badgeColor: "#FFD700"
-        };
-      }
-      return t;
-    }));
-    // Note: requires saving config to take effect
+    setTokens(
+      tokens.map((t) => {
+        if (t.code === tokenCode) {
+          return {
+            ...t,
+            isTrial: false,
+            label: "Lifetime",
+            expiresAt: null,
+            badgeIcon: "👑",
+            badgeColor: "#FFD700",
+          };
+        }
+        return t;
+      })
+    );
+    showToast("success", `Token ${tokenCode} berhasil di-upgrade ke VIP Lifetime!`);
   };
 
   const removeToken = (tokenToRemove: string) => {
-    setTokens(tokens.filter(t => t.code !== tokenToRemove));
+    setConfirmDialog({
+      isOpen: true,
+      title: "Hapus Token Akses?",
+      message: `Token "${tokenToRemove}" akan dihapus. Perangkat TV pengguna akan otomatis logout.`,
+      confirmText: "Hapus Token",
+      isDestructive: true,
+      onConfirm: () => {
+        setTokens(tokens.filter((t) => t.code !== tokenToRemove));
+        showToast("info", `Token ${tokenToRemove} dihapus.`);
+        setConfirmDialog(null);
+      },
+    });
   };
 
   const resetTokenDevice = (tokenCode: string) => {
-    setTokens(tokens.map(t => t.code === tokenCode ? { ...t, deviceId: "", deviceIds: [], _resetDevice: true } : t));
+    setTokens(
+      tokens.map((t) =>
+        t.code === tokenCode ? { ...t, deviceId: "", deviceIds: [], _resetDevice: true } : t
+      )
+    );
+    showToast("success", `Ikatan perangkat TV untuk ${tokenCode} berhasil di-reset!`);
   };
 
-  const handleSendInbox = async (tokenCode: string) => {
-    const message = window.prompt(`Masukkan pesan peringatan untuk token ${tokenCode}:\n(Pesan ini akan muncul popup besar di layar TV mereka)`);
-    if (!message) return;
-
+  const handleSendInboxSubmit = async () => {
+    if (!inboxModal || !inboxModal.message.trim()) return;
     try {
       const res = await fetch("/api/inbox", {
         method: "POST",
@@ -486,15 +777,16 @@ export default function AdminPanel() {
           "Content-Type": "application/json",
           "x-admin-password": adminPassword,
         },
-        body: JSON.stringify({ token: tokenCode, message }),
+        body: JSON.stringify({ token: inboxModal.token, message: inboxModal.message }),
       });
       if (res.ok) {
-        alert("Pesan berhasil dikirim!");
+        showToast("success", `Pesan popup berhasil dikirim ke TV (${inboxModal.token})!`);
+        setInboxModal(null);
       } else {
-        alert("Gagal mengirim pesan.");
+        showToast("error", "Gagal mengirim pesan popup.");
       }
     } catch {
-      alert("Terjadi kesalahan jaringan.");
+      showToast("error", "Terjadi kesalahan jaringan.");
     }
   };
 
@@ -517,7 +809,7 @@ export default function AdminPanel() {
           epgUrl,
           proxyUrl,
           customChannels,
-          tokens, // Kirim array tokens
+          tokens,
           notificationText,
           notificationColor,
           notificationEnabled,
@@ -538,1312 +830,1741 @@ export default function AdminPanel() {
       });
 
       if (res.ok) {
-        alert("Pengaturan berhasil disimpan ke Firebase!");
+        showToast("success", "Semua pengaturan berhasil tersimpan ke Firebase!");
       } else {
         const err = await res.json();
-        alert("Gagal menyimpan: " + (err.error || "Password Admin Salah!"));
+        showToast("error", "Gagal menyimpan: " + (err.error || "Password Admin Salah!"));
         if (res.status === 401) setIsAuthenticated(false);
       }
     } catch {
-      alert("Terjadi kesalahan jaringan.");
+      showToast("error", "Terjadi kesalahan jaringan saat menyimpan data.");
+    } finally {
+      setSaving(false);
     }
-    setSaving(false);
   };
+
+  // ==========================================
+  // Loading & Login Views
+  // ==========================================
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center text-foreground">
-        <RefreshCcw className="animate-spin w-8 h-8 text-primary" />
+      <div className="min-h-screen bg-[#080c14] flex flex-col items-center justify-center text-slate-100 gap-4">
+        <div className="relative flex items-center justify-center">
+          <div className="w-16 h-16 rounded-full border-4 border-indigo-500/20 border-t-indigo-500 animate-spin" />
+          <Tv className="w-6 h-6 text-indigo-400 absolute" />
+        </div>
+        <p className="text-sm text-slate-400 font-medium animate-pulse">Menghubungkan ke KIMTV Hub...</p>
       </div>
     );
   }
 
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen bg-card flex items-center justify-center p-4">
-        <div className="bg-muted  border border-border shadow-sm  p-8 rounded-xl border border-border w-full max-w-md shadow-md">
-          <div className="flex justify-center mb-6">
-            <div className="bg-accent p-4 rounded-full">
-              <Tv className="w-10 h-10 text-primary" />
+      <div className="min-h-screen bg-[#080c14] flex items-center justify-center p-4 relative overflow-hidden">
+        {/* Glow ambient spots */}
+        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-indigo-600/15 rounded-full blur-[120px] pointer-events-none" />
+        <div className="absolute bottom-10 right-10 w-72 h-72 bg-cyan-600/10 rounded-full blur-[100px] pointer-events-none" />
+
+        <div className="glass-panel p-8 md:p-10 rounded-3xl border border-white/10 w-full max-w-md shadow-2xl relative z-10">
+          <div className="flex flex-col items-center mb-8 text-center">
+            <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-cyan-400 p-0.5 shadow-xl shadow-indigo-500/25 mb-4">
+              <div className="w-full h-full bg-[#090d16] rounded-[14px] flex items-center justify-center">
+                <Tv className="w-8 h-8 text-indigo-400" />
+              </div>
             </div>
+            <h1 className="text-2xl font-black tracking-tight text-white">{appName} Console</h1>
+            <p className="text-slate-400 text-xs mt-1.5 max-w-xs">
+              Pusat kendali live streaming, token akses, moderasi chat, dan konfigurasi TV.
+            </p>
           </div>
-          <h1 className="text-2xl font-bold text-center text-foreground mb-2">KIMTV Admin Panel</h1>
-          <p className="text-muted-foreground text-center text-sm mb-8">Silakan masukkan password admin untuk melanjutkan.</p>
-          
-          <form onSubmit={handleLogin} className="space-y-6">
-            <div>
+
+          <form onSubmit={handleLogin} className="space-y-5">
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-slate-300 uppercase tracking-wider pl-1">
+                Password Administrator
+              </label>
               <div className="relative">
-                <ShieldAlert className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                <ShieldAlert className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
                 <input
                   type="password"
                   required
-                  placeholder="Admin Password"
+                  placeholder="••••••••••••"
                   value={adminPassword}
                   onChange={(e) => setAdminPassword(e.target.value)}
-                  className="w-full bg-background border border-border text-foreground rounded-xl py-3 pl-12 pr-4 focus:outline-none focus:border-purple-500 transition-colors"
+                  className="w-full bg-[#0c1322] border border-white/10 text-white rounded-2xl py-3.5 pl-12 pr-4 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 text-sm transition-all"
                 />
               </div>
             </div>
+
             <button
               type="submit"
-              className="w-full bg-primary text-primary-foreground font-bold py-3 rounded-xl hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
+              className="w-full py-3.5 px-4 bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 text-white font-bold rounded-2xl transition-all shadow-lg shadow-indigo-600/30 active:scale-[0.98] flex items-center justify-center gap-2 text-sm"
             >
-              <Key className="w-5 h-5" /> Masuk Panel
+              <Key className="w-4 h-4" /> Masuk ke Panel
             </button>
           </form>
+
+          <div className="mt-8 pt-6 border-t border-white/5 flex items-center justify-between text-xs text-slate-500">
+            <span>Versi Console 2.0</span>
+            <span className="flex items-center gap-1.5 text-emerald-400">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              Firebase Realtime
+            </span>
+          </div>
         </div>
       </div>
     );
   }
 
+  // Filtered tokens
+  const filteredTokens = tokens.filter((t) => {
+    const isTabMatch = tokenSubTab === "premium" ? !t.isTrial : t.isTrial;
+    if (!isTabMatch) return false;
+
+    const isExpired = t.expiresAt && t.expiresAt <= Date.now();
+    if (tokenFilter === "active" && isExpired) return false;
+    if (tokenFilter === "expired" && !isExpired) return false;
+
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      const codeMatch = t.code.toLowerCase().includes(q);
+      const devMatch = (t.deviceId && t.deviceId.toLowerCase().includes(q)) || (t.deviceIds && t.deviceIds.some(d => d.toLowerCase().includes(q)));
+      return codeMatch || devMatch;
+    }
+    return true;
+  });
+
+  const navigationTabs = [
+    { id: "overview", label: "Dashboard", icon: Activity, badge: activeUsersCount ? `${activeUsersCount} online` : undefined },
+    { id: "analytics", label: "Analisis", icon: PieChart },
+    { id: "playlist", label: "M3U & Channel", icon: Globe, count: customChannels.length },
+    { id: "tokens", label: "Token Akses", icon: Key, count: tokens.length },
+    { id: "chat", label: "Live Chat", icon: MessageSquare, badge: chatMessages.length > 0 ? chatMessages.length : undefined },
+    { id: "settings", label: "Pengaturan TV", icon: Sliders },
+  ];
+
   return (
-    <div className="flex h-screen bg-background text-foreground overflow-hidden">
-      {/* Sidebar */}
-      <aside className="w-64 bg-background border-r border-border flex flex-col hidden md:flex">
-        <div className="p-4 flex items-center gap-3">
-          <div className="bg-foreground text-background p-1.5 rounded-md flex items-center justify-center">
-            <Tv className="w-5 h-5" />
+    <div className="flex h-screen bg-[#080c14] text-slate-100 overflow-hidden font-sans">
+      {/* Toast Notification Container */}
+      <div className="fixed top-4 right-4 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none px-4 sm:px-0">
+        {toasts.map((toast) => (
+          <div
+            key={toast.id}
+            className={`pointer-events-auto flex items-center gap-3 p-3.5 rounded-2xl shadow-xl border text-sm backdrop-blur-xl animate-toast transition-all ${
+              toast.type === "success"
+                ? "bg-emerald-950/90 border-emerald-500/30 text-emerald-200"
+                : toast.type === "error"
+                ? "bg-red-950/90 border-red-500/30 text-red-200"
+                : "bg-indigo-950/90 border-indigo-500/30 text-indigo-200"
+            }`}
+          >
+            {toast.type === "success" && <Check className="w-5 h-5 text-emerald-400 shrink-0" />}
+            {toast.type === "error" && <AlertCircle className="w-5 h-5 text-red-400 shrink-0" />}
+            {toast.type === "info" && <Sparkles className="w-5 h-5 text-indigo-400 shrink-0" />}
+            <span className="flex-1 text-xs sm:text-sm font-medium">{toast.message}</span>
+            <button
+              onClick={() => setToasts((prev) => prev.filter((t) => t.id !== toast.id))}
+              className="text-slate-400 hover:text-white p-1"
+            >
+              <X className="w-4 h-4" />
+            </button>
           </div>
-          <div>
-            <h1 className="text-sm font-bold leading-none">{appName}</h1>
-            <p className="text-xs text-muted-foreground mt-1">Admin Panel</p>
+        ))}
+      </div>
+
+      {/* Confirmation Modal */}
+      {confirmDialog && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-toast">
+          <div className="glass-panel p-6 rounded-3xl border border-white/10 max-w-md w-full shadow-2xl space-y-4">
+            <div className="flex items-center gap-3">
+              <div
+                className={`p-3 rounded-2xl ${
+                  confirmDialog.isDestructive ? "bg-red-500/10 text-red-400" : "bg-indigo-500/10 text-indigo-400"
+                }`}
+              >
+                <AlertTriangle className="w-6 h-6" />
+              </div>
+              <h3 className="text-lg font-bold text-white">{confirmDialog.title}</h3>
+            </div>
+            <p className="text-sm text-slate-300 leading-relaxed">{confirmDialog.message}</p>
+            <div className="flex justify-end gap-3 pt-2">
+              <button
+                onClick={() => setConfirmDialog(null)}
+                className="px-4 py-2.5 rounded-xl text-sm font-medium text-slate-300 hover:bg-white/5 transition-colors"
+              >
+                Batal
+              </button>
+              <button
+                onClick={confirmDialog.onConfirm}
+                className={`px-5 py-2.5 rounded-xl text-sm font-bold text-white transition-all shadow-lg ${
+                  confirmDialog.isDestructive
+                    ? "bg-red-600 hover:bg-red-500 shadow-red-600/25"
+                    : "bg-indigo-600 hover:bg-indigo-500 shadow-indigo-600/25"
+                }`}
+              >
+                {confirmDialog.confirmText || "Konfirmasi"}
+              </button>
+            </div>
           </div>
         </div>
-        
-        <nav className="flex-1 px-4 py-2 space-y-6 overflow-y-auto">
-          <div>
-            <p className="text-xs font-semibold text-muted-foreground mb-2 px-2">General</p>
-            <div className="space-y-1">
-              {[
-                { id: "overview", label: "Dashboard", icon: Activity },
-                { id: "analytics", label: "Analytics", icon: PieChart },
-                { id: "chat", label: "Chats", icon: MessageSquare },
-                { id: "tokens", label: "Users", icon: Users },
-              ].map(tab => (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-md transition-all text-sm font-medium ${
-                    activeTab === tab.id 
-                      ? "bg-accent text-accent-foreground" 
-                      : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
-                  }`}
-                >
-                  <tab.icon className="w-4 h-4" />
-                  <span className="flex-1 text-left">{tab.label}</span>
-                </button>
-              ))}
-            </div>
-          </div>
+      )}
 
-          <div>
-            <p className="text-xs font-semibold text-muted-foreground mb-2 px-2">Configuration</p>
-            <div className="space-y-1">
-              {[
-                { id: "playlist", label: "M3U Playlist", icon: Globe },
-              ].map(tab => (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-md transition-all text-sm font-medium ${
-                    activeTab === tab.id 
-                      ? "bg-accent text-accent-foreground" 
-                      : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
-                  }`}
-                >
-                  <tab.icon className="w-4 h-4" />
-                  {tab.label}
-                </button>
-              ))}
+      {/* Inbox Prompt Modal */}
+      {inboxModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-toast">
+          <div className="glass-panel p-6 rounded-3xl border border-white/10 max-w-md w-full shadow-2xl space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="p-3 rounded-2xl bg-emerald-500/10 text-emerald-400">
+                <MessageCircle className="w-6 h-6" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-white">Kirim Pesan Layar TV</h3>
+                <p className="text-xs text-slate-400 font-mono">Token: {inboxModal.token}</p>
+              </div>
+            </div>
+            <p className="text-xs text-slate-400">
+              Pesan ini akan muncul sebagai dialog peringatan besar di tengah layar TV pengguna.
+            </p>
+            <textarea
+              rows={3}
+              placeholder="Contoh: Masa aktif langganan Anda tersisa 3 hari. Segera perpanjang ke admin..."
+              value={inboxModal.message}
+              onChange={(e) => setInboxModal({ ...inboxModal, message: e.target.value })}
+              className="w-full bg-[#0c1322] border border-white/10 text-white rounded-2xl p-3.5 focus:outline-none focus:border-indigo-500 text-sm"
+            />
+            <div className="flex justify-end gap-3 pt-2">
+              <button
+                onClick={() => setInboxModal(null)}
+                className="px-4 py-2.5 rounded-xl text-sm font-medium text-slate-300 hover:bg-white/5"
+              >
+                Batal
+              </button>
+              <button
+                onClick={handleSendInboxSubmit}
+                className="px-5 py-2.5 rounded-xl text-sm font-bold bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-600/20"
+              >
+                Kirim ke TV
+              </button>
             </div>
           </div>
+        </div>
+      )}
 
-          <div>
-            <p className="text-xs font-semibold text-muted-foreground mb-2 px-2">Other</p>
-            <div className="space-y-1">
-              {[
-                { id: "settings", label: "Settings", icon: ShieldAlert }
-              ].map(tab => (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-md transition-all text-sm font-medium ${
-                    activeTab === tab.id 
-                      ? "bg-accent text-accent-foreground" 
-                      : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
-                  }`}
-                >
-                  <tab.icon className="w-4 h-4" />
-                  {tab.label}
-                </button>
-              ))}
+      {/* ==========================================
+          Desktop Sidebar
+      ========================================== */}
+      <aside className="w-64 bg-[#080c14] border-r border-white/5 flex flex-col hidden lg:flex select-none">
+        {/* Brand Header */}
+        <div className="p-5 flex items-center justify-between border-b border-white/5">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-cyan-400 p-0.5 shadow-md shadow-indigo-500/20">
+              <div className="w-full h-full bg-[#090d16] rounded-[10px] flex items-center justify-center">
+                <Tv className="w-5 h-5 text-indigo-400" />
+              </div>
+            </div>
+            <div>
+              <h1 className="text-sm font-extrabold tracking-tight text-white">{appName}</h1>
+              <p className="text-[11px] text-slate-400 font-medium">Management Hub</p>
             </div>
           </div>
+          <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[10px] font-semibold text-emerald-400">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            LIVE
+          </div>
+        </div>
+
+        {/* Navigation Tabs */}
+        <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+          <div className="px-3 pb-2 text-[10px] font-bold tracking-wider text-slate-400 uppercase">
+            Menu Utama
+          </div>
+          {navigationTabs.map((tab) => {
+            const Icon = tab.icon;
+            const isActive = activeTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl transition-all text-xs font-semibold group ${
+                  isActive
+                    ? "bg-gradient-to-r from-indigo-600/90 to-indigo-700 text-white shadow-lg shadow-indigo-600/25"
+                    : "text-slate-400 hover:text-white hover:bg-white/5"
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <Icon className={`w-4 h-4 transition-colors ${isActive ? "text-white" : "text-slate-400 group-hover:text-indigo-400"}`} />
+                  <span>{tab.label}</span>
+                </div>
+                {tab.badge && (
+                  <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
+                    isActive ? "bg-white/20 text-white" : "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
+                  }`}>
+                    {tab.badge}
+                  </span>
+                )}
+                {typeof tab.count === "number" && (
+                  <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
+                    isActive ? "bg-white/20 text-white" : "bg-white/5 text-slate-400"
+                  }`}>
+                    {tab.count}
+                  </span>
+                )}
+              </button>
+            );
+          })}
         </nav>
-        
-        <div className="p-4 mt-auto">
-          <button 
+
+        {/* User Footer */}
+        <div className="p-3 border-t border-white/5">
+          <button
             onClick={() => setIsAuthenticated(false)}
-            className="w-full flex items-center gap-3 px-3 py-2 hover:bg-accent text-muted-foreground hover:text-foreground rounded-md transition-colors text-sm font-medium"
+            className="w-full flex items-center justify-between p-2.5 rounded-xl hover:bg-red-500/10 hover:border-red-500/20 border border-transparent transition-all group text-left"
           >
-            <div className="w-8 h-8 rounded-full bg-accent flex items-center justify-center text-foreground font-bold text-xs border border-border">
-              AD
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-xl bg-slate-800 flex items-center justify-center font-bold text-xs text-slate-300 border border-white/10 group-hover:bg-red-500/20 group-hover:text-red-300">
+                AD
+              </div>
+              <div className="overflow-hidden">
+                <div className="text-xs font-bold text-white group-hover:text-red-300 truncate">Administrator</div>
+                <div className="text-[10px] text-slate-400 group-hover:text-red-400/80">Keluar Sesi</div>
+              </div>
             </div>
-            <div className="flex-1 text-left">
-              <div className="text-foreground leading-none font-bold">Admin</div>
-              <div className="text-xs text-muted-foreground mt-1 truncate">Logout Panel</div>
-            </div>
+            <LogOut className="w-4 h-4 text-slate-500 group-hover:text-red-400 transition-colors" />
           </button>
         </div>
       </aside>
 
-      {/* Main Content Area */}
-      <main className="flex-1 flex flex-col h-screen overflow-hidden relative">
-        {/* Top Header */}
-        <header className="h-14 bg-background border-b border-border flex items-center justify-between px-4 sticky top-0 z-10 gap-4">
-          <div className="flex items-center gap-4 flex-1">
-            <button className="md:hidden text-muted-foreground hover:text-foreground">
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
-            </button>
-            <div className="hidden md:flex items-center text-sm text-muted-foreground gap-2">
-              <span className="hover:text-foreground cursor-pointer transition-colors">General</span>
-              <span className="text-border">/</span>
-              <span className="text-foreground font-medium capitalize">{activeTab}</span>
-            </div>
-          </div>
-          
-          <div className="flex items-center gap-3">
-            <div className="hidden md:flex items-center relative">
-              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="absolute left-3 top-2.5 text-muted-foreground"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-              <input type="text" placeholder="Search..." className="h-9 w-64 bg-accent/50 border border-transparent rounded-md pl-9 pr-12 text-sm focus:outline-none focus:border-border transition-colors" />
-              <div className="absolute right-1.5 top-1.5 flex items-center gap-1">
-                <span className="bg-background border border-border text-[10px] text-muted-foreground px-1.5 py-0.5 rounded shadow-sm">⌘K</span>
+      {/* ==========================================
+          Mobile Slide-over Drawer
+      ========================================== */}
+      {isMobileMenuOpen && (
+        <div className="fixed inset-0 z-50 lg:hidden flex">
+          <div
+            className="fixed inset-0 bg-black/70 backdrop-blur-sm"
+            onClick={() => setIsMobileMenuOpen(false)}
+          />
+          <div className="relative w-72 max-w-[80vw] bg-[#090d16] border-r border-white/10 h-full flex flex-col p-4 shadow-2xl z-10 animate-toast">
+            <div className="flex items-center justify-between pb-4 border-b border-white/10">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-indigo-600 flex items-center justify-center">
+                  <Tv className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h2 className="text-sm font-bold text-white">{appName}</h2>
+                  <p className="text-[10px] text-slate-400">Mobile Admin</p>
+                </div>
               </div>
+              <button
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/10"
+              >
+                <X className="w-5 h-5" />
+              </button>
             </div>
 
+            <nav className="flex-1 py-4 space-y-1.5 overflow-y-auto">
+              {navigationTabs.map((tab) => {
+                const Icon = tab.icon;
+                const isActive = activeTab === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => {
+                      setActiveTab(tab.id);
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className={`w-full flex items-center justify-between px-3.5 py-3 rounded-xl text-sm font-medium transition-colors ${
+                      isActive ? "bg-indigo-600 text-white font-bold" : "text-slate-300 hover:bg-white/5"
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <Icon className="w-4 h-4" />
+                      <span>{tab.label}</span>
+                    </div>
+                    {tab.badge && (
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-bold">
+                        {tab.badge}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </nav>
+
+            <button
+              onClick={() => {
+                setIsAuthenticated(false);
+                setIsMobileMenuOpen(false);
+              }}
+              className="mt-auto flex items-center gap-3 p-3 text-sm text-red-400 hover:bg-red-500/10 rounded-xl font-semibold"
+            >
+              <LogOut className="w-4 h-4" />
+              Logout Sesi
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ==========================================
+          Main Content Workspace
+      ========================================== */}
+      <main className="flex-1 flex flex-col h-screen overflow-hidden relative">
+        {/* Top App Header */}
+        <header className="h-16 bg-[#080c14]/80 backdrop-blur-md border-b border-white/5 flex items-center justify-between px-4 sm:px-6 sticky top-0 z-20 gap-4">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setIsMobileMenuOpen(true)}
+              className="lg:hidden p-2 rounded-xl text-slate-400 hover:text-white hover:bg-white/5"
+              aria-label="Buka Menu"
+            >
+              <Menu className="w-5 h-5" />
+            </button>
+            <div className="flex items-center gap-2 text-xs text-slate-400">
+              <span className="font-semibold text-white capitalize">{activeTab}</span>
+              <span className="text-slate-600">/</span>
+              <span className="hidden sm:inline text-slate-400">Console Hub</span>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 sm:gap-3">
+            {/* Quick Search */}
+            <div className="relative hidden md:block">
+              <Search className="w-4 h-4 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                placeholder="Cari token / user..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-44 lg:w-56 bg-[#0d1424] border border-white/5 rounded-xl pl-9 pr-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:w-64 transition-all"
+              />
+            </div>
+
+            {/* Save Config Button */}
             <button
               onClick={handleSave}
               disabled={saving}
-              className="h-9 px-4 bg-primary text-primary-foreground hover:bg-primary/90 rounded-md transition-colors text-sm font-medium flex items-center gap-2 disabled:opacity-50"
+              className="px-4 py-2 bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 text-white rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 shadow-lg shadow-indigo-600/25 active:scale-95 disabled:opacity-50 transition-all"
+              title="Shortcut: Ctrl+S"
             >
               {saving ? <RefreshCcw className="animate-spin w-4 h-4" /> : <Save className="w-4 h-4" />}
-              <span className="hidden md:inline">{saving ? "Menyimpan..." : "Save"}</span>
+              <span>{saving ? "Menyimpan..." : "Simpan Perubahan"}</span>
+              <kbd className="hidden xl:inline px-1.5 py-0.5 text-[10px] bg-white/20 rounded font-mono">⌘S</kbd>
             </button>
-
-            <button className="w-8 h-8 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-accent rounded-md transition-colors">
-              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"></path></svg>
-            </button>
-
-            <div className="w-8 h-8 rounded-full bg-accent border border-border flex items-center justify-center text-xs font-bold text-foreground overflow-hidden">
-              AD
-            </div>
           </div>
         </header>
 
-        {/* Scrollable Content */}
-        <div className="flex-1 overflow-y-auto p-4 md:p-8 pb-24 md:pb-8">
+        {/* Scrollable Dashboard View */}
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 pb-28 md:pb-12">
           <DashboardErrorBoundary>
-            <div className="max-w-6xl mx-auto space-y-4 md:space-y-6 pb-12">
+            <div className="max-w-7xl mx-auto space-y-6">
+
+              {/* ==========================================
+                  TAB 1: OVERVIEW (DASHBOARD)
+              ========================================== */}
               {activeTab === "overview" && (
-              <>
-              <div className="flex items-center justify-between space-y-2">
-                <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
-                <div className="flex items-center space-x-2">
-                  <button className="bg-foreground text-background hover:bg-foreground/90 h-9 px-4 py-2 inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors">
-                    Download
-                  </button>
-                </div>
-              </div>
-
-              <div className="flex items-center space-x-2 pb-2">
-                <div className="bg-muted text-muted-foreground h-9 items-center justify-center rounded-lg p-1 space-x-1 inline-flex">
-                  <button className="inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1 text-sm font-medium bg-background text-foreground shadow shadow-sm transition-all">Overview</button>
-                  <button className="inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1 text-sm font-medium transition-all hover:text-foreground">Analytics</button>
-                  <button className="hidden sm:inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1 text-sm font-medium transition-all hover:text-foreground">Reports</button>
-                  <button className="hidden sm:inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1 text-sm font-medium transition-all hover:text-foreground">Notifications</button>
-                </div>
-              </div>
-
-              {/* KPI Metrics Grid */}
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-                <div className="bg-card border border-border text-card-foreground rounded-xl shadow-sm">
-                  <div className="p-6 flex flex-row items-center justify-between space-y-0 pb-2">
-                    <h3 className="tracking-tight text-sm font-medium">Total Token Aktif</h3>
-                    <Key className="h-4 w-4 text-muted-foreground" />
-                  </div>
-                  <div className="p-6 pt-0">
-                    <div className="text-2xl font-bold">
-                      +{tokens.filter(t => !t.expiresAt || t.expiresAt > Date.now()).length}
+                <div className="space-y-6 animate-toast">
+                  {/* Maintenance Banner Warning */}
+                  {isMaintenance && (
+                    <div className="p-4 rounded-2xl bg-red-950/60 border border-red-500/40 text-red-200 flex items-center justify-between gap-4 shadow-lg shadow-red-950/30">
+                      <div className="flex items-center gap-3">
+                        <AlertTriangle className="w-5 h-5 text-red-400 shrink-0 animate-bounce" />
+                        <div>
+                          <h4 className="text-sm font-bold">MODE MAINTENANCE SEDANG AKTIF</h4>
+                          <p className="text-xs text-red-300/80">Semua aplikasi TV pengguna saat ini diblokir dengan pesan perbaikan.</p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => setActiveTab("settings")}
+                        className="px-3 py-1.5 bg-red-500 text-white text-xs font-bold rounded-lg hover:bg-red-400 shrink-0"
+                      >
+                        Ubah di Settings
+                      </button>
                     </div>
-                    <p className="text-xs text-muted-foreground">Dari total {tokens.length} token</p>
-                  </div>
-                </div>
+                  )}
 
-                <div className="bg-card border border-border text-card-foreground rounded-xl shadow-sm">
-                  <div className="p-6 flex flex-row items-center justify-between space-y-0 pb-2">
-                    <h3 className="tracking-tight text-sm font-medium">Slot Terpakai</h3>
-                    <Tv className="h-4 w-4 text-muted-foreground" />
-                  </div>
-                  <div className="p-6 pt-0">
-                    <div className="text-2xl font-bold">
-                      +{tokens.reduce((sum, t) => sum + (Array.isArray(t.deviceIds) ? t.deviceIds.length : (t.deviceId ? 1 : 0)), 0)}
+                  {/* 4 KPI Metrics Grid */}
+                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+                    {/* KPI 1 */}
+                    <div className="glass-card p-4 sm:p-5 rounded-2xl relative overflow-hidden">
+                      <div className="flex items-center justify-between mb-3">
+                        <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Token Aktif</span>
+                        <div className="w-8 h-8 rounded-xl bg-amber-500/10 text-amber-400 flex items-center justify-center">
+                          <Key className="w-4 h-4" />
+                        </div>
+                      </div>
+                      <div className="text-2xl sm:text-3xl font-black text-white tracking-tight">
+                        {tokens.filter((t) => !t.expiresAt || t.expiresAt > Date.now()).length}
+                      </div>
+                      <p className="text-[11px] text-slate-400 mt-1">
+                        Dari total <span className="text-slate-200 font-semibold">{tokens.length}</span> token terdaftar
+                      </p>
                     </div>
-                    <p className="text-xs text-muted-foreground">Dari {tokens.reduce((sum, t) => sum + (Number(t.maxDevices) || 1), 0)} max perangkat</p>
-                  </div>
-                </div>
 
-                <div className="bg-card border border-border text-card-foreground rounded-xl shadow-sm">
-                  <div className="p-6 flex flex-row items-center justify-between space-y-0 pb-2">
-                    <h3 className="tracking-tight text-sm font-medium">User Online</h3>
-                    <Activity className="h-4 w-4 text-muted-foreground" />
-                  </div>
-                  <div className="p-6 pt-0">
-                    <div className="text-2xl font-bold flex items-center gap-2">
-                      +{activeUsersCount}
-                      <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse shadow-sm"></div>
+                    {/* KPI 2 */}
+                    <div className="glass-card p-4 sm:p-5 rounded-2xl relative overflow-hidden">
+                      <div className="flex items-center justify-between mb-3">
+                        <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Slot Terpakai</span>
+                        <div className="w-8 h-8 rounded-xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center">
+                          <Tv className="w-4 h-4" />
+                        </div>
+                      </div>
+                      <div className="text-2xl sm:text-3xl font-black text-white tracking-tight">
+                        {tokens.reduce((sum, t) => sum + (Array.isArray(t.deviceIds) ? t.deviceIds.length : t.deviceId ? 1 : 0), 0)}
+                      </div>
+                      <p className="text-[11px] text-slate-400 mt-1">
+                        Dari <span className="text-slate-200 font-semibold">{tokens.reduce((sum, t) => sum + (Number(t.maxDevices) || 1), 0)}</span> max slot TV
+                      </p>
                     </div>
-                    <p className="text-xs text-muted-foreground">Sedang streaming saat ini</p>
-                  </div>
-                </div>
 
-                <div className="bg-card border border-border text-card-foreground rounded-xl shadow-sm">
-                  <div className="p-6 flex flex-row items-center justify-between space-y-0 pb-2">
-                    <h3 className="tracking-tight text-sm font-medium">Versi Aplikasi</h3>
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4 text-muted-foreground"><path d="M22 12h-4l-3 9L9 3l-3 9H2"></path></svg>
+                    {/* KPI 3 */}
+                    <div className="glass-card p-4 sm:p-5 rounded-2xl relative overflow-hidden">
+                      <div className="flex items-center justify-between mb-3">
+                        <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Sedang Streaming</span>
+                        <div className="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center">
+                          <Activity className="w-4 h-4" />
+                        </div>
+                      </div>
+                      <div className="text-2xl sm:text-3xl font-black text-emerald-400 tracking-tight flex items-center gap-2">
+                        {activeUsersCount}
+                        <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+                      </div>
+                      <p className="text-[11px] text-slate-400 mt-1">Pengguna aktif terhubung</p>
+                    </div>
+
+                    {/* KPI 4 */}
+                    <div className="glass-card p-4 sm:p-5 rounded-2xl relative overflow-hidden">
+                      <div className="flex items-center justify-between mb-3">
+                        <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Versi TV</span>
+                        <div className="w-8 h-8 rounded-xl bg-cyan-500/10 text-cyan-400 flex items-center justify-center">
+                          <Zap className="w-4 h-4" />
+                        </div>
+                      </div>
+                      <div className="text-2xl sm:text-3xl font-black text-cyan-300 tracking-tight">
+                        v{latestVersionCode}
+                      </div>
+                      <p className="text-[11px] text-slate-400 mt-1">Auto-Update TV aktif</p>
+                    </div>
                   </div>
-                  <div className="p-6 pt-0">
-                    <div className="text-2xl font-bold">v{typeof latestVersionCode === 'number' || typeof latestVersionCode === 'string' ? latestVersionCode : 1}</div>
-                    <p className="text-xs text-muted-foreground">Pembaruan TV otomatis aktif</p>
+
+                  {/* 2-Pane: Top Channels & Active Streamers */}
+                  <div className="grid grid-cols-1 lg:grid-cols-7 gap-6">
+                    {/* Top Channels (col-span-4) */}
+                    <div className="lg:col-span-4 glass-panel p-5 sm:p-6 rounded-3xl space-y-4">
+                      <div className="flex items-center justify-between pb-3 border-b border-white/5">
+                        <div className="flex items-center gap-2.5">
+                          <Radio className="w-5 h-5 text-indigo-400" />
+                          <h3 className="text-sm font-bold text-white">Channel Paling Banyak Ditonton</h3>
+                        </div>
+                        <span className="text-xs text-slate-400">Real-time stats</span>
+                      </div>
+
+                      {channelStats.length === 0 ? (
+                        <div className="text-center py-12 text-slate-400 text-xs">
+                          Belum ada statistik channel terkumpul.
+                        </div>
+                      ) : (
+                        <div className="space-y-3 pt-1">
+                          {channelStats.map((stat, i) => {
+                            const maxCount = channelStats[0]?.count || 1;
+                            const percent = Math.round((stat.count / maxCount) * 100);
+                            const medals = ["🥇", "🥈", "🥉"];
+                            return (
+                              <div key={stat.name || i} className="p-3 rounded-2xl bg-white/[0.02] border border-white/5 hover:border-indigo-500/30 transition-all space-y-2">
+                                <div className="flex items-center justify-between text-xs">
+                                  <div className="flex items-center gap-2 font-bold text-white">
+                                    <span>{medals[i] || `#${i + 1}`}</span>
+                                    <span className="truncate max-w-[200px] sm:max-w-[280px]">{stat.name}</span>
+                                  </div>
+                                  <span className="font-mono text-indigo-300 font-bold">{stat.count} views</span>
+                                </div>
+                                <div className="w-full bg-slate-800/60 rounded-full h-2 overflow-hidden">
+                                  <div
+                                    className="bg-gradient-to-r from-indigo-500 to-cyan-400 h-full rounded-full transition-all duration-500"
+                                    style={{ width: `${percent}%` }}
+                                  />
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Active Streamers (col-span-3) */}
+                    <div className="lg:col-span-3 glass-panel p-5 sm:p-6 rounded-3xl space-y-4 flex flex-col">
+                      <div className="flex items-center justify-between pb-3 border-b border-white/5">
+                        <div className="flex items-center gap-2.5">
+                          <Users className="w-5 h-5 text-emerald-400" />
+                          <h3 className="text-sm font-bold text-white">Penonton Streaming Saat Ini</h3>
+                        </div>
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 font-bold border border-emerald-500/20">
+                          {activeUsersCount} Online
+                        </span>
+                      </div>
+
+                      <div className="flex-1 overflow-y-auto max-h-[320px] space-y-2 pr-1">
+                        {activeUsers.length === 0 ? (
+                          <div className="text-center py-10 text-slate-400 text-xs">
+                            Tidak ada penonton aktif saat ini.
+                          </div>
+                        ) : (
+                          activeUsers.map((user, idx) => {
+                            const elapsedSec = now ? Math.floor((now - (Number(user.lastSeen) || 0)) / 1000) : 0;
+                            return (
+                              <div
+                                key={idx}
+                                className="p-3 rounded-2xl bg-white/[0.02] border border-white/5 hover:bg-white/[0.04] transition-all flex items-center justify-between gap-3 text-xs"
+                              >
+                                <div className="flex items-center gap-3 overflow-hidden">
+                                  <div className="w-8 h-8 rounded-xl bg-slate-800 flex items-center justify-center text-slate-300 shrink-0 border border-white/5">
+                                    {user.isTv ? <Monitor className="w-4 h-4 text-blue-400" /> : <Smartphone className="w-4 h-4 text-emerald-400" />}
+                                  </div>
+                                  <div className="overflow-hidden">
+                                    <div className="font-mono font-bold text-amber-300 truncate">{user.token}</div>
+                                    <div className="text-[11px] text-slate-400 truncate">{user.channel}</div>
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-2 shrink-0">
+                                  <span className="text-[10px] text-slate-500">{elapsedSec}s lalu</span>
+                                  <button
+                                    onClick={() => handleKick(user.token)}
+                                    className="px-2 py-1 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 font-bold text-[10px] transition-colors"
+                                  >
+                                    KICK
+                                  </button>
+                                </div>
+                              </div>
+                            );
+                          })
+                        )}
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </div>
-              
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7 mb-4">
-                {/* Card: Top Channels (col-span-4) */}
-                <div className="col-span-4 bg-card border border-border rounded-xl shadow-sm">
-                  <div className="p-6 pb-4">
-                    <h3 className="tracking-tight text-lg font-medium">Overview</h3>
+              )}
+
+              {/* ==========================================
+                  TAB 2: ANALYTICS
+              ========================================== */}
+              {activeTab === "analytics" && (
+                <div className="space-y-6 animate-toast">
+                  {/* Device Distribution Split Bar */}
+                  <div className="glass-panel p-6 rounded-3xl space-y-4">
+                    <div className="flex items-center gap-2.5 pb-2 border-b border-white/5">
+                      <PieChart className="w-5 h-5 text-indigo-400" />
+                      <h3 className="text-sm font-bold text-white">Distribusi Perangkat Penonton</h3>
+                    </div>
+
+                    {(() => {
+                      const tvCount = activeUsers.filter((u) => u.isTv).length;
+                      const mobileCount = activeUsers.length - tvCount;
+                      const tvPercent = activeUsers.length > 0 ? Math.round((tvCount / activeUsers.length) * 100) : 50;
+                      return (
+                        <div className="space-y-3">
+                          <div className="flex justify-between items-center text-xs font-semibold">
+                            <span className="flex items-center gap-2 text-blue-400">
+                              <Monitor className="w-4 h-4" /> Smart TV / STB: {tvCount} ({tvPercent}%)
+                            </span>
+                            <span className="flex items-center gap-2 text-emerald-400">
+                              <Smartphone className="w-4 h-4" /> Smartphone / HP: {mobileCount} ({100 - tvPercent}%)
+                            </span>
+                          </div>
+                          <div className="w-full bg-slate-800/80 rounded-full h-4 overflow-hidden flex shadow-inner">
+                            <div
+                              className="bg-gradient-to-r from-blue-600 to-blue-400 h-full transition-all duration-500"
+                              style={{ width: `${tvPercent}%` }}
+                            />
+                            <div
+                              className="bg-gradient-to-r from-emerald-500 to-emerald-400 h-full transition-all duration-500"
+                              style={{ width: `${100 - tvPercent}%` }}
+                            />
+                          </div>
+                        </div>
+                      );
+                    })()}
                   </div>
-                  <div className="p-6 pt-0">
-                    {channelStats.length === 0 ? (
-                      <div className="text-center text-muted-foreground py-10 text-sm">
-                        Belum ada data statistik channel.
+
+                  {/* Brand and Model Rank Grid */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="glass-panel p-5 sm:p-6 rounded-3xl space-y-4">
+                      <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider pb-2 border-b border-white/5">
+                        Peringkat Merek Perangkat (Top Brands)
+                      </h4>
+                      <div className="space-y-2">
+                        {(() => {
+                          const brands: Record<string, number> = {};
+                          activeUsers.forEach((u) => {
+                            const b = u.deviceBrand || "Unknown";
+                            brands[b] = (brands[b] || 0) + 1;
+                          });
+                          const list = Object.entries(brands).sort((a, b) => b[1] - a[1]).slice(0, 5);
+                          if (list.length === 0) {
+                            return <p className="text-xs text-slate-500 py-4 text-center">Belum ada data perangkat.</p>;
+                          }
+                          return list.map(([brand, count], idx) => (
+                            <div key={idx} className="flex justify-between items-center p-3 rounded-2xl bg-white/[0.02] border border-white/5 text-xs">
+                              <span className="font-semibold text-white capitalize">{brand}</span>
+                              <span className="px-2.5 py-1 rounded-full bg-blue-500/10 text-blue-400 font-bold border border-blue-500/20">
+                                {count} Perangkat
+                              </span>
+                            </div>
+                          ));
+                        })()}
+                      </div>
+                    </div>
+
+                    <div className="glass-panel p-5 sm:p-6 rounded-3xl space-y-4">
+                      <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider pb-2 border-b border-white/5">
+                        Peringkat Tipe Model (Top Models)
+                      </h4>
+                      <div className="space-y-2">
+                        {(() => {
+                          const models: Record<string, number> = {};
+                          activeUsers.forEach((u) => {
+                            const m = u.deviceModel || "Unknown";
+                            models[m] = (models[m] || 0) + 1;
+                          });
+                          const list = Object.entries(models).sort((a, b) => b[1] - a[1]).slice(0, 5);
+                          if (list.length === 0) {
+                            return <p className="text-xs text-slate-500 py-4 text-center">Belum ada data model.</p>;
+                          }
+                          return list.map(([model, count], idx) => (
+                            <div key={idx} className="flex justify-between items-center p-3 rounded-2xl bg-white/[0.02] border border-white/5 text-xs">
+                              <span className="font-semibold text-white uppercase">{model}</span>
+                              <span className="px-2.5 py-1 rounded-full bg-purple-500/10 text-purple-300 font-bold border border-purple-500/20">
+                                {count} User
+                              </span>
+                            </div>
+                          ));
+                        })()}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* ==========================================
+                  TAB 3: PLAYLIST M3U & CUSTOM CHANNELS
+              ========================================== */}
+              {activeTab === "playlist" && (
+                <div className="space-y-6 animate-toast">
+                  {/* Multi-Server Playlist Card */}
+                  <div className="glass-panel p-6 rounded-3xl space-y-6">
+                    <div className="flex items-center justify-between pb-3 border-b border-white/5">
+                      <div className="flex items-center gap-2.5">
+                        <Globe className="w-5 h-5 text-indigo-400" />
+                        <div>
+                          <h3 className="text-base font-bold text-white">Multi-Server Playlist M3U</h3>
+                          <p className="text-xs text-slate-400">Konfigurasi sumber siaran otomatis dengan failover 3 tingkat.</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                      {/* Server 1 */}
+                      <div className="p-4 rounded-2xl bg-indigo-950/20 border border-indigo-500/30 space-y-3">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-bold text-indigo-400 uppercase tracking-wider">Server 1 (Utama)</span>
+                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 font-bold">Priority 1</span>
+                        </div>
+                        <input
+                          type="text"
+                          value={m3uName}
+                          onChange={(e) => setM3uName(e.target.value)}
+                          placeholder="Label (Contoh: VIP Server)"
+                          className="w-full bg-[#0c1322] border border-white/10 text-white rounded-xl p-2.5 text-xs focus:outline-none focus:border-indigo-500"
+                        />
+                        <input
+                          type="url"
+                          value={m3uUrl}
+                          onChange={(e) => setM3uUrl(e.target.value)}
+                          placeholder="https://server1.com/list.m3u"
+                          className="w-full bg-[#0c1322] border border-indigo-500/30 text-white rounded-xl p-2.5 text-xs focus:outline-none focus:border-indigo-500"
+                        />
+                      </div>
+
+                      {/* Server 2 */}
+                      <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/10 space-y-3">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-bold text-slate-300 uppercase tracking-wider">Server 2 (Cadangan 1)</span>
+                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/10 text-slate-400 font-bold">Fallback 1</span>
+                        </div>
+                        <input
+                          type="text"
+                          value={m3uName2}
+                          onChange={(e) => setM3uName2(e.target.value)}
+                          placeholder="Label (Contoh: Server Cadangan)"
+                          className="w-full bg-[#0c1322] border border-white/10 text-white rounded-xl p-2.5 text-xs focus:outline-none focus:border-indigo-500"
+                        />
+                        <input
+                          type="url"
+                          value={m3uUrl2}
+                          onChange={(e) => setM3uUrl2(e.target.value)}
+                          placeholder="https://server2.com/list.m3u"
+                          className="w-full bg-[#0c1322] border border-white/10 text-white rounded-xl p-2.5 text-xs focus:outline-none focus:border-indigo-500"
+                        />
+                      </div>
+
+                      {/* Server 3 */}
+                      <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/10 space-y-3">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-bold text-slate-300 uppercase tracking-wider">Server 3 (Cadangan 2)</span>
+                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/10 text-slate-400 font-bold">Fallback 2</span>
+                        </div>
+                        <input
+                          type="text"
+                          value={m3uName3}
+                          onChange={(e) => setM3uName3(e.target.value)}
+                          placeholder="Label (Contoh: Emergency Server)"
+                          className="w-full bg-[#0c1322] border border-white/10 text-white rounded-xl p-2.5 text-xs focus:outline-none focus:border-indigo-500"
+                        />
+                        <input
+                          type="url"
+                          value={m3uUrl3}
+                          onChange={(e) => setM3uUrl3(e.target.value)}
+                          placeholder="https://server3.com/list.m3u"
+                          className="w-full bg-[#0c1322] border border-white/10 text-white rounded-xl p-2.5 text-xs focus:outline-none focus:border-indigo-500"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5 pt-4 border-t border-white/5">
+                      {/* EPG URL */}
+                      <div className="space-y-2">
+                        <label className="text-xs font-bold text-emerald-400 block uppercase tracking-wider">
+                          Global EPG URL (Jadwal Siaran XMLTV)
+                        </label>
+                        <input
+                          type="url"
+                          value={epgUrl}
+                          onChange={(e) => setEpgUrl(e.target.value)}
+                          placeholder="https://example.com/epg.xml"
+                          className="w-full bg-[#0c1322] border border-emerald-500/30 text-white rounded-xl p-3 text-xs focus:outline-none focus:border-emerald-500"
+                        />
+                        <p className="text-[11px] text-slate-400">Jadwal tayangan TV akan otomatis disinkronkan ke semua perangkat.</p>
+                      </div>
+
+                      {/* Stream Proxy URL */}
+                      <div className="space-y-2">
+                        <label className="text-xs font-bold text-cyan-400 block uppercase tracking-wider">
+                          Global Stream Proxy (Cloudflare Worker)
+                        </label>
+                        <input
+                          type="url"
+                          value={proxyUrl}
+                          onChange={(e) => setProxyUrl(e.target.value)}
+                          placeholder="https://proxy.namakamu.workers.dev/"
+                          className="w-full bg-[#0c1322] border border-cyan-500/30 text-white rounded-xl p-3 text-xs focus:outline-none focus:border-cyan-500"
+                        />
+                        <p className="text-[11px] text-slate-400">Bypass proteksi CORS / Referer untuk stream terproteksi.</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Custom Channels Section */}
+                  <div className="glass-panel p-6 rounded-3xl space-y-6">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-3 border-b border-white/5">
+                      <div className="flex items-center gap-2.5">
+                        <Tv className="w-5 h-5 text-amber-400" />
+                        <div>
+                          <h3 className="text-base font-bold text-white">Custom Channels (Manual)</h3>
+                          <p className="text-xs text-slate-400">Tambahkan channel independen tanpa perlu mengedit M3U server.</p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => {
+                          setEditingCustomChannel({ type: "direct" });
+                          setIsChannelModalOpen(true);
+                        }}
+                        className="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl text-xs flex items-center justify-center gap-2 shadow-lg shadow-amber-500/20"
+                      >
+                        <Plus className="w-4 h-4" /> Tambah Channel Baru
+                      </button>
+                    </div>
+
+                    {/* Channel Cards Grid */}
+                    {customChannels.length === 0 ? (
+                      <div className="text-center py-12 text-slate-500 text-xs">
+                        Belum ada channel custom manual yang ditambahkan.
                       </div>
                     ) : (
-                      <div className="space-y-6">
-                        {channelStats.map((stat, i) => (
-                          <div key={stat.name || i} className="flex items-center">
-                            <div className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold bg-accent text-muted-foreground mr-4">
-                              {i + 1}
-                            </div>
-                            <div className="flex-1 space-y-1">
-                              <p className="text-sm font-medium leading-none">{typeof stat.name === 'string' ? stat.name : String(stat.name || '')}</p>
-                              <p className="text-sm text-muted-foreground">Channel TV</p>
-                            </div>
-                            <div className="font-medium text-sm">
-                              +{typeof stat.count === 'number' ? stat.count : (Number(stat.count) || 0)} views
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Card: Analytics Dashboard / Active Users (col-span-3) */}
-                <div className="col-span-3 bg-card border border-border rounded-xl shadow-sm">
-                  <div className="p-6 pb-4">
-                    <h3 className="tracking-tight text-lg font-medium">Recent Users</h3>
-                    <p className="text-sm text-muted-foreground mt-1.5">Ada {activeUsersCount} perangkat sedang streaming saat ini.</p>
-                  </div>
-                  <div className="p-6 pt-0">
-                    <div className="space-y-6 max-h-[350px] overflow-y-auto pr-2">
-                      {activeUsers.length === 0 ? (
-                        <div className="text-center text-muted-foreground py-6 text-sm">Belum ada perangkat terhubung.</div>
-                      ) : (
-                        activeUsers.map((user, idx) => (
-                          <div key={idx} className="flex items-center">
-                            <span className="relative flex h-9 w-9 shrink-0 overflow-hidden rounded-full bg-accent items-center justify-center mr-4">
-                              <span className="font-semibold text-muted-foreground text-xs">{typeof user.token === 'string' && user.token ? user.token.substring(0, 2).toUpperCase() : "U"}</span>
-                            </span>
-                            <div className="flex-1 space-y-1 overflow-hidden">
-                              <p className="text-sm font-medium leading-none truncate">{typeof user.token === 'string' ? user.token : String(user.token || '')}</p>
-                              <p className="text-sm text-muted-foreground truncate">{typeof user.channel === 'string' ? user.channel : (typeof user.channel === 'object' ? JSON.stringify(user.channel) : String(user.channel || ''))}</p>
-                            </div>
-                            <div className="flex items-center gap-3">
-                              <div className="font-medium text-xs text-muted-foreground">
-                                {now ? Math.floor((now - (Number(user.lastSeen) || 0)) / 1000) : 0}s
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                        {customChannels.map((c) => (
+                          <div
+                            key={c.id}
+                            className="p-4 rounded-2xl bg-white/[0.02] border border-white/10 hover:border-amber-500/30 transition-all flex flex-col justify-between gap-3 group"
+                          >
+                            <div className="space-y-1.5">
+                              <div className="flex items-center justify-between">
+                                <span className="font-bold text-white text-sm truncate">{c.name}</span>
+                                <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase ${
+                                  c.type === "embed" ? "bg-purple-500/20 text-purple-300" : "bg-emerald-500/20 text-emerald-300"
+                                }`}>
+                                  {c.type || "direct"}
+                                </span>
                               </div>
-                              <button onClick={() => handleKick(user.token)} className="text-primary hover:text-foreground text-xs font-bold transition-colors">
-                                KICK
+                              <p className="text-[11px] text-slate-400 font-mono truncate">{c.streamUrl}</p>
+                              {c.group && (
+                                <span className="inline-block text-[10px] px-2 py-0.5 rounded-md bg-white/5 text-slate-300">
+                                  {c.group}
+                                </span>
+                              )}
+                            </div>
+
+                            <div className="flex items-center justify-end gap-2 pt-2 border-t border-white/5">
+                              <button
+                                onClick={() => {
+                                  setEditingCustomChannel(c);
+                                  setIsChannelModalOpen(true);
+                                }}
+                                className="px-3 py-1 bg-white/5 hover:bg-white/10 text-slate-300 rounded-lg text-xs font-semibold"
+                              >
+                                Edit
+                              </button>
+                              <button
+                                onClick={() => setCustomChannels(customChannels.filter((x) => x.id !== c.id))}
+                                className="px-3 py-1 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-lg text-xs font-semibold"
+                              >
+                                Hapus
                               </button>
                             </div>
                           </div>
-                        ))
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Geo Analytics Card (Full width below) */}
-              {(() => {
-                const countryCounts: Record<string, number> = {};
-                activeUsers.forEach(u => {
-                  const rawCode = typeof u.country === 'string' ? u.country : String(u.country || "ID");
-                  const code = rawCode.toUpperCase();
-                  countryCounts[code] = (countryCounts[code] || 0) + 1;
-                });
-                const sortedCountries = Object.entries(countryCounts).sort((a, b) => b[1] - a[1]).slice(0, 5);
-                const getCountryName = (c: string) => {
-                  const safeCode = typeof c === 'string' ? c : String(c || '');
-                  const map: Record<string, string> = { ID: "Indonesia", MY: "Malaysia", SG: "Singapura", US: "Amerika Serikat", AU: "Australia" };
-                  return map[safeCode.toUpperCase()] || safeCode.toUpperCase();
-                };
-
-                return (
-                  <div className="bg-card rounded-xl border border-border shadow-sm mb-8 mt-4">
-                    <div className="p-6 pb-4">
-                      <h3 className="tracking-tight text-lg font-medium">Distribusi Lokasi</h3>
-                    </div>
-                    <div className="p-6 pt-0">
-                      {sortedCountries.length === 0 ? (
-                        <div className="text-center text-muted-foreground py-4 text-sm">Belum ada data lokasi.</div>
-                      ) : (
-                        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                          {sortedCountries.map(([code, count]) => (
-                            <div key={code} className="flex flex-col items-center justify-center bg-accent/50 py-4 px-2 rounded-xl border border-border">
-                              <span className="font-bold text-card-foreground text-md text-center">{getCountryName(code)}</span>
-                              <span className="text-xs text-muted-foreground mt-1">{count} Perangkat</span>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                );
-              })()}
-              </>
-            )}
-            {activeTab === "analytics" && (
-              <div className="space-y-6">
-                <div className="bg-card  border border-border p-6 rounded-xl">
-                  <div className="flex items-center gap-3 border-b border-border pb-4 mb-4">
-                    <PieChart className="text-blue-500" />
-                    <h2 className="text-lg font-semibold">Distribusi Tipe Perangkat</h2>
-                  </div>
-                  <div className="flex flex-col gap-4">
-                    {(() => {
-                       const tvCount = activeUsers.filter(u => u.isTv).length;
-                       const mobileCount = activeUsers.length - tvCount;
-                       const tvPercent = activeUsers.length > 0 ? (tvCount / activeUsers.length) * 100 : 0;
-                       return (
-                         <div className="w-full">
-                           <div className="flex justify-between mb-2 font-medium">
-                             <span className="text-blue-400">Smart TV / STB ({tvCount})</span>
-                             <span className="text-green-400">Mobile / HP ({mobileCount})</span>
-                           </div>
-                           <div className="w-full bg-accent rounded-full h-4 overflow-hidden flex">
-                             <div className="bg-blue-500 h-full transition-all" style={{ width: `${tvPercent}%` }}></div>
-                             <div className="bg-green-500 h-full transition-all" style={{ width: `${100 - tvPercent}%` }}></div>
-                           </div>
-                         </div>
-                       )
-                    })()}
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="bg-card  border border-border p-6 rounded-xl">
-                    <h3 className="text-md font-medium text-muted-foreground mb-4 border-b border-border pb-2">Peringkat Merek (Top Brands)</h3>
-                    <div className="space-y-3">
-                      {(() => {
-                         const brands: Record<string, number> = {};
-                         activeUsers.forEach(u => {
-                           const brand = typeof u.deviceBrand === 'string' ? u.deviceBrand : String(u.deviceBrand || "Unknown");
-                           brands[brand] = (brands[brand] || 0) + 1;
-                         });
-                         return Object.entries(brands)
-                           .sort((a,b) => b[1] - a[1])
-                           .slice(0, 5)
-                           .map(([brand, count], idx) => (
-                             <div key={idx} className="flex justify-between items-center bg-card p-3 rounded-lg border border-border hover:bg-accent transition-colors">
-                               <span className="capitalize">{String(brand)}</span>
-                               <span className="bg-blue-500/20 border border-blue-500/30 text-blue-400 px-3 py-1 rounded-full text-xs font-bold">{count} User</span>
-                             </div>
-                           ));
-                      })()}
-                    </div>
-                  </div>
-
-                  <div className="bg-card  border border-border p-6 rounded-xl">
-                    <h3 className="text-md font-medium text-muted-foreground mb-4 border-b border-border pb-2">Peringkat Model (Top Models)</h3>
-                    <div className="space-y-3">
-                      {(() => {
-                         const models: Record<string, number> = {};
-                         activeUsers.forEach(u => {
-                           const model = typeof u.deviceModel === 'string' ? u.deviceModel : String(u.deviceModel || "Unknown");
-                           models[model] = (models[model] || 0) + 1;
-                         });
-                         return Object.entries(models)
-                           .sort((a,b) => b[1] - a[1])
-                           .slice(0, 5)
-                           .map(([model, count], idx) => (
-                             <div key={idx} className="flex justify-between items-center bg-card p-3 rounded-lg border border-border hover:bg-accent transition-colors">
-                               <span className="uppercase">{String(model)}</span>
-                               <span className="bg-purple-500/20 border border-border text-primary px-3 py-1 rounded-full text-xs font-bold">{count} User</span>
-                             </div>
-                           ));
-                      })()}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="bg-card  border border-border p-6 rounded-xl overflow-hidden flex flex-col">
-                  <h3 className="text-md font-medium text-muted-foreground mb-4 border-b border-border pb-2">Detail Perangkat Pengguna Aktif</h3>
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-sm text-left">
-                      <thead className="text-xs text-muted-foreground uppercase bg-card">
-                        <tr>
-                          <th className="px-4 py-3 rounded-tl-lg">Token</th>
-                          <th className="px-4 py-3">Tipe</th>
-                          <th className="px-4 py-3">Merek & Model</th>
-                          <th className="px-4 py-3 rounded-tr-lg">Aktivitas</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {activeUsers.map((u, idx) => (
-                          <tr key={idx} className="border-b border-border hover:bg-card">
-                            <td className="px-4 py-3 font-mono text-yellow-400 font-bold">{String(u.token || '')}</td>
-                            <td className="px-4 py-3">
-                              {u.isTv ? (
-                                <span className="text-xs bg-blue-500/20 text-blue-400 px-2 py-1 rounded-full">Smart TV</span>
-                              ) : (
-                                <span className="text-xs bg-green-500/20 text-green-400 px-2 py-1 rounded-full">Mobile</span>
-                              )}
-                            </td>
-                            <td className="px-4 py-3 capitalize">
-                              <div className="font-semibold text-card-foreground">{typeof u.deviceBrand === 'string' ? u.deviceBrand : String(u.deviceBrand || "-")}</div>
-                              <div className="text-xs text-muted-foreground uppercase">{typeof u.deviceModel === 'string' ? u.deviceModel : String(u.deviceModel || "-")}</div>
-                            </td>
-                            <td className="px-4 py-3 text-card-foreground">{typeof u.channel === 'string' ? u.channel : (typeof u.channel === 'object' ? JSON.stringify(u.channel) : String(u.channel || '-'))}</td>
-                          </tr>
                         ))}
-                        {activeUsers.length === 0 && (
-                          <tr>
-                            <td colSpan={4} className="text-center py-6 text-muted-foreground">Belum ada pengguna aktif</td>
-                          </tr>
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              </div>
-            )}
-            {activeTab === "playlist" && (
-              <>
-              {/* Card 1: Playlist M3U Multi-Server */}
-          <div className="bg-card  border-r border-border p-6 rounded-xl border border-border space-y-4">
-            <div className="flex items-center gap-3 border-b border-border pb-4 mb-4">
-              <Globe className="text-blue-500" />
-              <h2 className="text-lg font-semibold">Multi-Server Playlist (M3U)</h2>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div>
-                <label className="block text-sm font-bold text-blue-400 mb-2">Server Utama</label>
-                <input
-                  type="text"
-                  value={m3uName}
-                  onChange={(e) => setM3uName(e.target.value)}
-                  placeholder="Nama (opsional, cth: VIP Server)"
-                  className="w-full bg-background border border-blue-500/30 text-foreground rounded-xl p-3 mb-2 focus:outline-none focus:border-blue-500 transition-colors"
-                />
-                <input
-                  type="url"
-                  value={m3uUrl}
-                  onChange={(e) => setM3uUrl(e.target.value)}
-                  placeholder="https://server1.com/list.m3u"
-                  className="w-full bg-background border border-blue-500/30 text-foreground rounded-xl p-3 focus:outline-none focus:border-blue-500 transition-colors"
-                />
-              </div>
-              <div>
-                <label className="block text-sm text-muted-foreground mb-2">Server Cadangan 1</label>
-                <input
-                  type="text"
-                  value={m3uName2}
-                  onChange={(e) => setM3uName2(e.target.value)}
-                  placeholder="Nama (opsional, cth: Server Cadangan)"
-                  className="w-full bg-background border border-border text-foreground rounded-xl p-3 mb-2 focus:outline-none focus:border-blue-500 transition-colors"
-                />
-                <input
-                  type="url"
-                  value={m3uUrl2}
-                  onChange={(e) => setM3uUrl2(e.target.value)}
-                  placeholder="https://server2.com/list.m3u"
-                  className="w-full bg-background border border-border text-foreground rounded-xl p-3 focus:outline-none focus:border-blue-500 transition-colors"
-                />
-              </div>
-              <div>
-                <label className="block text-sm text-muted-foreground mb-2">Server Cadangan 2</label>
-                <input
-                  type="text"
-                  value={m3uName3}
-                  onChange={(e) => setM3uName3(e.target.value)}
-                  placeholder="Nama (opsional, cth: Server 3)"
-                  className="w-full bg-background border border-border text-foreground rounded-xl p-3 mb-2 focus:outline-none focus:border-blue-500 transition-colors"
-                />
-                <input
-                  type="url"
-                  value={m3uUrl3}
-                  onChange={(e) => setM3uUrl3(e.target.value)}
-                  placeholder="https://server3.com/list.m3u"
-                  className="w-full bg-background border border-border text-foreground rounded-xl p-3 focus:outline-none focus:border-blue-500 transition-colors"
-                />
-              </div>
-            </div>
-            <p className="text-xs text-muted-foreground mt-2 mb-6">Jika Server Utama gagal dimuat, aplikasi akan otomatis mencoba Server Cadangan tanpa sepengetahuan pengguna.</p>
-            
-            <div className="border-t border-border pt-4 mt-2">
-              <label className="block text-sm font-bold text-green-400 mb-2">Global EPG URL (Jadwal Tayangan XMLTV)</label>
-              <input
-                type="url"
-                value={epgUrl}
-                onChange={(e) => setEpgUrl(e.target.value)}
-                placeholder="https://example.com/epg.xml"
-                className="w-full bg-background border border-green-500/30 text-foreground rounded-xl p-3 focus:outline-none focus:border-green-500 transition-colors"
-              />
-              <p className="text-xs text-muted-foreground mt-2">Opsional. Jika diisi, semua aplikasi TV akan otomatis menggunakan jadwal (EPG) dari URL ini dan menimpa pengaturan EPG manual di dalam aplikasi TV.</p>
-            </div>
-
-            <div className="border-t border-border pt-4 mt-2">
-              <label className="block text-sm font-bold text-primary mb-2">Global Stream Proxy URL (Cloudflare Worker)</label>
-              <input
-                type="url"
-                value={proxyUrl}
-                onChange={(e) => setProxyUrl(e.target.value)}
-                placeholder="https://proxy.namakamu.workers.dev/"
-                className="w-full bg-background border border-border text-foreground rounded-xl p-3 focus:outline-none focus:border-purple-500 transition-colors"
-              />
-              <p className="text-xs text-muted-foreground mt-2">Opsional. Jika diisi, channel dengan DRM atau Referer akan otomatis dirutekan melalui proxy ini untuk melewati pemblokiran.</p>
-            </div>
-
-            <div className="border-t border-border pt-4 mt-6">
-              <div className="flex items-center gap-3 mb-4">
-                <Tv className="text-orange-500" />
-                <h2 className="text-lg font-semibold">Custom Channels (Manual)</h2>
-              </div>
-              <p className="text-xs text-muted-foreground mb-4">Tambahkan channel sendiri tanpa perlu mengedit file M3U. Channel ini akan digabungkan otomatis ke daftar tayangan di TV.</p>
-              
-              <div className="bg-black/30 p-4 rounded-xl border border-border space-y-3 mb-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <input type="text" placeholder="Nama Channel (Wajib)" className="bg-background border border-border rounded-lg p-2 text-sm text-foreground focus:border-orange-500"
-                    value={editingCustomChannel?.name || ""}
-                    onChange={(e) => setEditingCustomChannel({...editingCustomChannel, name: e.target.value})} />
-                  <select 
-                    value={editingCustomChannel?.type || "direct"} 
-                    onChange={(e) => setEditingCustomChannel({...editingCustomChannel, type: e.target.value})}
-                    className="bg-background border border-border rounded-lg p-2 text-sm text-foreground focus:border-orange-500">
-                    <option value="direct">Direct Stream (m3u8/mp4)</option>
-                    <option value="embed">Embed Code / Iframe</option>
-                  </select>
-                  
-                  {editingCustomChannel?.type === "embed" ? (
-                    <textarea 
-                      placeholder="Masukkan kode Iframe HTML atau URL webpage di sini (Wajib)" 
-                      className="bg-background border border-border rounded-lg p-2 text-sm text-foreground focus:border-orange-500 md:col-span-2 min-h-[100px]"
-                      value={editingCustomChannel?.streamUrl || ""}
-                      onChange={(e) => setEditingCustomChannel({...editingCustomChannel, streamUrl: e.target.value})}
-                    />
-                  ) : (
-                    <input type="url" placeholder="Stream URL (Wajib)" className="bg-background border border-border rounded-lg p-2 text-sm text-foreground focus:border-orange-500"
-                      value={editingCustomChannel?.streamUrl || ""}
-                      onChange={(e) => setEditingCustomChannel({...editingCustomChannel, streamUrl: e.target.value})} />
-                  )}
-
-                  <input type="text" placeholder="Grup (Cth: VIP)" className="bg-background border border-border rounded-lg p-2 text-sm text-foreground focus:border-orange-500"
-                    value={editingCustomChannel?.group || ""}
-                    onChange={(e) => setEditingCustomChannel({...editingCustomChannel, group: e.target.value})} />
-                  <input type="url" placeholder="Logo URL" className="bg-background border border-border rounded-lg p-2 text-sm text-foreground focus:border-orange-500"
-                    value={editingCustomChannel?.logoUrl || ""}
-                    onChange={(e) => setEditingCustomChannel({...editingCustomChannel, logoUrl: e.target.value})} />
-                  
-                  {editingCustomChannel?.type !== "embed" && (
-                    <>
-                      <input type="text" placeholder="License Key (opsional)" className="bg-background border border-border rounded-lg p-2 text-sm text-foreground focus:border-orange-500"
-                        value={editingCustomChannel?.licenseKey || ""}
-                        onChange={(e) => setEditingCustomChannel({...editingCustomChannel, licenseKey: e.target.value})} />
-                      <input type="text" placeholder="User-Agent (opsional)" className="bg-background border border-border rounded-lg p-2 text-sm text-foreground focus:border-orange-500"
-                        value={editingCustomChannel?.userAgent || ""}
-                        onChange={(e) => setEditingCustomChannel({...editingCustomChannel, userAgent: e.target.value})} />
-                    </>
-                  )}
-                </div>
-                <div className="flex gap-2 justify-end mt-2">
-                  <button onClick={() => setEditingCustomChannel(null)} className="px-3 py-1.5 text-xs rounded-lg bg-gray-500/20 text-foreground">Batal</button>
-                  <button onClick={() => {
-                    if (!editingCustomChannel?.name || !editingCustomChannel?.streamUrl) return alert("Nama dan Stream URL wajib diisi!");
-                    const isNew = !editingCustomChannel.id;
-                    const id = isNew ? "cc_" + Date.now() : editingCustomChannel.id;
-                    const newChannel = { ...editingCustomChannel, id } as CustomChannel;
-                    if (isNew) {
-                      setCustomChannels([...customChannels, newChannel]);
-                    } else {
-                      setCustomChannels(customChannels.map(c => c.id === id ? newChannel : c));
-                    }
-                    setEditingCustomChannel(null);
-                  }} className="px-3 py-1.5 text-xs rounded-lg bg-orange-500 text-foreground font-bold">
-                    {editingCustomChannel?.id ? "Simpan Perubahan" : "Tambah Channel"}
-                  </button>
-                </div>
-              </div>
-
-              <div className="space-y-2 max-h-60 overflow-y-auto pr-2">
-                {customChannels.length === 0 ? (
-                  <p className="text-xs text-muted-foreground text-center py-4">Belum ada custom channel.</p>
-                ) : (
-                  customChannels.map((c) => {
-                    const nameStr = typeof c.name === 'string' ? c.name : (typeof c.name === 'object' ? JSON.stringify(c.name) : String(c.name || ''));
-                    const streamUrlStr = typeof c.streamUrl === 'string' ? c.streamUrl : (typeof c.streamUrl === 'object' ? JSON.stringify(c.streamUrl) : String(c.streamUrl || ''));
-                    const groupStr = typeof c.group === 'string' ? c.group : (c.group ? String(c.group) : '');
-
-                    return (
-                      <div key={c.id} className="flex justify-between items-center bg-muted p-3 rounded-lg border border-border">
-                        <div>
-                          <div className="font-bold text-orange-400 text-sm">{nameStr} {c.type === 'embed' && <span className="text-[10px] bg-blue-500/20 text-blue-300 px-1 ml-1 rounded">EMBED</span>}</div>
-                          <div className="text-xs text-muted-foreground truncate max-w-[200px] md:max-w-[400px]">{streamUrlStr}</div>
-                          {groupStr && <div className="text-[10px] bg-accent inline-block px-1.5 rounded mt-1">{groupStr}</div>}
-                        </div>
-                        <div className="flex gap-2">
-                          <button onClick={() => setEditingCustomChannel(c)} className="text-xs px-2 py-1 bg-blue-500/20 text-blue-400 rounded hover:bg-blue-500/40">Edit</button>
-                          <button onClick={() => setCustomChannels(customChannels.filter(x => x.id !== c.id))} className="text-xs px-2 py-1 bg-purple-500/20 text-purple-300 rounded hover:bg-purple-500/40">Hapus</button>
-                        </div>
                       </div>
-                    );
-                  })
-                )}
-              </div>
-            </div>
-          </div>
-              </>
-            )}
-            {activeTab === "tokens" && (
-              <>
-              {/* Card 2: Keamanan Akses (Multi-Token) */}
-          <div className="bg-card  border-r border-border p-6 rounded-xl border border-border space-y-6">
-            <div className="flex items-center justify-between border-b border-border pb-4">
-              <div className="flex items-center gap-3">
-                <Key className="text-yellow-500" />
-                <h2 className="text-lg font-semibold">Manajemen Token Akses</h2>
-              </div>
-              <span className="bg-yellow-500/20 text-yellow-500 text-xs font-bold px-2 py-1 rounded-lg">
-                {tokens.length} Token Aktif
-              </span>
-            </div>
-            
-            <div className="space-y-4">
-              {/* Tambah Token Baru */}
-              <div className="flex flex-col gap-2">
-                <label className="block text-sm text-muted-foreground">Buat Token Custom</label>
-                <div className="flex flex-wrap gap-2">
-                  <select
-                    value={tokenDuration}
-                    onChange={(e) => setTokenDuration(e.target.value)}
-                    className="bg-background border border-border text-foreground rounded-xl px-3 py-3 focus:outline-none focus:border-yellow-500 text-sm"
-                  >
-                    <option value="lifetime">Lifetime</option>
-                    <option value="1h">1 Jam</option>
-                    <option value="1d">1 Hari</option>
-                    <option value="1w">1 Minggu</option>
-                    <option value="1m">1 Bulan</option>
-                  </select>
-                  <input
-                    type="text"
-                    value={customTokenInput}
-                    onChange={(e) => setCustomTokenInput(e.target.value)}
-                    placeholder="Misal: VIP-BUDI"
-                    className="flex-1 bg-background border border-border text-foreground rounded-xl p-3 focus:outline-none focus:border-yellow-500 transition-colors min-w-[150px]"
-                  />
-                  <input
-                    type="text"
-                    value={tokenBadgeIcon}
-                    onChange={(e) => setTokenBadgeIcon(e.target.value)}
-                    placeholder="Badge (cth: 👑)"
-                    className="w-32 bg-background border border-border text-foreground rounded-xl p-3 focus:outline-none focus:border-yellow-500 transition-colors"
-                  />
-                  <div className="flex flex-col">
-                    <input
-                      type="number"
-                      min="1"
-                      value={tokenMaxDevices}
-                      onChange={(e) => setTokenMaxDevices(parseInt(e.target.value) || 1)}
-                      className="w-20 bg-background border border-border text-foreground rounded-xl p-3 focus:outline-none focus:border-yellow-500 transition-colors"
-                      title="Max Device"
-                    />
-                    <span className="text-[10px] text-muted-foreground text-center mt-1">Max Device</span>
-                  </div>
-                  <input
-                    type="color"
-                    value={tokenBadgeColor}
-                    onChange={(e) => setTokenBadgeColor(e.target.value)}
-                    className="w-12 h-12 p-1 bg-background border border-border rounded-xl cursor-pointer"
-                    title="Warna Chat"
-                  />
-                  <div className="flex flex-col gap-2">
-                    <select
-                      value={isCustomEffect(tokenNameEffect) ? 'CUSTOM' : (tokenNameEffect || 'NONE')}
-                      onChange={(e) => {
-                        if (e.target.value === 'CUSTOM') {
-                          setTokenNameEffect('https://');
-                        } else {
-                          setTokenNameEffect(e.target.value);
-                        }
-                      }}
-                      className="bg-background border border-border text-foreground rounded-xl px-3 py-3 focus:outline-none focus:border-yellow-500 text-sm"
-                      title="Efek Nama (Glitch/Sparkle)"
-                    >
-                      <option value="NONE">Normal</option>
-                      <option value="GLITCH">⚡ Glitch</option>
-                      <option value="SPARKLE">✨ Sparkle</option>
-                      <option value="NEON">🔮 Neon Glow</option>
-                      <option value="RAINBOW">🌈 Rainbow</option>
-                      <option value="WAVY">🌊 Wavy Bounce</option>
-                      <option value="CUSTOM">🎨 Custom GIF URL...</option>
-                    </select>
-                    {isCustomEffect(tokenNameEffect) && (
-                      <input
-                        type="url"
-                        value={tokenNameEffect || ''}
-                        onChange={(e) => setTokenNameEffect(e.target.value)}
-                        placeholder="https://...gif"
-                        className="bg-background border border-border text-foreground rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-yellow-500 w-full max-w-[200px]"
-                      />
                     )}
                   </div>
-                  <button 
-                    onClick={addCustomToken}
-                    className="bg-yellow-600 hover:bg-yellow-700 text-foreground font-bold px-4 py-3 rounded-xl transition-colors"
-                  >
-                    {editingTokenCode ? "Simpan" : "Tambah"}
-                  </button>
-                  {editingTokenCode && (
-                    <button 
-                      onClick={() => {
-                        setEditingTokenCode(null);
-                        setCustomTokenInput("");
-                      }}
-                      className="bg-gray-600 hover:bg-gray-700 text-foreground font-bold px-4 py-3 rounded-xl transition-colors"
-                    >
-                      Batal
-                    </button>
-                  )}
-                </div>
-              </div>
 
-              <button 
-                onClick={generateRandomToken}
-                className="w-full bg-card hover:bg-accent text-foreground border border-border font-medium py-3 rounded-xl transition-colors text-sm"
-              >
-                + Generate Token Acak
-              </button>
+                  {/* Channel Edit / Add Modal */}
+                  {isChannelModalOpen && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-toast">
+                      <div className="glass-panel p-6 rounded-3xl border border-white/10 max-w-lg w-full shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+                        <div className="flex items-center justify-between pb-3 border-b border-white/5">
+                          <h3 className="text-base font-bold text-white">
+                            {editingCustomChannel?.id ? "Edit Custom Channel" : "Tambah Custom Channel"}
+                          </h3>
+                          <button
+                            onClick={() => setIsChannelModalOpen(false)}
+                            className="text-slate-400 hover:text-white"
+                          >
+                            <X className="w-5 h-5" />
+                          </button>
+                        </div>
 
-              {/* Token Sub Tabs */}
-              <div className="flex gap-2 border-b border-border pb-2">
-                <button 
-                  onClick={() => setTokenSubTab("premium")}
-                  className={`px-4 py-2 rounded-t-xl text-sm font-semibold transition-colors ${tokenSubTab === "premium" ? "bg-accent text-foreground" : "text-muted-foreground hover:text-card-foreground"}`}
-                >
-                  Premium Tokens
-                </button>
-                <button 
-                  onClick={() => setTokenSubTab("trial")}
-                  className={`px-4 py-2 rounded-t-xl text-sm font-semibold transition-colors ${tokenSubTab === "trial" ? "bg-accent text-foreground" : "text-muted-foreground hover:text-card-foreground"}`}
-                >
-                  Trial Users
-                </button>
-              </div>
+                        <div className="space-y-3 text-xs">
+                          <div>
+                            <label className="block text-slate-300 mb-1 font-semibold">Nama Channel *</label>
+                            <input
+                              type="text"
+                              required
+                              placeholder="Contoh: RCTI HD"
+                              value={editingCustomChannel?.name || ""}
+                              onChange={(e) => setEditingCustomChannel({ ...editingCustomChannel, name: e.target.value })}
+                              className="w-full bg-[#0c1322] border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-amber-500"
+                            />
+                          </div>
 
-              {/* Daftar Token Aktif */}
-              <div className="mt-4 pt-4 max-h-48 overflow-y-auto pr-2 space-y-2">
-                {tokens.filter(t => tokenSubTab === "premium" ? !t.isTrial : t.isTrial).length === 0 ? (
-                  <p className="text-sm text-muted-foreground text-center py-4">Belum ada {tokenSubTab === "premium" ? "token premium" : "pengguna trial"}.</p>
-                ) : (
-                  tokens.filter(t => tokenSubTab === "premium" ? !t.isTrial : t.isTrial).map((tokenObj, idx) => {
-                    const codeStr = typeof tokenObj.code === 'string' ? tokenObj.code : String(tokenObj.code || '');
-                    const labelStr = typeof tokenObj.label === 'string' ? tokenObj.label : String(tokenObj.label || 'Lifetime');
-                    const maxDev = Number(tokenObj.maxDevices) || 1;
-                    const devIdStr = typeof tokenObj.deviceId === 'string' ? tokenObj.deviceId : String(tokenObj.deviceId || '');
-                    const devCount = Array.isArray(tokenObj.deviceIds) ? tokenObj.deviceIds.length : (devIdStr ? 1 : 0);
-                    const formattedExp = formatDateSafe(tokenObj.expiresAt);
-
-                    return (
-                      <div key={idx} className="flex items-center justify-between bg-muted p-3 rounded-xl border border-border">
-                        <div>
-                          <span className="font-mono text-yellow-400 font-bold block">{codeStr}</span>
-                          <span className="text-xs text-muted-foreground">
-                            Durasi: {labelStr} 
-                            {formattedExp ? ` (Exp: ${formattedExp})` : ''}
-                          </span>
-                          {maxDev > 1 && (
-                            <span className="text-xs text-yellow-500 block mt-1">
-                              Batas Perangkat: {maxDev} TV
-                            </span>
-                          )}
-                          {((tokenObj.deviceIds && tokenObj.deviceIds.length > 0) || devIdStr) && (
-                            <span 
-                              onClick={() => {
-                                navigator.clipboard.writeText(devIdStr);
-                                alert('Device ID disalin: ' + devIdStr);
-                              }}
-                              className="text-xs font-bold text-purple-300 mt-1 flex items-center gap-1 cursor-pointer hover:text-red-300 transition-colors w-fit"
-                              title="Klik untuk menyalin Device ID lengkap"
+                          <div>
+                            <label className="block text-slate-300 mb-1 font-semibold">Tipe Siaran</label>
+                            <select
+                              value={editingCustomChannel?.type || "direct"}
+                              onChange={(e) => setEditingCustomChannel({ ...editingCustomChannel, type: e.target.value })}
+                              className="w-full bg-[#0c1322] border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-amber-500"
                             >
-                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
-                              Terhubung ({devCount}/{maxDev})
-                              <svg className="w-3 h-3 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
-                            </span>
+                              <option value="direct">Direct Stream (m3u8 / mp4 / mpd)</option>
+                              <option value="embed">Embed Webpage / Iframe HTML</option>
+                            </select>
+                          </div>
+
+                          <div>
+                            <label className="block text-slate-300 mb-1 font-semibold">Stream URL atau Kode Embed *</label>
+                            {editingCustomChannel?.type === "embed" ? (
+                              <textarea
+                                rows={3}
+                                placeholder="<iframe>...</iframe>"
+                                value={editingCustomChannel?.streamUrl || ""}
+                                onChange={(e) => setEditingCustomChannel({ ...editingCustomChannel, streamUrl: e.target.value })}
+                                className="w-full bg-[#0c1322] border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-amber-500 font-mono"
+                              />
+                            ) : (
+                              <input
+                                type="url"
+                                placeholder="https://example.com/stream.m3u8"
+                                value={editingCustomChannel?.streamUrl || ""}
+                                onChange={(e) => setEditingCustomChannel({ ...editingCustomChannel, streamUrl: e.target.value })}
+                                className="w-full bg-[#0c1322] border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-amber-500 font-mono"
+                              />
+                            )}
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-3">
+                            <div>
+                              <label className="block text-slate-300 mb-1 font-semibold">Kategori Grup</label>
+                              <input
+                                type="text"
+                                placeholder="Contoh: Nasional"
+                                value={editingCustomChannel?.group || ""}
+                                onChange={(e) => setEditingCustomChannel({ ...editingCustomChannel, group: e.target.value })}
+                                className="w-full bg-[#0c1322] border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-amber-500"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-slate-300 mb-1 font-semibold">Logo URL</label>
+                              <input
+                                type="url"
+                                placeholder="https://.../logo.png"
+                                value={editingCustomChannel?.logoUrl || ""}
+                                onChange={(e) => setEditingCustomChannel({ ...editingCustomChannel, logoUrl: e.target.value })}
+                                className="w-full bg-[#0c1322] border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-amber-500"
+                              />
+                            </div>
+                          </div>
+
+                          {editingCustomChannel?.type !== "embed" && (
+                            <div className="grid grid-cols-2 gap-3">
+                              <div>
+                                <label className="block text-slate-300 mb-1 font-semibold">License Key (DRM)</label>
+                                <input
+                                  type="text"
+                                  placeholder="key_id:key"
+                                  value={editingCustomChannel?.licenseKey || ""}
+                                  onChange={(e) => setEditingCustomChannel({ ...editingCustomChannel, licenseKey: e.target.value })}
+                                  className="w-full bg-[#0c1322] border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-amber-500 font-mono"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-slate-300 mb-1 font-semibold">User-Agent Kustom</label>
+                                <input
+                                  type="text"
+                                  placeholder="KIMTV/1.0"
+                                  value={editingCustomChannel?.userAgent || ""}
+                                  onChange={(e) => setEditingCustomChannel({ ...editingCustomChannel, userAgent: e.target.value })}
+                                  className="w-full bg-[#0c1322] border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-amber-500"
+                                />
+                              </div>
+                            </div>
                           )}
                         </div>
-                        <div className="flex gap-2">
-                          {tokenObj.isTrial && (
-                            <button 
-                              onClick={() => upgradeTrialToPremium(codeStr)}
-                              className="text-indigo-400 hover:text-indigo-300 text-sm font-bold bg-indigo-500/10 hover:bg-indigo-500/20 px-3 py-1 rounded-lg transition-colors"
-                            >
-                              Upgrade Premium
-                            </button>
-                          )}
-                          {devIdStr && (
-                            <button 
-                              onClick={() => resetTokenDevice(codeStr)}
-                              className="text-yellow-500 hover:text-yellow-400 text-sm font-bold bg-yellow-500/10 hover:bg-yellow-500/20 px-3 py-1 rounded-lg transition-colors"
-                              title="Hapus kaitan dengan TV lama"
-                            >
-                              Reset TV
-                            </button>
-                          )}
-                          <button 
-                            onClick={() => handleSendInbox(codeStr)}
-                            className="text-green-500 hover:text-green-400 text-sm font-bold bg-green-500/10 hover:bg-green-500/20 px-3 py-1 rounded-lg transition-colors"
+
+                        <div className="flex justify-end gap-3 pt-3 border-t border-white/5">
+                          <button
+                            onClick={() => setIsChannelModalOpen(false)}
+                            className="px-4 py-2 text-slate-300 text-xs font-semibold rounded-xl hover:bg-white/5"
                           >
-                            Pesan
+                            Batal
                           </button>
-                          {!tokenObj.isTrial && (
-                            <button 
-                              onClick={() => startEditToken(tokenObj)}
-                              className="text-blue-500 hover:text-blue-400 text-sm font-bold bg-blue-500/10 hover:bg-blue-500/20 px-3 py-1 rounded-lg transition-colors"
-                            >
-                              Edit
-                            </button>
-                          )}
-                          <button 
-                            onClick={() => removeToken(codeStr)}
-                            className="text-primary hover:text-purple-300 text-sm font-bold bg-purple-500/10 hover:bg-purple-500/20 px-3 py-1 rounded-lg transition-colors"
+                          <button
+                            onClick={() => {
+                              if (!editingCustomChannel?.name || !editingCustomChannel?.streamUrl) {
+                                showToast("error", "Nama dan Stream URL wajib diisi!");
+                                return;
+                              }
+                              const isNew = !editingCustomChannel.id;
+                              const id = isNew ? "cc_" + Date.now() : editingCustomChannel.id;
+                              const newChannel = { ...editingCustomChannel, id } as CustomChannel;
+                              if (isNew) {
+                                setCustomChannels([...customChannels, newChannel]);
+                                showToast("success", `Channel ${newChannel.name} ditambahkan!`);
+                              } else {
+                                setCustomChannels(customChannels.map((c) => (c.id === id ? newChannel : c)));
+                                showToast("success", `Channel ${newChannel.name} diperbarui!`);
+                              }
+                              setIsChannelModalOpen(false);
+                            }}
+                            className="px-5 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold rounded-xl shadow-lg shadow-amber-500/20"
                           >
-                            Hapus
+                            Simpan Channel
                           </button>
                         </div>
                       </div>
-                    );
-                  })
-                )}
-              </div>
-              <p className="text-xs text-muted-foreground mt-2">Hapus token untuk mengeluarkan pengguna (logout) dari TV mereka. Gunakan <b>Reset TV</b> jika pengguna membeli TV baru.</p>
-            </div>
-          </div>
-              </>
-            )}
-            {activeTab === "chat" && (
-              <>
-              {/* Card: Chat Moderation */}
-          <div className="bg-card  border-r border-border p-6 rounded-xl border border-border space-y-6">
-            <div className="flex items-center justify-between border-b border-border pb-4">
-              <div className="flex items-center gap-3">
-                <MessageSquare className="text-pink-500" />
-                <h2 className="text-lg font-semibold">Moderasi Live Chat</h2>
-              </div>
-              <label className="flex items-center gap-3 cursor-pointer p-2 bg-background rounded-xl border border-border">
-                <span className="text-sm font-medium">{chatEnabled ? 'Chat Aktif' : 'Chat Dimatikan'}</span>
-                <div className="relative">
-                  <input 
-                    type="checkbox" 
-                    className="sr-only" 
-                    checked={chatEnabled}
-                    onChange={(e) => setChatEnabled(e.target.checked)}
-                  />
-                  <div className={`block w-10 h-6 rounded-full transition-colors ${chatEnabled ? 'bg-pink-500' : 'bg-gray-600'}`}></div>
-                  <div className={`dot absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform ${chatEnabled ? 'transform translate-x-4' : ''}`}></div>
-                </div>
-              </label>
-            </div>
-            
-            <div className="flex flex-col gap-4">
-              <div className="flex items-center gap-4 bg-background p-4 rounded-xl border border-border">
-                <div>
-                  <label className="block text-xs text-muted-foreground mb-1">Badge Admin</label>
-                  <input
-                    type="text"
-                    value={adminBadgeIcon}
-                    onChange={(e) => setAdminBadgeIcon(e.target.value)}
-                    className="w-20 bg-background border border-border text-foreground rounded-lg p-2 focus:outline-none focus:border-pink-500 text-sm"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs text-muted-foreground mb-1">Warna</label>
-                  <input
-                    type="color"
-                    value={adminBadgeColor}
-                    onChange={(e) => setAdminBadgeColor(e.target.value)}
-                    className="w-10 h-10 p-1 bg-background border border-border rounded-lg cursor-pointer"
-                  />
-                </div>
-                <div className="flex flex-col gap-1">
-                  <label className="block text-xs text-muted-foreground mb-1">Efek Animasi</label>
-                  <select
-                    value={isCustomEffect(adminNameEffect) ? 'CUSTOM' : (adminNameEffect || 'NONE')}
-                    onChange={(e) => {
-                      if (e.target.value === 'CUSTOM') {
-                        setAdminNameEffect('https://');
-                      } else {
-                        setAdminNameEffect(e.target.value);
-                      }
-                    }}
-                    className="h-10 bg-background border border-border text-foreground rounded-lg px-2 focus:outline-none focus:border-pink-500 text-sm"
-                  >
-                    <option value="NONE">Normal</option>
-                    <option value="GLITCH">⚡ Glitch</option>
-                    <option value="SPARKLE">✨ Sparkle</option>
-                    <option value="NEON">🔮 Neon Glow</option>
-                    <option value="RAINBOW">🌈 Rainbow</option>
-                    <option value="WAVY">🌊 Wavy Bounce</option>
-                    <option value="CUSTOM">🎨 Custom GIF URL...</option>
-                  </select>
-                  {isCustomEffect(adminNameEffect) && (
-                    <input
-                      type="url"
-                      value={adminNameEffect || ''}
-                      onChange={(e) => setAdminNameEffect(e.target.value)}
-                      placeholder="https://..."
-                      className="bg-background border border-border text-foreground rounded-lg px-2 py-1 text-xs focus:outline-none focus:border-pink-500 w-32"
-                    />
+                    </div>
                   )}
                 </div>
-              </div>
+              )}
 
-              <div className="bg-background border border-border rounded-xl p-4 h-64 overflow-y-auto flex flex-col gap-2">
-                {chatMessages.length === 0 ? (
-                  <div className="text-muted-foreground text-center m-auto">Belum ada pesan chat</div>
-                ) : (
-                  chatMessages.map((msg) => {
-                    const senderStr = typeof msg.sender === 'string' ? msg.sender : (typeof msg.sender === 'object' ? JSON.stringify(msg.sender) : String(msg.sender || 'User'));
-                    const messageStr = typeof msg.message === 'string' ? msg.message : (typeof msg.message === 'object' && msg.message !== null ? ((msg.message as any).text || (msg.message as any).msg || JSON.stringify(msg.message)) : String(msg.message || ''));
-                    const timestampNum = typeof msg.timestamp === 'number' ? msg.timestamp : (Number(msg.timestamp) || Date.now());
-
-                    return (
-                      <div key={msg.id} className="flex justify-between items-start group hover:bg-card p-2 rounded-lg transition-colors">
+              {/* ==========================================
+                  TAB 4: TOKEN & USER MANAGEMENT
+              ========================================== */}
+              {activeTab === "tokens" && (
+                <div className="space-y-6 animate-toast">
+                  {/* Token Generator Card */}
+                  <div className="glass-panel p-6 rounded-3xl space-y-5">
+                    <div className="flex items-center justify-between pb-3 border-b border-white/5">
+                      <div className="flex items-center gap-2.5">
+                        <Key className="w-5 h-5 text-amber-400" />
                         <div>
-                          <span className="font-bold text-sm text-blue-400 mr-2">{senderStr.split('|')[0]}</span>
-                          <span className="text-sm text-card-foreground">{messageStr}</span>
-                          <div className="text-xs text-gray-600 mt-1">{formatDateSafe(timestampNum) || "Baru saja"}</div>
+                          <h3 className="text-base font-bold text-white">Generator Token Akses</h3>
+                          <p className="text-xs text-slate-400">Buat token langganan baru atau atur batasan perangkat TV.</p>
                         </div>
-                        <button onClick={() => handleDeleteChat(msg.id)} className="text-primary opacity-50 group-hover:opacity-100 hover:text-purple-300 p-2">
-                          <Trash2 className="w-4 h-4" />
+                      </div>
+                      <button
+                        onClick={generateRandomToken}
+                        className="px-3.5 py-2 bg-white/5 hover:bg-white/10 text-white rounded-xl text-xs font-bold flex items-center gap-2 transition-all border border-white/10"
+                      >
+                        <Sparkles className="w-4 h-4 text-amber-400" /> Generate Acak
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+                      {/* Code Input */}
+                      <div className="lg:col-span-2 space-y-1">
+                        <label className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider pl-1">
+                          {editingTokenCode ? `Kode Token (Mengedit: ${editingTokenCode})` : "Kode Token Custom"}
+                        </label>
+                        <input
+                          type="text"
+                          value={customTokenInput}
+                          onChange={(e) => setCustomTokenInput(e.target.value.toUpperCase())}
+                          placeholder="VIP-BUDI"
+                          className="w-full bg-[#0c1322] border border-white/10 text-white font-mono font-bold rounded-xl p-3 text-xs focus:outline-none focus:border-amber-500"
+                        />
+                      </div>
+
+                      {/* Duration */}
+                      <div className="space-y-1">
+                        <label className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider pl-1">
+                          Masa Berlaku
+                        </label>
+                        <select
+                          value={tokenDuration}
+                          onChange={(e) => setTokenDuration(e.target.value)}
+                          className="w-full bg-[#0c1322] border border-white/10 text-white rounded-xl p-3 text-xs focus:outline-none focus:border-amber-500"
+                        >
+                          <option value="lifetime">VIP Lifetime</option>
+                          <option value="1h">1 Jam (Uji Coba)</option>
+                          <option value="1d">1 Hari</option>
+                          <option value="1w">1 Minggu</option>
+                          <option value="1m">1 Bulan</option>
+                        </select>
+                      </div>
+
+                      {/* Max Devices */}
+                      <div className="space-y-1">
+                        <label className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider pl-1">
+                          Max Slot TV
+                        </label>
+                        <input
+                          type="number"
+                          min={1}
+                          max={10}
+                          value={tokenMaxDevices}
+                          onChange={(e) => setTokenMaxDevices(parseInt(e.target.value) || 1)}
+                          className="w-full bg-[#0c1322] border border-white/10 text-white rounded-xl p-3 text-xs focus:outline-none focus:border-amber-500"
+                        />
+                      </div>
+
+                      {/* Add/Save Action */}
+                      <div className="flex items-end gap-2">
+                        <button
+                          onClick={addCustomToken}
+                          className="flex-1 py-3 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl text-xs transition-all shadow-lg shadow-amber-500/20 active:scale-95"
+                        >
+                          {editingTokenCode ? "Simpan Edit" : "Tambah Token"}
+                        </button>
+                        {editingTokenCode && (
+                          <button
+                            onClick={() => {
+                              setEditingTokenCode(null);
+                              setCustomTokenInput("");
+                            }}
+                            className="px-3 py-3 bg-white/5 hover:bg-white/10 text-slate-400 rounded-xl text-xs font-semibold"
+                          >
+                            Batal
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Token List Panel */}
+                  <div className="glass-panel p-6 rounded-3xl space-y-4">
+                    {/* Sub-tabs & Filter Controls */}
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-3 border-b border-white/5">
+                      <div className="flex items-center gap-2 p-1 rounded-xl bg-white/[0.03] border border-white/5">
+                        <button
+                          onClick={() => setTokenSubTab("premium")}
+                          className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                            tokenSubTab === "premium" ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/20" : "text-slate-400 hover:text-white"
+                          }`}
+                        >
+                          Premium ({tokens.filter((t) => !t.isTrial).length})
+                        </button>
+                        <button
+                          onClick={() => setTokenSubTab("trial")}
+                          className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                            tokenSubTab === "trial" ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/20" : "text-slate-400 hover:text-white"
+                          }`}
+                        >
+                          Trial Users ({tokens.filter((t) => t.isTrial).length})
                         </button>
                       </div>
-                    );
-                  })
-                )}
-              </div>
-              
-              <div className="flex gap-2">
-                <button onClick={() => handleDeleteChat('all')} className="bg-purple-500/20 hover:bg-purple-500/30 text-primary p-3 rounded-xl transition-colors" title="Hapus Semua Chat">
-                  <Trash2 className="w-5 h-5" />
-                </button>
-                <form onSubmit={handleSendChat} className="flex-1 flex gap-2">
-                  <input
-                    type="text"
-                    value={chatInput}
-                    onChange={(e) => setChatInput(e.target.value)}
-                    placeholder="Kirim pesan sebagai Admin..."
-                    className="flex-1 bg-background border border-border text-foreground rounded-xl p-3 focus:outline-none focus:border-pink-500 transition-colors"
-                  />
-                  <button type="submit" className="bg-pink-600 hover:bg-pink-700 text-foreground px-4 rounded-xl transition-colors">
-                    <Send className="w-5 h-5" />
-                  </button>
-                </form>
-              </div>
-            </div>
-          </div>
-              </>
-            )}
-            {activeTab === "settings" && (
-              <div className="space-y-8">
-                {/* Card 4: Notifikasi / Marquee */}
-          <div className="bg-card  border-r border-border p-6 rounded-xl border border-border space-y-6">
-            <div className="flex items-center gap-3 border-b border-border pb-4">
-              <Bell className="text-green-500" />
-              <h2 className="text-lg font-semibold">Teks Berjalan (Marquee)</h2>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-              <div className="md:col-span-3">
-                <label className="block text-sm text-muted-foreground mb-2">Isi Pesan (Pengumuman / Marquee)</label>
-                <input
-                  type="text"
-                  value={notificationText}
-                  onChange={(e) => setNotificationText(e.target.value)}
-                  placeholder="Contoh: Selamat datang di KIMTV..."
-                  className="w-full bg-background border border-border text-foreground rounded-xl p-3 focus:outline-none focus:border-green-500 transition-colors"
-                />
-              </div>
 
-              <div>
-                <label className="block text-sm text-muted-foreground mb-2">Warna Teks Marquee</label>
-                <div className="flex gap-4">
-                  <input
-                    type="color"
-                    value={notificationColor}
-                    onChange={(e) => setNotificationColor(e.target.value)}
-                    className="w-14 h-12 rounded cursor-pointer bg-background border-0 p-0"
-                  />
-                  <input
-                    type="text"
-                    value={notificationColor}
-                    onChange={(e) => setNotificationColor(e.target.value)}
-                    className="flex-1 bg-background border border-border text-foreground rounded-xl p-3 focus:outline-none focus:border-green-500 transition-colors uppercase"
-                    placeholder="#FFFFFF"
-                  />
-                </div>
-              </div>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => setTokenFilter("all")}
+                          className={`px-3 py-1 rounded-lg text-xs font-semibold ${
+                            tokenFilter === "all" ? "bg-white/10 text-white" : "text-slate-500 hover:text-slate-300"
+                          }`}
+                        >
+                          Semua
+                        </button>
+                        <button
+                          onClick={() => setTokenFilter("active")}
+                          className={`px-3 py-1 rounded-lg text-xs font-semibold ${
+                            tokenFilter === "active" ? "bg-emerald-500/20 text-emerald-300" : "text-slate-500 hover:text-slate-300"
+                          }`}
+                        >
+                          Aktif
+                        </button>
+                        <button
+                          onClick={() => setTokenFilter("expired")}
+                          className={`px-3 py-1 rounded-lg text-xs font-semibold ${
+                            tokenFilter === "expired" ? "bg-red-500/20 text-red-300" : "text-slate-500 hover:text-slate-300"
+                          }`}
+                        >
+                          Expired
+                        </button>
+                      </div>
+                    </div>
 
-              <div>
-                <label className="block text-sm text-muted-foreground mb-2">Tampilkan Marquee?</label>
-                <label className="flex items-center gap-3 cursor-pointer p-3 bg-background rounded-xl border border-border">
-                  <div className="relative">
-                    <input 
-                      type="checkbox" 
-                      className="sr-only" 
-                      checked={notificationEnabled}
-                      onChange={(e) => setNotificationEnabled(e.target.checked)}
-                    />
-                    <div className={`block w-10 h-6 rounded-full transition-colors ${notificationEnabled ? 'bg-green-500' : 'bg-gray-600'}`}></div>
-                    <div className={`dot absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform ${notificationEnabled ? 'transform translate-x-4' : ''}`}></div>
+                    {/* Token Rows */}
+                    {filteredTokens.length === 0 ? (
+                      <div className="text-center py-12 text-slate-500 text-xs">
+                        Tidak ada token yang sesuai dengan filter.
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        {filteredTokens.map((tokenObj, idx) => {
+                          const isExpired = tokenObj.expiresAt && tokenObj.expiresAt <= Date.now();
+                          const maxDev = Number(tokenObj.maxDevices) || 1;
+                          const devCount = Array.isArray(tokenObj.deviceIds)
+                            ? tokenObj.deviceIds.length
+                            : tokenObj.deviceId
+                            ? 1
+                            : 0;
+
+                          return (
+                            <div
+                              key={idx}
+                              className={`p-4 rounded-2xl border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4 ${
+                                isExpired
+                                  ? "bg-red-950/10 border-red-500/20 opacity-70"
+                                  : "bg-white/[0.02] border-white/5 hover:border-indigo-500/30"
+                              }`}
+                            >
+                              <div className="space-y-1.5">
+                                <div className="flex items-center gap-2.5">
+                                  <span className="font-mono text-base font-black text-amber-300">{tokenObj.code}</span>
+                                  <button
+                                    onClick={() => copyToClipboard(tokenObj.code, `Token ${tokenObj.code} tersalin!`)}
+                                    className="p-1 rounded-lg hover:bg-white/10 text-slate-400 hover:text-white transition-colors"
+                                    title="Salin Token"
+                                  >
+                                    {copiedKey === tokenObj.code ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                                  </button>
+                                  {isExpired ? (
+                                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-red-500/20 text-red-300 font-bold">
+                                      EXPIRED
+                                    </span>
+                                  ) : (
+                                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-bold">
+                                      {tokenObj.label || "Lifetime"}
+                                    </span>
+                                  )}
+                                </div>
+
+                                <div className="flex flex-wrap items-center gap-3 text-xs text-slate-400">
+                                  {tokenObj.expiresAt && (
+                                    <span className="flex items-center gap-1">
+                                      <Clock className="w-3 h-3 text-slate-500" />
+                                      Exp: {formatDateSafe(tokenObj.expiresAt)}
+                                    </span>
+                                  )}
+                                  <span className="flex items-center gap-1 text-slate-300">
+                                    <Monitor className="w-3 h-3 text-indigo-400" />
+                                    Slot: <b className="text-white">{devCount}/{maxDev}</b> TV Terhubung
+                                  </span>
+                                </div>
+                              </div>
+
+                              <div className="flex flex-wrap items-center gap-2 shrink-0">
+                                {tokenObj.isTrial && (
+                                  <button
+                                    onClick={() => upgradeTrialToPremium(tokenObj.code)}
+                                    className="px-3 py-1.5 rounded-xl bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-300 text-xs font-bold transition-colors"
+                                  >
+                                    Upgrade VIP
+                                  </button>
+                                )}
+                                {devCount > 0 && (
+                                  <button
+                                    onClick={() => resetTokenDevice(tokenObj.code)}
+                                    className="px-3 py-1.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 text-xs font-bold transition-colors"
+                                    title="Reset kaitan TV lama"
+                                  >
+                                    Reset TV
+                                  </button>
+                                )}
+                                <button
+                                  onClick={() => setInboxModal({ isOpen: true, token: tokenObj.code, message: "" })}
+                                  className="px-3 py-1.5 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 text-xs font-bold transition-colors"
+                                >
+                                  Pesan TV
+                                </button>
+                                {!tokenObj.isTrial && (
+                                  <button
+                                    onClick={() => startEditToken(tokenObj)}
+                                    className="px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 text-xs font-bold transition-colors"
+                                  >
+                                    Edit
+                                  </button>
+                                )}
+                                <button
+                                  onClick={() => removeToken(tokenObj.code)}
+                                  className="p-1.5 rounded-xl hover:bg-red-500/20 text-slate-500 hover:text-red-400 transition-colors"
+                                  title="Hapus Token"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
-                  <span className="text-sm font-medium">{notificationEnabled ? 'Aktif' : 'Mati'}</span>
-                </label>
-              </div>
-            </div>
-          </div>
-
-          {/* Card: Konfigurasi Teks Aplikasi */}
-          <div className="bg-card  border-r border-border p-6 rounded-xl border border-border space-y-6 mt-6">
-            <div className="flex items-center gap-3 border-b border-border pb-4">
-              <Tv className="text-primary" />
-              <h2 className="text-lg font-semibold">Teks Logo Aplikasi</h2>
-            </div>
-            <div className="grid grid-cols-1 gap-6">
-              <div>
-                <label className="block text-sm text-muted-foreground mb-2">Nama Aplikasi (Tampil di Menu Utama & Settings)</label>
-                <input
-                  type="text"
-                  value={appName}
-                  onChange={(e) => setAppName(e.target.value)}
-                  placeholder="KIMTV"
-                  className="w-full bg-background border border-border text-foreground rounded-xl p-3 focus:outline-none focus:border-purple-500 transition-colors"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Card: Konfigurasi Update & Kontak */}
-          <div className="bg-card  border-r border-border p-6 rounded-xl border border-border space-y-6 mt-6">
-            <div className="flex items-center gap-3 border-b border-border pb-4">
-              <Globe className="text-blue-500" />
-              <h2 className="text-lg font-semibold">Konfigurasi Sistem TV</h2>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm text-muted-foreground mb-2">URL Kontak Admin (WhatsApp/Telegram)</label>
-                <input
-                  type="text"
-                  value={adminContactUrl}
-                  onChange={(e) => setAdminContactUrl(e.target.value)}
-                  placeholder="https://wa.me/..."
-                  className="w-full bg-background border border-border text-foreground rounded-xl p-3 focus:outline-none focus:border-blue-500 transition-colors"
-                />
-                <p className="text-xs text-muted-foreground mt-2">Ditampilkan sebagai QR Code di layar Profil aplikasi TV.</p>
-              </div>
-              <div>
-                <label className="block text-sm text-muted-foreground mb-2">URL Update APK</label>
-                <input
-                  type="text"
-                  value={apkUpdateUrl}
-                  onChange={(e) => setApkUpdateUrl(e.target.value)}
-                  placeholder="https://example.com/app.apk"
-                  className="w-full bg-background border border-border text-foreground rounded-xl p-3 focus:outline-none focus:border-blue-500 transition-colors"
-                />
-                <p className="text-xs text-muted-foreground mt-2">Aplikasi akan mengunduh dari link ini jika ada update.</p>
-              </div>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
-              <div>
-                <label className="block text-sm text-muted-foreground mb-2">Versi Aplikasi Terbaru (Version Code)</label>
-                <input
-                  type="number"
-                  value={latestVersionCode}
-                  onChange={(e) => setLatestVersionCode(parseInt(e.target.value) || 1)}
-                  placeholder="6"
-                  className="w-full bg-background border border-border text-foreground rounded-xl p-3 focus:outline-none focus:border-blue-500 transition-colors"
-                />
-                <p className="text-xs text-muted-foreground mt-2">Isikan angka versi (Contoh: Aplikasi Anda saat ini versi 5.1 dengan Version Code = 6).</p>
-              </div>
-            </div>
-          </div>
-
-              {/* Pre-roll Ads Settings */}
-              <div className="bg-card  border-r border-border p-6 rounded-xl border border-border space-y-6">
-                <div className="flex items-center gap-3 border-b border-border pb-4">
-                  <PlaySquare className="text-green-500" />
-                  <h2 className="text-lg font-semibold">Iklan Pembuka (Pre-roll Ad)</h2>
                 </div>
-                
-                <div className="flex items-center gap-4">
-                  <label className="text-sm text-muted-foreground font-medium">Aktifkan Iklan Video?</label>
-                  <button
-                    onClick={() => setPrerollAdEnabled(!prerollAdEnabled)}
-                    className={`w-12 h-6 rounded-full transition-colors relative ${prerollAdEnabled ? 'bg-green-600' : 'bg-gray-700'}`}
-                  >
-                    <div className={`w-4 h-4 bg-white rounded-full absolute top-1 transition-transform ${prerollAdEnabled ? 'translate-x-7' : 'translate-x-1'}`} />
-                  </button>
+              )}
+
+              {/* ==========================================
+                  TAB 5: LIVE CHAT MODERATION
+              ========================================== */}
+              {activeTab === "chat" && (
+                <div className="space-y-6 animate-toast">
+                  <div className="glass-panel p-6 rounded-3xl space-y-6">
+                    {/* Header & Toggle */}
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-3 border-b border-white/5">
+                      <div className="flex items-center gap-2.5">
+                        <MessageSquare className="w-5 h-5 text-pink-400" />
+                        <div>
+                          <h3 className="text-base font-bold text-white">Moderasi Live Chat</h3>
+                          <p className="text-xs text-slate-400">Kelola obrolan publik dan kirim siaran resmi sebagai Administrator.</p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-3">
+                        <span className="text-xs font-semibold text-slate-300">
+                          {chatEnabled ? "Chat Diaktifkan" : "Chat Ditutup"}
+                        </span>
+                        <button
+                          onClick={() => setChatEnabled(!chatEnabled)}
+                          className={`w-12 h-6 rounded-full transition-colors relative ${
+                            chatEnabled ? "bg-pink-600" : "bg-slate-700"
+                          }`}
+                        >
+                          <div
+                            className={`w-4 h-4 bg-white rounded-full absolute top-1 transition-transform ${
+                              chatEnabled ? "translate-x-7" : "translate-x-1"
+                            }`}
+                          />
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Admin Identity Customizer & Live Preview */}
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 p-4 rounded-2xl bg-white/[0.02] border border-white/5">
+                      <div className="space-y-2">
+                        <label className="text-[11px] font-bold text-slate-400 uppercase">Badge Ikon Admin</label>
+                        <input
+                          type="text"
+                          value={adminBadgeIcon}
+                          onChange={(e) => setAdminBadgeIcon(e.target.value)}
+                          className="w-full bg-[#0c1322] border border-white/10 rounded-xl p-2.5 text-xs text-white"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <label className="text-[11px] font-bold text-slate-400 uppercase">Warna Badge</label>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="color"
+                            value={adminBadgeColor}
+                            onChange={(e) => setAdminBadgeColor(e.target.value)}
+                            className="w-10 h-9 rounded-xl bg-transparent border-0 cursor-pointer"
+                          />
+                          <input
+                            type="text"
+                            value={adminBadgeColor}
+                            onChange={(e) => setAdminBadgeColor(e.target.value)}
+                            className="flex-1 bg-[#0c1322] border border-white/10 rounded-xl p-2 text-xs text-white font-mono"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Live Preview Bubble */}
+                      <div className="space-y-2">
+                        <label className="text-[11px] font-bold text-slate-400 uppercase">Live Preview Bubble</label>
+                        <div className="p-2.5 rounded-xl bg-slate-900 border border-white/10 flex items-center gap-2">
+                          <span
+                            className="px-2 py-0.5 rounded-md text-xs font-bold text-white shadow-sm"
+                            style={{ backgroundColor: adminBadgeColor }}
+                          >
+                            {adminBadgeIcon} ADMIN
+                          </span>
+                          <span className="text-xs text-slate-300">Halo penonton!</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Chat Messages Box */}
+                    <div className="bg-[#090d16] border border-white/10 rounded-2xl p-4 h-80 overflow-y-auto space-y-2 flex flex-col">
+                      {chatMessages.length === 0 ? (
+                        <div className="text-center m-auto text-slate-500 text-xs">
+                          Belum ada pesan chat live dari penonton.
+                        </div>
+                      ) : (
+                        chatMessages.map((msg) => {
+                          const senderParts = msg.sender.split("|");
+                          const senderName = senderParts[0] || "User";
+                          const isAdminMsg = senderParts.includes("ADMIN");
+
+                          return (
+                            <div
+                              key={msg.id}
+                              className={`p-2.5 rounded-xl flex items-start justify-between gap-3 group transition-colors ${
+                                isAdminMsg ? "bg-indigo-950/40 border border-indigo-500/20" : "hover:bg-white/[0.03]"
+                              }`}
+                            >
+                              <div className="space-y-0.5">
+                                <div className="flex items-center gap-2">
+                                  <span className={`text-xs font-bold ${isAdminMsg ? "text-pink-400" : "text-cyan-400"}`}>
+                                    {senderName}
+                                  </span>
+                                  <span className="text-[10px] text-slate-500">{formatDateSafe(msg.timestamp) || "Baru saja"}</span>
+                                </div>
+                                <p className="text-xs text-slate-200">{msg.message}</p>
+                              </div>
+                              <button
+                                onClick={() => handleDeleteChat(msg.id)}
+                                className="opacity-0 group-hover:opacity-100 p-1 rounded-lg text-slate-500 hover:text-red-400 transition-all"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
+
+                    {/* Chat Composer */}
+                    <form onSubmit={handleSendChat} className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteChat("all")}
+                        className="px-3 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-400"
+                        title="Bersihkan Semua Chat"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                      <input
+                        type="text"
+                        value={chatInput}
+                        onChange={(e) => setChatInput(e.target.value)}
+                        placeholder="Kirim pesan resmi sebagai Admin..."
+                        className="flex-1 bg-[#0c1322] border border-white/10 text-white rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-pink-500"
+                      />
+                      <button
+                        type="submit"
+                        className="px-5 rounded-xl bg-pink-600 hover:bg-pink-500 text-white font-bold text-xs flex items-center gap-2 shadow-lg shadow-pink-600/25"
+                      >
+                        <Send className="w-4 h-4" /> Kirim
+                      </button>
+                    </form>
+                  </div>
                 </div>
+              )}
 
-                <div className="space-y-2 mt-4">
-                  <label className="block text-sm text-muted-foreground mb-2">URL Video Iklan (MP4/HLS)</label>
-                  <input 
-                    type="url"
-                    value={prerollAdUrl}
-                    onChange={(e) => setPrerollAdUrl(e.target.value)}
-                    placeholder="https://example.com/ad.mp4"
-                    className="w-full bg-background border border-border text-foreground rounded-xl p-3 focus:outline-none focus:border-green-500 transition-colors"
-                  />
-                  <p className="text-xs text-muted-foreground mt-2">Video iklan akan diputar sebelum tayangan TV dimulai.</p>
+              {/* ==========================================
+                  TAB 6: SETTINGS
+              ========================================== */}
+              {activeTab === "settings" && (
+                <div className="space-y-6 animate-toast">
+                  {/* Card 1: Branding */}
+                  <div className="glass-panel p-6 rounded-3xl space-y-4">
+                    <div className="flex items-center gap-2.5 pb-2 border-b border-white/5">
+                      <Tv className="w-5 h-5 text-indigo-400" />
+                      <h3 className="text-base font-bold text-white">Identitas & Branding Aplikasi</h3>
+                    </div>
+                    <div>
+                      <label className="text-xs font-semibold text-slate-300 mb-1.5 block">Nama Aplikasi (Tampil di Layar TV & Header)</label>
+                      <input
+                        type="text"
+                        value={appName}
+                        onChange={(e) => setAppName(e.target.value)}
+                        placeholder="KIMTV"
+                        className="w-full max-w-md bg-[#0c1322] border border-white/10 text-white rounded-xl p-3 text-xs focus:outline-none focus:border-indigo-500"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Card 2: Marquee / Teks Berjalan dengan LIVE PREVIEW */}
+                  <div className="glass-panel p-6 rounded-3xl space-y-5">
+                    <div className="flex items-center justify-between pb-2 border-b border-white/5">
+                      <div className="flex items-center gap-2.5">
+                        <Bell className="w-5 h-5 text-emerald-400" />
+                        <div>
+                          <h3 className="text-base font-bold text-white">Teks Pengumuman Berjalan (Marquee)</h3>
+                          <p className="text-xs text-slate-400">Pesan siaran berjalan di bagian atas layar TV pengguna.</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <span className="text-xs font-semibold text-slate-300">
+                          {notificationEnabled ? "Marquee Aktif" : "Mati"}
+                        </span>
+                        <button
+                          onClick={() => setNotificationEnabled(!notificationEnabled)}
+                          className={`w-12 h-6 rounded-full transition-colors relative ${
+                            notificationEnabled ? "bg-emerald-600" : "bg-slate-700"
+                          }`}
+                        >
+                          <div
+                            className={`w-4 h-4 bg-white rounded-full absolute top-1 transition-transform ${
+                              notificationEnabled ? "translate-x-7" : "translate-x-1"
+                            }`}
+                          />
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                      <div className="md:col-span-3 space-y-1.5">
+                        <label className="text-xs font-semibold text-slate-300">Isi Pesan Pengumuman</label>
+                        <input
+                          type="text"
+                          value={notificationText}
+                          onChange={(e) => setNotificationText(e.target.value)}
+                          placeholder="Selamat datang di KIMTV! Update channel terbaru setiap hari..."
+                          className="w-full bg-[#0c1322] border border-white/10 text-white rounded-xl p-3 text-xs focus:outline-none focus:border-emerald-500"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-semibold text-slate-300">Warna Teks</label>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="color"
+                            value={notificationColor}
+                            onChange={(e) => setNotificationColor(e.target.value)}
+                            className="w-10 h-10 rounded-xl bg-transparent border-0 cursor-pointer"
+                          />
+                          <input
+                            type="text"
+                            value={notificationColor}
+                            onChange={(e) => setNotificationColor(e.target.value)}
+                            className="flex-1 bg-[#0c1322] border border-white/10 text-white rounded-xl p-2 text-xs font-mono"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Live Marquee Preview Banner */}
+                    <div className="space-y-1.5 pt-2">
+                      <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Simulasi Layar TV:</span>
+                      <div className="w-full bg-slate-950/80 rounded-2xl border border-white/10 p-3 overflow-hidden flex items-center gap-3">
+                        <Bell className="w-4 h-4 text-emerald-400 shrink-0" />
+                        <div className="flex-1 overflow-hidden">
+                          <div
+                            className="animate-marquee font-medium text-xs whitespace-nowrap"
+                            style={{ color: notificationColor }}
+                          >
+                            {notificationText || "Contoh teks berjalan KIMTV yang tampil di TV pengguna..."}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Card 3: Auto-Update APK & Versioning */}
+                  <div className="glass-panel p-6 rounded-3xl space-y-5">
+                    <div className="flex items-center gap-2.5 pb-2 border-b border-white/5">
+                      <Zap className="w-5 h-5 text-cyan-400" />
+                      <div>
+                        <h3 className="text-base font-bold text-white">Sistem Auto-Update Aplikasi TV</h3>
+                        <p className="text-xs text-slate-400">TV akan otomatis mendownload dan auto-install APK jika versi dinaikkan.</p>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-semibold text-slate-300">
+                          Kode Versi Terbaru (Version Code) *
+                        </label>
+                        <input
+                          type="number"
+                          value={latestVersionCode}
+                          onChange={(e) => setLatestVersionCode(parseInt(e.target.value) || 1)}
+                          className="w-full bg-[#0c1322] border border-white/10 text-white rounded-xl p-3 text-xs focus:outline-none focus:border-cyan-500 font-mono font-bold"
+                        />
+                        <p className="text-[11px] text-slate-400">
+                          Aplikasi saat ini: Kode 10 (v5.5). Jika ingin memicu update, isi 11 atau lebih tinggi.
+                        </p>
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-semibold text-slate-300">
+                          URL Download APK Langsung (.apk)
+                        </label>
+                        <input
+                          type="url"
+                          value={apkUpdateUrl}
+                          onChange={(e) => setApkUpdateUrl(e.target.value)}
+                          placeholder="https://domain.com/kimtv-release.apk"
+                          className="w-full bg-[#0c1322] border border-white/10 text-white rounded-xl p-3 text-xs focus:outline-none focus:border-cyan-500 font-mono"
+                        />
+                      </div>
+
+                      <div className="space-y-1.5 md:col-span-2">
+                        <label className="text-xs font-semibold text-slate-300">
+                          Link Kontak Admin (WhatsApp / Telegram)
+                        </label>
+                        <input
+                          type="text"
+                          value={adminContactUrl}
+                          onChange={(e) => setAdminContactUrl(e.target.value)}
+                          placeholder="https://wa.me/6281234567890"
+                          className="w-full bg-[#0c1322] border border-white/10 text-white rounded-xl p-3 text-xs focus:outline-none focus:border-cyan-500"
+                        />
+                        <p className="text-[11px] text-slate-400">Akan dirender sebagai QR Code di layar Profil aplikasi TV.</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Card 4: Wallpaper & Welcome Banner */}
+                  <div className="glass-panel p-6 rounded-3xl space-y-4">
+                    <div className="flex items-center gap-2.5 pb-2 border-b border-white/5">
+                      <ImageIcon className="w-5 h-5 text-indigo-400" />
+                      <h3 className="text-base font-bold text-white">Wallpaper & Promo Banner Pop-up</h3>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-semibold text-slate-300">URL Gambar Latar Belakang (Wallpaper TV)</label>
+                        <input
+                          type="url"
+                          value={backgroundUrl}
+                          onChange={(e) => setBackgroundUrl(e.target.value)}
+                          placeholder="https://domain.com/bg.jpg"
+                          className="w-full bg-[#0c1322] border border-white/10 text-white rounded-xl p-3 text-xs focus:outline-none focus:border-indigo-500"
+                        />
+                        <p className="text-[11px] text-slate-400">Kosongkan jika ingin menggunakan latar bawaan aplikasi.</p>
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-semibold text-slate-300">URL Banner Sambutan (Popup Promo)</label>
+                        <input
+                          type="url"
+                          value={welcomeBannerUrl}
+                          onChange={(e) => setWelcomeBannerUrl(e.target.value)}
+                          placeholder="https://domain.com/promo.jpg"
+                          className="w-full bg-[#0c1322] border border-white/10 text-white rounded-xl p-3 text-xs focus:outline-none focus:border-indigo-500"
+                        />
+                        <p className="text-[11px] text-slate-400">Muncul sekali setiap pengguna membuka aplikasi TV.</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Card 5: Maintenance Mode */}
+                  <div className={`p-6 rounded-3xl border transition-all ${
+                    isMaintenance ? "bg-red-950/40 border-red-500 shadow-xl shadow-red-950/40" : "glass-panel"
+                  }`}>
+                    <div className="flex items-center justify-between gap-4">
+                      <div className="flex items-center gap-4">
+                        <div className={`p-3 rounded-2xl ${isMaintenance ? "bg-red-500 text-white" : "bg-white/5 text-slate-400"}`}>
+                          <AlertTriangle className="w-7 h-7" />
+                        </div>
+                        <div>
+                          <h4 className="text-base font-bold text-white">Mode Perbaikan (Maintenance Mode)</h4>
+                          <p className="text-xs text-slate-400">
+                            Kunci semua aplikasi TV pengguna secara paksa jika server streaming sedang mengalami kendala.
+                          </p>
+                        </div>
+                      </div>
+
+                      <button
+                        onClick={() => setIsMaintenance(!isMaintenance)}
+                        className={`w-14 h-8 rounded-full transition-colors relative shrink-0 ${
+                          isMaintenance ? "bg-red-600" : "bg-slate-700"
+                        }`}
+                      >
+                        <div
+                          className={`w-6 h-6 bg-white rounded-full absolute top-1 transition-transform ${
+                            isMaintenance ? "translate-x-7" : "translate-x-1"
+                          }`}
+                        />
+                      </button>
+                    </div>
+                  </div>
                 </div>
-              </div>
+              )}
 
-                {/* Card 3: Wallpaper TV */}
-          <div className="bg-card  border-r border-border p-6 rounded-xl border border-border space-y-6">
-            <div className="flex items-center gap-3 border-b border-border pb-4">
-              <ImageIcon className="text-primary" />
-              <h2 className="text-lg font-semibold">Wallpaper TV (Background)</h2>
-            </div>
-            <div>
-              <label className="block text-sm text-muted-foreground mb-2">URL Gambar Latar Belakang</label>
-              <input
-                type="url"
-                value={backgroundUrl}
-                onChange={(e) => setBackgroundUrl(e.target.value)}
-                placeholder="https://contoh.com/gambar-bagus.jpg"
-                className="w-full bg-background border border-border text-foreground rounded-xl p-3 focus:outline-none focus:border-purple-500 transition-colors"
-              />
-              <p className="text-xs text-muted-foreground mt-2 mb-4">Kosongkan kolom ini jika ingin menggunakan wallpaper bawaan aplikasi.</p>
-
-              <label className="block text-sm text-muted-foreground mb-2 border-t border-border pt-4">URL Banner Promo (Pop-up Sambutan)</label>
-              <input
-                type="url"
-                value={welcomeBannerUrl}
-                onChange={(e) => setWelcomeBannerUrl(e.target.value)}
-                placeholder="https://contoh.com/promo-diskon.jpg"
-                className="w-full bg-background border border-border text-foreground rounded-xl p-3 focus:outline-none focus:border-purple-500 transition-colors"
-              />
-              <p className="text-xs text-muted-foreground mt-2">Gambar akan muncul sekali setiap pengguna membuka aplikasi TV. Kosongkan untuk mematikan.</p>
-            </div>
-          </div>
-
-          
-                {/* Card: Auto Update */}
-          <div className="bg-card  border-r border-border p-6 rounded-xl border border-border space-y-6">
-            <div className="flex items-center gap-3 border-b border-border pb-4">
-              <RefreshCcw className="text-cyan-500" />
-              <h2 className="text-lg font-semibold">Auto-Update Aplikasi TV</h2>
-            </div>
-            <div>
-              <label className="block text-sm text-muted-foreground mb-2">Versi Aplikasi Terbaru (Version Code)</label>
-              <input
-                type="number"
-                value={latestVersionCode}
-                onChange={(e) => setLatestVersionCode(parseInt(e.target.value) || 1)}
-                className="w-full bg-background border border-border text-foreground rounded-xl p-3 focus:outline-none focus:border-cyan-500 transition-colors mb-4"
-              />
-              <label className="block text-sm text-muted-foreground mb-2">URL Download APK Terbaru</label>
-              <input
-                type="url"
-                value={apkUpdateUrl}
-                onChange={(e) => setApkUpdateUrl(e.target.value)}
-                placeholder="https://contoh.com/KIMTV_v2.apk"
-                className="w-full bg-background border border-border text-foreground rounded-xl p-3 focus:outline-none focus:border-cyan-500 transition-colors"
-              />
-              <p className="text-xs text-muted-foreground mt-2">Ubah version code lebih tinggi dari aplikasi TV (saat ini biasanya 1) agar TV menampilkan popup Update.</p>
-            </div>
-          </div>
-
-          
-                {/* Card 5: Maintenance Mode */}
-          <div className={`p-6 rounded-xl border transition-all ${isMaintenance ? 'bg-purple-900/30 border-purple-500' : 'bg-card  border-r border-border'}`}>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className={`p-3 rounded-lg ${isMaintenance ? 'bg-primary text-primary-foreground' : 'bg-gray-800'}`}>
-                  <AlertTriangle className={`w-8 h-8 ${isMaintenance ? 'text-foreground' : 'text-muted-foreground'}`} />
-                </div>
-                <div>
-                  <h2 className="text-xl font-bold text-foreground mb-1">MODE PERBAIKAN (MAINTENANCE)</h2>
-                  <p className="text-muted-foreground text-sm">Kunci semua aplikasi TV pengguna jika server sedang mati atau diperbaiki.</p>
-                </div>
-              </div>
-              <label className="flex items-center cursor-pointer">
-                <div className="relative">
-                  <input 
-                    type="checkbox" 
-                    className="sr-only" 
-                    checked={isMaintenance}
-                    onChange={(e) => setIsMaintenance(e.target.checked)}
-                  />
-                  <div className={`block w-16 h-8 rounded-full transition-colors ${isMaintenance ? 'bg-primary text-primary-foreground' : 'bg-gray-700'}`}></div>
-                  <div className={`dot absolute left-1 top-1 bg-white w-6 h-6 rounded-full transition-transform ${isMaintenance ? 'transform translate-x-8' : ''}`}></div>
-                </div>
-              </label>
-            </div>
-          </div>
-
-        
-              </div>
-            )}
             </div>
           </DashboardErrorBoundary>
         </div>
-      </main>
 
-      {/* Mobile Bottom Navigation */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-card  border-r border-border border-t border-border flex justify-around p-2 z-50 pb-[env(safe-area-inset-bottom)]">
-        {[
-          { id: "overview", label: "Beranda", icon: Activity },
-          { id: "analytics", label: "Analisis", icon: PieChart },
-          { id: "playlist", label: "M3U", icon: Globe },
-          { id: "tokens", label: "Token", icon: Key },
-          { id: "chat", label: "Chat", icon: MessageSquare },
-          { id: "settings", label: "Setelan", icon: ShieldAlert }
-        ].map(tab => (
+        {/* ==========================================
+            Mobile Floating Quick Save Bar
+        ========================================== */}
+        <div className="lg:hidden fixed bottom-16 left-0 right-0 p-3 bg-[#080c14]/90 backdrop-blur-xl border-t border-white/5 flex items-center justify-between z-30">
+          <div className="flex items-center gap-2 text-xs text-slate-400">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+            <span className="font-semibold text-white truncate max-w-[150px]">{appName} Admin</span>
+          </div>
           <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={`flex flex-col items-center justify-center w-16 h-12 rounded-xl transition-colors ${
-              activeTab === tab.id 
-                ? "text-primary" 
-                : "text-muted-foreground hover:text-card-foreground"
+            onClick={handleSave}
+            disabled={saving}
+            className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold flex items-center gap-2 shadow-lg shadow-indigo-600/30 active:scale-95 disabled:opacity-50"
+          >
+            {saving ? <RefreshCcw className="animate-spin w-3.5 h-3.5" /> : <Save className="w-3.5 h-3.5" />}
+            <span>{saving ? "Menyimpan..." : "Simpan"}</span>
+          </button>
+        </div>
+
+        {/* ==========================================
+            Mobile Bottom Navigation Bar
+        ========================================== */}
+        <nav className="lg:hidden fixed bottom-0 left-0 right-0 h-16 bg-[#090d16]/95 backdrop-blur-2xl border-t border-white/10 flex items-center justify-around z-40 px-2 pb-[env(safe-area-inset-bottom)]">
+          {navigationTabs.slice(0, 5).map((tab) => {
+            const Icon = tab.icon;
+            const isActive = activeTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`flex flex-col items-center justify-center flex-1 h-full transition-all relative ${
+                  isActive ? "text-indigo-400 font-bold" : "text-slate-400 hover:text-slate-200"
+                }`}
+              >
+                {isActive && (
+                  <span className="absolute top-0 w-8 h-1 rounded-full bg-indigo-500 shadow-md shadow-indigo-500/50" />
+                )}
+                <Icon className="w-5 h-5 mb-0.5" />
+                <span className="text-[10px] tracking-tight">{tab.label.split(" ")[0]}</span>
+              </button>
+            );
+          })}
+          <button
+            onClick={() => setActiveTab("settings")}
+            className={`flex flex-col items-center justify-center flex-1 h-full transition-all relative ${
+              activeTab === "settings" ? "text-indigo-400 font-bold" : "text-slate-400 hover:text-slate-200"
             }`}
           >
-            <tab.icon className="w-5 h-5 mb-1" />
-            <span className="text-[10px] font-medium">{tab.label}</span>
+            {activeTab === "settings" && (
+              <span className="absolute top-0 w-8 h-1 rounded-full bg-indigo-500 shadow-md shadow-indigo-500/50" />
+            )}
+            <Sliders className="w-5 h-5 mb-0.5" />
+            <span className="text-[10px] tracking-tight">Setelan</span>
           </button>
-        ))}
-      </nav>
+        </nav>
+      </main>
     </div>
   );
 }
