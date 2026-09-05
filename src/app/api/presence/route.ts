@@ -8,8 +8,12 @@ export async function GET() {
       return NextResponse.json({ error: "FIREBASE_URL is not configured" }, { status: 500 });
     }
 
+    const firebaseSecret = process.env.FIREBASE_SECRET;
+    const authQuery = firebaseSecret ? `?auth=${firebaseSecret}` : "";
+    const sep = authQuery ? "&" : "?";
+
     // Ambil data presence dari Firebase (tambahkan timestamp agar tidak di-cache)
-    const res = await fetch(`${firebaseUrl}/presence.json?_t=${Date.now()}`, { 
+    const res = await fetch(`${firebaseUrl}/presence.json${authQuery}${sep}_t=${Date.now()}`, { 
       cache: 'no-store',
       headers: {
         'Cache-Control': 'no-cache, no-store, must-revalidate',

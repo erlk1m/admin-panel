@@ -116,6 +116,7 @@ export default function AdminPanel() {
     maxDevices?: number;
     deviceIds?: string[];
     isTrial?: boolean;
+    _resetDevice?: boolean;
   }
 
   const [tokens, setTokens] = useState<TokenObject[]>([]); // Ganti accessCode jadi tokens
@@ -159,60 +160,58 @@ export default function AdminPanel() {
     return () => clearInterval(timer);
   }, []);
 
-  useEffect(() => {
-    // Coba ambil config yang ada (publik)
-    fetch("/api/config")
-      .then((res) => res.json())
-      .then((data) => {
-        if (data && typeof data === 'object') {
-          setM3uUrl(typeof data.m3uUrl === 'string' ? data.m3uUrl : "");
-          setM3uUrl2(typeof data.m3uUrl2 === 'string' ? data.m3uUrl2 : "");
-          setM3uUrl3(typeof data.m3uUrl3 === 'string' ? data.m3uUrl3 : "");
-          setM3uName(typeof data.m3uName === 'string' ? data.m3uName : "");
-          setM3uName2(typeof data.m3uName2 === 'string' ? data.m3uName2 : "");
-          setM3uName3(typeof data.m3uName3 === 'string' ? data.m3uName3 : "");
-          setEpgUrl(typeof data.epgUrl === 'string' ? data.epgUrl : "");
-          setProxyUrl(typeof data.proxyUrl === 'string' ? data.proxyUrl : "");
+  const loadConfig = async (authPassword?: string) => {
+    try {
+      const headers: Record<string, string> = {};
+      if (authPassword) {
+        headers["x-admin-password"] = authPassword;
+      }
+      const res = await fetch("/api/config", { headers, cache: "no-store" });
+      const data = await res.json();
+      if (data && typeof data === 'object') {
+        setM3uUrl(typeof data.m3uUrl === 'string' ? data.m3uUrl : "");
+        setM3uUrl2(typeof data.m3uUrl2 === 'string' ? data.m3uUrl2 : "");
+        setM3uUrl3(typeof data.m3uUrl3 === 'string' ? data.m3uUrl3 : "");
+        setM3uName(typeof data.m3uName === 'string' ? data.m3uName : "");
+        setM3uName2(typeof data.m3uName2 === 'string' ? data.m3uName2 : "");
+        setM3uName3(typeof data.m3uName3 === 'string' ? data.m3uName3 : "");
+        setEpgUrl(typeof data.epgUrl === 'string' ? data.epgUrl : "");
+        setProxyUrl(typeof data.proxyUrl === 'string' ? data.proxyUrl : "");
 
-          let rawChannels: any[] = [];
-          if (data.customChannels) {
-            if (Array.isArray(data.customChannels)) {
-              rawChannels = data.customChannels;
-            } else if (typeof data.customChannels === 'object') {
-              rawChannels = Object.values(data.customChannels);
-            }
+        let rawChannels: any[] = [];
+        if (data.customChannels) {
+          if (Array.isArray(data.customChannels)) {
+            rawChannels = data.customChannels;
+          } else if (typeof data.customChannels === 'object') {
+            rawChannels = Object.values(data.customChannels);
           }
-          const safeChannels: CustomChannel[] = rawChannels.map((c: any) => ({
-            id: String(c.id || "cc_" + Math.random()),
-            name: typeof c.name === 'string' ? c.name : (typeof c.name === 'object' ? JSON.stringify(c.name) : String(c.name || '')),
-            type: typeof c.type === 'string' ? c.type : 'direct',
-            streamUrl: typeof c.streamUrl === 'string' ? c.streamUrl : (typeof c.streamUrl === 'object' ? JSON.stringify(c.streamUrl) : String(c.streamUrl || '')),
-            group: typeof c.group === 'string' ? c.group : (c.group ? String(c.group) : undefined),
-            logoUrl: typeof c.logoUrl === 'string' ? c.logoUrl : undefined,
-            licenseKey: typeof c.licenseKey === 'string' ? c.licenseKey : undefined,
-            licenseType: typeof c.licenseType === 'string' ? c.licenseType : undefined,
-            userAgent: typeof c.userAgent === 'string' ? c.userAgent : undefined,
-            referer: typeof c.referer === 'string' ? c.referer : undefined,
-            tvgId: typeof c.tvgId === 'string' ? c.tvgId : undefined,
-          }));
-          setCustomChannels(safeChannels);
-          
-          // Migrasi otomatis jika masih pakai accessCode lama
+        }
+        const safeChannels: CustomChannel[] = rawChannels.map((c: any) => ({
+          id: String(c.id || "cc_" + Math.random()),
+          name: typeof c.name === 'string' ? c.name : (typeof c.name === 'object' ? JSON.stringify(c.name) : String(c.name || '')),
+          type: typeof c.type === 'string' ? c.type : 'direct',
+          streamUrl: typeof c.streamUrl === 'string' ? c.streamUrl : (typeof c.streamUrl === 'object' ? JSON.stringify(c.streamUrl) : String(c.streamUrl || '')),
+          group: typeof c.group === 'string' ? c.group : (c.group ? String(c.group) : undefined),
+          logoUrl: typeof c.logoUrl === 'string' ? c.logoUrl : undefined,
+          licenseKey: typeof c.licenseKey === 'string' ? c.licenseKey : undefined,
+          licenseType: typeof c.licenseType === 'string' ? c.licenseType : undefined,
+          userAgent: typeof c.userAgent === 'string' ? c.userAgent : undefined,
+          referer: typeof c.referer === 'string' ? c.referer : undefined,
+          tvgId: typeof c.tvgId === 'string' ? c.tvgId : undefined,
+        }));
+        setCustomChannels(safeChannels);
+        
+        if (data.tokens) {
           let rawTokens: any[] = [];
-          if (data.tokens) {
-            if (Array.isArray(data.tokens)) {
-              rawTokens = data.tokens;
-            } else if (typeof data.tokens === 'object') {
-              rawTokens = Object.entries(data.tokens).map(([key, val]: [string, any]) => {
-                if (typeof val === 'string') return { code: val || key, expiresAt: null, label: "Lifetime" };
-                if (typeof val === 'object' && val !== null) return { ...val, code: typeof val.code === 'string' ? val.code : key };
-                return { code: key, expiresAt: null, label: "Lifetime" };
-              });
-            }
-          } else if (data.accessCode) {
-            rawTokens = [{ code: typeof data.accessCode === 'string' ? data.accessCode : String(data.accessCode), expiresAt: null, label: "Lifetime" }];
+          if (Array.isArray(data.tokens)) {
+            rawTokens = data.tokens;
+          } else if (typeof data.tokens === 'object') {
+            rawTokens = Object.entries(data.tokens).map(([key, val]: [string, any]) => {
+              if (typeof val === 'string') return { code: val || key, expiresAt: null, label: "Lifetime" };
+              if (typeof val === 'object' && val !== null) return { ...val, code: typeof val.code === 'string' ? val.code : key };
+              return { code: key, expiresAt: null, label: "Lifetime" };
+            });
           }
-
           const mappedTokens: TokenObject[] = rawTokens.map((t: any) => {
             if (typeof t === 'string') {
               return { code: t, expiresAt: null, label: "Lifetime" };
@@ -235,27 +234,34 @@ export default function AdminPanel() {
             return { code: String(t || ''), expiresAt: null, label: "Lifetime" };
           });
           setTokens(mappedTokens);
-
-          setNotificationText(typeof data.notificationText === 'string' ? data.notificationText : (typeof data.notificationText === 'object' ? JSON.stringify(data.notificationText) : String(data.notificationText || "")));
-          setNotificationColor(typeof data.notificationColor === 'string' ? data.notificationColor : "#FFFFFF");
-          setNotificationEnabled(Boolean(data.notificationEnabled));
-          setBackgroundUrl(typeof data.backgroundUrl === 'string' ? data.backgroundUrl : "");
-          setWelcomeBannerUrl(typeof data.welcomeBannerUrl === 'string' ? data.welcomeBannerUrl : "");
-          setLatestVersionCode(typeof data.latestVersionCode === 'number' ? data.latestVersionCode : (Number(data.latestVersionCode) || 1));
-          setApkUpdateUrl(typeof data.apkUpdateUrl === 'string' ? data.apkUpdateUrl : "");
-          setAdminContactUrl(typeof data.adminContactUrl === 'string' ? data.adminContactUrl : "");
-          setIsMaintenance(Boolean(data.isMaintenance));
-          setPrerollAdUrl(typeof data.prerollAdUrl === 'string' ? data.prerollAdUrl : "");
-          setPrerollAdEnabled(Boolean(data.prerollAdEnabled));
-          setChatEnabled(data.chatEnabled !== false); // default true if not set
-          setAdminBadgeIcon(typeof data.adminBadgeIcon === 'string' ? data.adminBadgeIcon : "🔧");
-          setAdminBadgeColor(typeof data.adminBadgeColor === 'string' ? data.adminBadgeColor : "#FF00FF");
-          setAdminNameEffect(typeof data.adminNameEffect === 'string' ? data.adminNameEffect : "NONE");
-          setAppName(typeof data.appName === 'string' ? data.appName : (typeof data.appName === 'object' ? JSON.stringify(data.appName) : String(data.appName || "KIMTV")));
         }
-        setLoading(false);
-      })
-      .catch(() => setLoading(false));
+
+        setNotificationText(typeof data.notificationText === 'string' ? data.notificationText : (typeof data.notificationText === 'object' ? JSON.stringify(data.notificationText) : String(data.notificationText || "")));
+        setNotificationColor(typeof data.notificationColor === 'string' ? data.notificationColor : "#FFFFFF");
+        setNotificationEnabled(Boolean(data.notificationEnabled));
+        setBackgroundUrl(typeof data.backgroundUrl === 'string' ? data.backgroundUrl : "");
+        setWelcomeBannerUrl(typeof data.welcomeBannerUrl === 'string' ? data.welcomeBannerUrl : "");
+        setLatestVersionCode(typeof data.latestVersionCode === 'number' ? data.latestVersionCode : (Number(data.latestVersionCode) || 1));
+        setApkUpdateUrl(typeof data.apkUpdateUrl === 'string' ? data.apkUpdateUrl : "");
+        setAdminContactUrl(typeof data.adminContactUrl === 'string' ? data.adminContactUrl : "");
+        setIsMaintenance(Boolean(data.isMaintenance));
+        setPrerollAdUrl(typeof data.prerollAdUrl === 'string' ? data.prerollAdUrl : "");
+        setPrerollAdEnabled(Boolean(data.prerollAdEnabled));
+        setChatEnabled(data.chatEnabled !== false);
+        setAdminBadgeIcon(typeof data.adminBadgeIcon === 'string' ? data.adminBadgeIcon : "🔧");
+        setAdminBadgeColor(typeof data.adminBadgeColor === 'string' ? data.adminBadgeColor : "#FF00FF");
+        setAdminNameEffect(typeof data.adminNameEffect === 'string' ? data.adminNameEffect : "NONE");
+        setAppName(typeof data.appName === 'string' ? data.appName : (typeof data.appName === 'object' ? JSON.stringify(data.appName) : String(data.appName || "KIMTV")));
+      }
+    } catch (e) {
+      console.error("Config fetch error:", e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadConfig();
   }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -270,6 +276,7 @@ export default function AdminPanel() {
         
         if (res.ok) {
           setIsAuthenticated(true);
+          loadConfig(adminPassword);
         } else {
           const data = await res.json();
           alert(data.error || "Password Admin Salah!");
@@ -465,10 +472,7 @@ export default function AdminPanel() {
   };
 
   const resetTokenDevice = (tokenCode: string) => {
-    setTokens(tokens.map(t => t.code === tokenCode ? { ...t, deviceId: "", deviceIds: [] } : t));
-    // Kita harus panggil handleSave atau biarkan user klik "Simpan Perubahan" sendiri.
-    // Untuk kenyamanan, biarkan mereka klik "Simpan" setelah mereset, atau kita panggil otomatis.
-    // Di sini kita biarkan admin menekan tombol "Simpan Perubahan" utama.
+    setTokens(tokens.map(t => t.code === tokenCode ? { ...t, deviceId: "", deviceIds: [], _resetDevice: true } : t));
   };
 
   const handleSendInbox = async (tokenCode: string) => {

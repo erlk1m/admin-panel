@@ -12,11 +12,14 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Firebase URL not configured" }, { status: 500 });
     }
 
+    const firebaseSecret = process.env.FIREBASE_SECRET;
+    const authQuery = firebaseSecret ? `?auth=${firebaseSecret}` : "";
+
     // Encoding channel name to be safe for Firebase path (no '.', '#', '$', '[', or ']')
     const safeChannelName = encodeURIComponent(channel).replace(/\./g, '%2E');
 
     // 1. Get current count
-    const getRes = await fetch(`${firebaseUrl}/stats/channels/${safeChannelName}.json`);
+    const getRes = await fetch(`${firebaseUrl}/stats/channels/${safeChannelName}.json${authQuery}`);
     let currentCount = 0;
     if (getRes.ok) {
       const data = await getRes.json();
@@ -24,7 +27,7 @@ export async function POST(req: Request) {
     }
 
     // 2. Increment and PUT
-    const putRes = await fetch(`${firebaseUrl}/stats/channels/${safeChannelName}.json`, {
+    const putRes = await fetch(`${firebaseUrl}/stats/channels/${safeChannelName}.json${authQuery}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(currentCount + 1),
@@ -48,7 +51,10 @@ export async function GET() {
       return NextResponse.json({ error: "Firebase URL not configured" }, { status: 500 });
     }
 
-    const res = await fetch(`${firebaseUrl}/stats/channels.json`, { cache: 'no-store' });
+    const firebaseSecret = process.env.FIREBASE_SECRET;
+    const authQuery = firebaseSecret ? `?auth=${firebaseSecret}` : "";
+
+    const res = await fetch(`${firebaseUrl}/stats/channels.json${authQuery}`, { cache: 'no-store' });
     if (!res.ok) {
       return NextResponse.json({ error: "Failed to fetch stats" }, { status: 500 });
     }

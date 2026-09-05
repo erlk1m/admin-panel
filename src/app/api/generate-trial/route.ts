@@ -13,8 +13,12 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Device ID diperlukan" }, { status: 400 });
     }
 
+    const firebaseSecret = process.env.FIREBASE_SECRET;
+    const authQuery = firebaseSecret ? `?auth=${firebaseSecret}` : "";
+    const sep = authQuery ? "&" : "?";
+
     // 1. Fetch current config
-    const getRes = await fetch(`${firebaseUrl}/config.json?_t=${Date.now()}`, { 
+    const getRes = await fetch(`${firebaseUrl}/config.json${authQuery}${sep}_t=${Date.now()}`, { 
       cache: 'no-store',
       headers: { 'Cache-Control': 'no-cache, no-store, must-revalidate' }
     });
@@ -95,10 +99,7 @@ export async function POST(request: Request) {
     data.tokens.push(tokenObj);
 
     // 4. Save to Firebase
-    const firebaseSecret = process.env.FIREBASE_SECRET;
-    const authQuery = firebaseSecret ? `&auth=${firebaseSecret}` : "";
-
-    const putRes = await fetch(`${firebaseUrl}/config.json?_t=${Date.now()}${authQuery}`, {
+    const putRes = await fetch(`${firebaseUrl}/config.json${authQuery}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),

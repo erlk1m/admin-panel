@@ -2,21 +2,54 @@ import { NextResponse } from "next/server";
 
 export const dynamic = 'force-dynamic';
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
     const firebaseUrl = process.env.FIREBASE_URL;
     if (!firebaseUrl) {
       return NextResponse.json({ error: "FIREBASE_URL is not configured" }, { status: 500 });
     }
 
-    const res = await fetch(`${firebaseUrl}/config.json?_t=${Date.now()}`, { 
+    const firebaseSecret = process.env.FIREBASE_SECRET;
+    const authQuery = firebaseSecret ? `?auth=${firebaseSecret}` : "";
+    const sep = authQuery ? "&" : "?";
+
+    const res = await fetch(`${firebaseUrl}/config.json${authQuery}${sep}_t=${Date.now()}`, { 
       cache: 'no-store',
       headers: { 'Cache-Control': 'no-cache, no-store, must-revalidate' }
     });
     const data = await res.json();
     const configData = data && typeof data === 'object' ? { ...data } : {};
 
-    // Normalize tokens if object
+    // Check if requester is authenticated as Admin
+    const adminPassword = process.env.ADMIN_PASSWORD;
+    const providedPassword = request.headers.get("x-admin-password");
+    const isAdmin = Boolean(adminPassword && providedPassword === adminPassword);
+
+    if (!isAdmin) {
+      // Return only public non-sensitive config
+      return NextResponse.json({
+        appName: configData.appName || "KIMTV",
+        backgroundUrl: configData.backgroundUrl || null,
+        welcomeBannerUrl: configData.welcomeBannerUrl || null,
+        isMaintenance: Boolean(configData.isMaintenance),
+        notificationText: configData.notificationText || "",
+        notificationColor: configData.notificationColor || "#FFFFFF",
+        notificationEnabled: Boolean(configData.notificationEnabled),
+        latestVersionCode: configData.latestVersionCode || 1,
+        apkUpdateUrl: configData.apkUpdateUrl || null,
+        adminContactUrl: configData.adminContactUrl || null,
+        chatEnabled: configData.chatEnabled !== false,
+        prerollAdUrl: configData.prerollAdUrl || null,
+        prerollAdEnabled: Boolean(configData.prerollAdEnabled),
+      }, {
+        headers: {
+          'Cache-Control': 'no-store, no-cache, must-revalidate',
+          'Pragma': 'no-cache'
+        }
+      });
+    }
+
+    // Normalize tokens if object (for authenticated admin)
     if (configData.tokens && !Array.isArray(configData.tokens) && typeof configData.tokens === 'object') {
       configData.tokens = Object.entries(configData.tokens).map(([key, val]: [string, any]) => {
         if (typeof val === 'string') {
@@ -48,7 +81,7 @@ export async function GET() {
     });
   } // eslint-disable-next-line @typescript-eslint/no-explicit-any
   catch (error: any) {
-    return NextResponse.json({ error: "Failed to fetch from Firebase" }, { status: 500 });
+    return NextResponse.json({ error: "Failed to fetch from Firebase: " + (error?.message || "") }, { status: 500 });
   }
 }
 
@@ -67,11 +100,85 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    
     const firebaseSecret = process.env.FIREBASE_SECRET;
     const authQuery = firebaseSecret ? `?auth=${firebaseSecret}` : "";
+    const sep = authQuery ? "&" : "?";
 
-    // Gunakan method PUT untuk menimpa data (overwrite) di Firebase RTDB
+    // 1. Fetch current config from Firebase to prevent overwriting active device bindings and trials
+    let currentConfig: any = {};
+    try {
+      const getRes = await fetch(`${firebaseUrl}/config.json${authQuery}${sep}_t=${Date.now()}`, {
+        cache: 'no-store',
+        headers: { 'Cache-Control': 'no-cache, no-store, must-revalidate' }
+      });
+      if (getRes.ok) {
+        currentConfig = await getRes.json() || {};
+      }
+    } catch (e) {
+      console.warn("Could not pre-fetch current config for merging:", e);
+    }
+
+    // 2. Merge tokens safely
+    if (Array.isArray(body.tokens)) {
+      let currentTokens: any[] = [];
+      if (Array.isArray(currentConfig.tokens)) {
+        currentTokens = currentConfig.tokens;
+      } else if (currentConfig.tokens && typeof currentConfig.tokens === 'object') {
+        currentTokens = Object.values(currentConfig.tokens);
+      }
+
+      const currentTokenMap = new Map<string, any>();
+      for (const t of currentTokens) {
+        if (t && typeof t === 'object' && t.code) {
+          currentTokenMap.set(String(t.code), t);
+        }
+      }
+
+      const mergedTokens: any[] = [];
+      const handledCodes = new Set<string>();
+
+      for (const inputToken of body.tokens) {
+        if (!inputToken || !inputToken.code) continue;
+        const code = String(inputToken.code);
+        handledCodes.add(code);
+
+        const existing = currentTokenMap.get(code);
+        if (existing) {
+          // If admin requested a device reset explicitly (resetDevice: true), clear it.
+          // Otherwise, preserve active device IDs from Firebase so ongoing sessions aren't broken.
+          const isResetExplicit = Boolean(inputToken._resetDevice);
+          const preservedDeviceIds = isResetExplicit ? [] : (existing.deviceIds || (existing.deviceId ? [existing.deviceId] : []));
+          const preservedDeviceId = isResetExplicit ? "" : (existing.deviceId || (preservedDeviceIds[0] || ""));
+
+          const cleanToken = { ...inputToken };
+          delete cleanToken._resetDevice;
+
+          mergedTokens.push({
+            ...cleanToken,
+            deviceId: preservedDeviceId,
+            deviceIds: preservedDeviceIds,
+          });
+        } else {
+          const cleanToken = { ...inputToken };
+          delete cleanToken._resetDevice;
+          mergedTokens.push(cleanToken);
+        }
+      }
+
+      // Preserve any active trial tokens from Firebase that were generated in the background
+      for (const t of currentTokens) {
+        if (t && t.code && !handledCodes.has(String(t.code)) && t.isTrial) {
+          // Check if trial is still not expired
+          if (!t.expiresAt || t.expiresAt > Date.now()) {
+            mergedTokens.push(t);
+          }
+        }
+      }
+
+      body.tokens = mergedTokens;
+    }
+
+    // 3. Save merged config back to Firebase RTDB
     const res = await fetch(`${firebaseUrl}/config.json${authQuery}`, {
       method: "PUT",
       headers: {

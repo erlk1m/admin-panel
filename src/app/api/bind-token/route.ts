@@ -9,6 +9,7 @@ export async function POST(request: Request) {
 
     const firebaseSecret = process.env.FIREBASE_SECRET;
     const authQuery = firebaseSecret ? `?auth=${firebaseSecret}` : "";
+    const sep = authQuery ? "&" : "?";
 
     const { code, deviceId } = await request.json();
 
@@ -17,7 +18,7 @@ export async function POST(request: Request) {
     }
 
     // 1. Fetch current config
-    const getRes = await fetch(`${firebaseUrl}/config.json?_t=${Date.now()}`, { 
+    const getRes = await fetch(`${firebaseUrl}/config.json${authQuery}${sep}_t=${Date.now()}`, { 
       cache: 'no-store',
       headers: { 'Cache-Control': 'no-cache, no-store, must-revalidate' }
     });

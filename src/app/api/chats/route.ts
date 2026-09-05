@@ -9,7 +9,11 @@ export async function GET() {
       return NextResponse.json({ error: "FIREBASE_URL is not configured" }, { status: 500 });
     }
 
-    const res = await fetch(`${firebaseUrl}/chats.json?_t=${Date.now()}`, { 
+    const firebaseSecret = process.env.FIREBASE_SECRET;
+    const authQuery = firebaseSecret ? `?auth=${firebaseSecret}` : "";
+    const sep = authQuery ? "&" : "?";
+
+    const res = await fetch(`${firebaseUrl}/chats.json${authQuery}${sep}_t=${Date.now()}`, { 
       cache: 'no-store',
       headers: { 'Cache-Control': 'no-cache, no-store, must-revalidate' }
     });
@@ -85,7 +89,10 @@ export async function POST(request: Request) {
       timestamp: Date.now()
     };
 
-    const res = await fetch(`${firebaseUrl}/chats.json`, {
+    const firebaseSecret = process.env.FIREBASE_SECRET;
+    const authQuery = firebaseSecret ? `?auth=${firebaseSecret}` : "";
+
+    const res = await fetch(`${firebaseUrl}/chats.json${authQuery}`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -125,9 +132,12 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ error: "ID is required" }, { status: 400 });
     }
 
-    let url = `${firebaseUrl}/chats/${id}.json`;
+    const firebaseSecret = process.env.FIREBASE_SECRET;
+    const authQuery = firebaseSecret ? `?auth=${firebaseSecret}` : "";
+
+    let url = `${firebaseUrl}/chats/${id}.json${authQuery}`;
     if (id === 'all') {
-      url = `${firebaseUrl}/chats.json`;
+      url = `${firebaseUrl}/chats.json${authQuery}`;
     }
 
     const res = await fetch(url, {
