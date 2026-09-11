@@ -42,8 +42,9 @@ export default function RootLayout({
       lang="id"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased dark`}
     >
-      <body className="min-h-full flex flex-col font-sans bg-[#080c14] text-slate-100 selection:bg-indigo-500/30 selection:text-indigo-200">
-        <div className="fixed inset-0 pointer-events-none bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-indigo-950/25 via-[#080c14]/80 to-[#080c14] -z-10" />
+      <body className="min-h-full flex flex-col font-sans bg-[#060911] text-slate-100 selection:bg-indigo-500/30 selection:text-indigo-200">
+        <div className="fixed inset-0 pointer-events-none bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-indigo-950/30 via-[#070a13]/85 to-[#060911] -z-10" />
+        <div className="fixed inset-0 pointer-events-none bg-grid-cyber opacity-40 -z-10 [mask-image:radial-gradient(ellipse_at_center,white,transparent_80%)]" />
         {children}
       </body>
     </html>

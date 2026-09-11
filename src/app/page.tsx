@@ -33,6 +33,9 @@ import {
   AlertCircle,
   Sliders,
   Zap,
+  Eye,
+  EyeOff,
+  ShieldCheck,
 } from "lucide-react";
 
 // ==========================================
@@ -181,6 +184,7 @@ const formatDateSafe = (timestamp: any) => {
 export default function AdminPanel() {
   // Auth & Navigation States
   const [adminPassword, setAdminPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [activeTab, setActiveTab] = useState("overview");
   const [tokenSubTab, setTokenSubTab] = useState<"premium" | "trial">("premium");
   const [tokenFilter, setTokenFilter] = useState<"all" | "active" | "expired">("all");
@@ -866,55 +870,80 @@ export default function AdminPanel() {
 
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen bg-[#080c14] flex items-center justify-center p-4 relative overflow-hidden">
-        {/* Glow ambient spots */}
-        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-indigo-600/15 rounded-full blur-[120px] pointer-events-none" />
-        <div className="absolute bottom-10 right-10 w-72 h-72 bg-cyan-600/10 rounded-full blur-[100px] pointer-events-none" />
+      <div className="min-h-screen bg-[#060911] flex items-center justify-center p-4 relative overflow-hidden select-none">
+        {/* Ambient Glow Spots */}
+        <div className="absolute -top-24 -left-24 w-[500px] h-[500px] bg-indigo-600/15 rounded-full blur-[140px] pointer-events-none animate-pulse-glow" />
+        <div className="absolute -bottom-24 -right-24 w-[500px] h-[500px] bg-cyan-500/10 rounded-full blur-[140px] pointer-events-none" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-violet-600/10 rounded-full blur-[160px] pointer-events-none" />
 
-        <div className="glass-panel p-8 md:p-10 rounded-3xl border border-white/10 w-full max-w-md shadow-2xl relative z-10">
+        {/* Central Card */}
+        <div className="glass-panel p-8 sm:p-10 rounded-3xl border border-white/10 w-full max-w-md shadow-2xl relative z-10 before:absolute before:top-0 before:left-0 before:right-0 before:h-[2px] before:bg-gradient-to-r before:from-indigo-500 before:via-purple-500 before:to-cyan-400 before:rounded-t-3xl">
           <div className="flex flex-col items-center mb-8 text-center">
-            <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-cyan-400 p-0.5 shadow-xl shadow-indigo-500/25 mb-4">
-              <div className="w-full h-full bg-[#090d16] rounded-[14px] flex items-center justify-center">
-                <Tv className="w-8 h-8 text-indigo-400" />
+            {/* Glowing Brand Icon */}
+            <div className="relative mb-5 group">
+              <div className="absolute -inset-2 rounded-2xl bg-gradient-to-r from-indigo-500 via-purple-500 to-cyan-400 opacity-60 blur-md group-hover:opacity-100 transition duration-500 animate-pulse-glow" />
+              <div className="relative w-16 h-16 rounded-2xl bg-[#090d16] border border-white/15 p-0.5 shadow-2xl flex items-center justify-center">
+                <Tv className="w-8 h-8 text-indigo-400 drop-shadow-[0_0_10px_rgba(99,102,241,0.6)]" />
               </div>
             </div>
-            <h1 className="text-2xl font-black tracking-tight text-white">{appName} Console</h1>
-            <p className="text-slate-400 text-xs mt-1.5 max-w-xs">
-              Pusat kendali live streaming, token akses, moderasi chat, dan konfigurasi TV.
+
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-[10px] font-bold text-indigo-300 uppercase tracking-widest mb-2.5">
+              <Sparkles className="w-3 h-3 text-indigo-400" />
+              <span>Enterprise Hub • v2.0</span>
+            </div>
+
+            <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white">{appName} Console</h1>
+            <p className="text-slate-400 text-xs mt-2 max-w-xs leading-relaxed">
+              Pusat kendali live streaming IPTV, manajemen token VIP, moderasi chat, dan konfigurasi TV.
             </p>
           </div>
 
           <form onSubmit={handleLogin} className="space-y-5">
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-300 uppercase tracking-wider pl-1">
-                Password Administrator
+              <label className="text-[11px] font-bold text-slate-300 uppercase tracking-wider pl-1 flex items-center justify-between">
+                <span>Password Administrator</span>
+                <span className="text-[10px] text-slate-400 lowercase font-normal">wajib</span>
               </label>
-              <div className="relative">
-                <ShieldAlert className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
+              <div className="relative group">
+                <ShieldAlert className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-indigo-400 transition-colors" />
                 <input
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   required
                   placeholder="••••••••••••"
                   value={adminPassword}
                   onChange={(e) => setAdminPassword(e.target.value)}
-                  className="w-full bg-[#0c1322] border border-white/10 text-white rounded-2xl py-3.5 pl-12 pr-4 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 text-sm transition-all"
+                  className="w-full bg-[#0a101d] border border-white/10 text-white rounded-2xl py-3.5 pl-12 pr-12 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 text-sm transition-all placeholder:text-slate-600 font-mono"
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 text-slate-400 hover:text-white rounded-lg transition-colors"
+                  title={showPassword ? "Sembunyikan password" : "Tampilkan password"}
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
               </div>
             </div>
 
             <button
               type="submit"
-              className="w-full py-3.5 px-4 bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 text-white font-bold rounded-2xl transition-all shadow-lg shadow-indigo-600/30 active:scale-[0.98] flex items-center justify-center gap-2 text-sm"
+              className="w-full py-3.5 px-4 bg-gradient-to-r from-indigo-600 via-indigo-500 to-cyan-500 hover:from-indigo-500 hover:to-cyan-400 text-white font-bold rounded-2xl transition-all shadow-lg shadow-indigo-600/30 hover:shadow-indigo-500/50 active:scale-[0.98] flex items-center justify-center gap-2 text-sm border border-indigo-400/20"
             >
               <Key className="w-4 h-4" /> Masuk ke Panel
             </button>
           </form>
 
-          <div className="mt-8 pt-6 border-t border-white/5 flex items-center justify-between text-xs text-slate-500">
-            <span>Versi Console 2.0</span>
-            <span className="flex items-center gap-1.5 text-emerald-400">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              Firebase Realtime
+          <div className="mt-8 pt-5 border-t border-white/5 flex items-center justify-between text-xs text-slate-400">
+            <span className="flex items-center gap-1.5 font-medium">
+              <ShieldCheck className="w-4 h-4 text-indigo-400" />
+              <span>SSL Protected</span>
+            </span>
+            <span className="flex items-center gap-2 text-emerald-400 font-medium">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+              </span>
+              Firebase RTDB
             </span>
           </div>
         </div>
@@ -1059,28 +1088,38 @@ export default function AdminPanel() {
       {/* ==========================================
           Desktop Sidebar
       ========================================== */}
-      <aside className="w-64 bg-[#080c14] border-r border-white/5 flex flex-col hidden lg:flex select-none">
+      {/* ==========================================
+          Desktop Sidebar (Linear/Vercel Style)
+      ========================================== */}
+      <aside className="w-64 bg-[#070b14]/90 backdrop-blur-xl border-r border-white/[0.07] flex flex-col hidden lg:flex select-none z-20">
         {/* Brand Header */}
-        <div className="p-5 flex items-center justify-between border-b border-white/5">
+        <div className="p-5 flex items-center justify-between border-b border-white/[0.07]">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-cyan-400 p-0.5 shadow-md shadow-indigo-500/20">
-              <div className="w-full h-full bg-[#090d16] rounded-[10px] flex items-center justify-center">
+            <div className="relative group">
+              <div className="absolute -inset-1 rounded-xl bg-gradient-to-r from-indigo-500 via-purple-500 to-cyan-400 opacity-60 blur-[4px] group-hover:opacity-100 transition duration-300" />
+              <div className="relative w-10 h-10 rounded-xl bg-[#090d16] border border-white/10 flex items-center justify-center shadow-lg">
                 <Tv className="w-5 h-5 text-indigo-400" />
               </div>
             </div>
             <div>
-              <h1 className="text-sm font-extrabold tracking-tight text-white">{appName}</h1>
-              <p className="text-[11px] text-slate-400 font-medium">Management Hub</p>
+              <h1 className="text-sm font-black tracking-tight text-white flex items-center gap-1.5">
+                {appName}
+                <span className="text-[9px] px-1.5 py-0.2 rounded bg-indigo-500/20 text-indigo-300 font-mono font-bold border border-indigo-500/30">PRO</span>
+              </h1>
+              <p className="text-[10px] text-slate-400 font-medium tracking-wide">Management Hub</p>
             </div>
           </div>
-          <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[10px] font-semibold text-emerald-400">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-            LIVE
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[10px] font-bold text-emerald-400">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+            </span>
+            <span>LIVE</span>
           </div>
         </div>
 
         {/* Navigation Tabs */}
-        <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+        <nav className="flex-1 px-3 py-4 space-y-1.5 overflow-y-auto">
           <div className="px-3 pb-2 text-[10px] font-bold tracking-wider text-slate-400 uppercase">
             Menu Utama
           </div>
@@ -1091,25 +1130,25 @@ export default function AdminPanel() {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl transition-all text-xs font-semibold group ${
+                className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl transition-all text-xs font-semibold group relative ${
                   isActive
-                    ? "bg-gradient-to-r from-indigo-600/90 to-indigo-700 text-white shadow-lg shadow-indigo-600/25"
-                    : "text-slate-400 hover:text-white hover:bg-white/5"
+                    ? "bg-gradient-to-r from-indigo-600/20 via-indigo-600/10 to-transparent text-white border border-indigo-500/30 shadow-[0_0_20px_-4px_rgba(99,102,241,0.25)] before:absolute before:left-0 before:top-2 before:bottom-2 before:w-1 before:bg-indigo-400 before:rounded-r-full"
+                    : "text-slate-400 hover:text-slate-200 hover:bg-white/[0.04]"
                 }`}
               >
                 <div className="flex items-center gap-3">
-                  <Icon className={`w-4 h-4 transition-colors ${isActive ? "text-white" : "text-slate-400 group-hover:text-indigo-400"}`} />
+                  <Icon className={`w-4 h-4 transition-colors ${isActive ? "text-indigo-400" : "text-slate-400 group-hover:text-indigo-400"}`} />
                   <span>{tab.label}</span>
                 </div>
                 {tab.badge && (
                   <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
-                    isActive ? "bg-white/20 text-white" : "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
+                    isActive ? "bg-indigo-500/20 text-indigo-300 border border-indigo-500/30" : "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
                   }`}>
                     {tab.badge}
                   </span>
                 )}
                 {typeof tab.count === "number" && (
-                  <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
+                  <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold font-mono ${
                     isActive ? "bg-white/20 text-white" : "bg-white/5 text-slate-400"
                   }`}>
                     {tab.count}
@@ -1120,14 +1159,23 @@ export default function AdminPanel() {
           })}
         </nav>
 
-        {/* User Footer */}
-        <div className="p-3 border-t border-white/5">
+        {/* Sidebar Footer with System Widget */}
+        <div className="p-3 border-t border-white/[0.07] space-y-2">
+          {/* RTDB Sync Status Card */}
+          <div className="px-3 py-2 rounded-xl bg-white/[0.02] border border-white/5 flex items-center justify-between text-[10px] text-slate-400">
+            <span className="flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-pulse" />
+              RTDB Engine
+            </span>
+            <span className="font-mono text-emerald-400 font-bold">Synchronized</span>
+          </div>
+
           <button
             onClick={() => setIsAuthenticated(false)}
             className="w-full flex items-center justify-between p-2.5 rounded-xl hover:bg-red-500/10 hover:border-red-500/20 border border-transparent transition-all group text-left"
           >
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-xl bg-slate-800 flex items-center justify-center font-bold text-xs text-slate-300 border border-white/10 group-hover:bg-red-500/20 group-hover:text-red-300">
+              <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-600 to-indigo-900 flex items-center justify-center font-bold text-xs text-white border border-white/10 shadow-sm group-hover:from-red-600 group-hover:to-red-900 transition-all">
                 AD
               </div>
               <div className="overflow-hidden">
@@ -1146,18 +1194,18 @@ export default function AdminPanel() {
       {isMobileMenuOpen && (
         <div className="fixed inset-0 z-50 lg:hidden flex">
           <div
-            className="fixed inset-0 bg-black/70 backdrop-blur-sm"
+            className="fixed inset-0 bg-black/75 backdrop-blur-sm"
             onClick={() => setIsMobileMenuOpen(false)}
           />
-          <div className="relative w-72 max-w-[80vw] bg-[#090d16] border-r border-white/10 h-full flex flex-col p-4 shadow-2xl z-10 animate-toast">
+          <div className="relative w-72 max-w-[80vw] bg-[#070b14] border-r border-white/10 h-full flex flex-col p-4 shadow-2xl z-10 animate-toast">
             <div className="flex items-center justify-between pb-4 border-b border-white/10">
               <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-indigo-600 flex items-center justify-center">
+                <div className="w-9 h-9 rounded-xl bg-indigo-600 flex items-center justify-center shadow-lg shadow-indigo-600/30">
                   <Tv className="w-5 h-5 text-white" />
                 </div>
                 <div>
                   <h2 className="text-sm font-bold text-white">{appName}</h2>
-                  <p className="text-[10px] text-slate-400">Mobile Admin</p>
+                  <p className="text-[10px] text-slate-400">Mobile Hub Console</p>
                 </div>
               </div>
               <button
@@ -1179,8 +1227,8 @@ export default function AdminPanel() {
                       setActiveTab(tab.id);
                       setIsMobileMenuOpen(false);
                     }}
-                    className={`w-full flex items-center justify-between px-3.5 py-3 rounded-xl text-sm font-medium transition-colors ${
-                      isActive ? "bg-indigo-600 text-white font-bold" : "text-slate-300 hover:bg-white/5"
+                    className={`w-full flex items-center justify-between px-3.5 py-3 rounded-xl text-sm font-semibold transition-colors ${
+                      isActive ? "bg-gradient-to-r from-indigo-600 to-indigo-700 text-white font-bold shadow-lg shadow-indigo-600/30" : "text-slate-300 hover:bg-white/5"
                     }`}
                   >
                     <div className="flex items-center gap-3">
@@ -1202,7 +1250,7 @@ export default function AdminPanel() {
                 setIsAuthenticated(false);
                 setIsMobileMenuOpen(false);
               }}
-              className="mt-auto flex items-center gap-3 p-3 text-sm text-red-400 hover:bg-red-500/10 rounded-xl font-semibold"
+              className="mt-auto flex items-center gap-3 p-3 text-sm text-red-400 hover:bg-red-500/10 rounded-xl font-semibold transition-colors"
             >
               <LogOut className="w-4 h-4" />
               Logout Sesi
@@ -1216,7 +1264,7 @@ export default function AdminPanel() {
       ========================================== */}
       <main className="flex-1 flex flex-col h-screen overflow-hidden relative">
         {/* Top App Header */}
-        <header className="h-16 bg-[#080c14]/80 backdrop-blur-md border-b border-white/5 flex items-center justify-between px-4 sm:px-6 sticky top-0 z-20 gap-4">
+        <header className="h-16 bg-[#060911]/85 backdrop-blur-xl border-b border-white/[0.07] flex items-center justify-between px-4 sm:px-6 sticky top-0 z-20 gap-4">
           <div className="flex items-center gap-3">
             <button
               onClick={() => setIsMobileMenuOpen(true)}
@@ -1225,31 +1273,37 @@ export default function AdminPanel() {
             >
               <Menu className="w-5 h-5" />
             </button>
-            <div className="flex items-center gap-2 text-xs text-slate-400">
-              <span className="font-semibold text-white capitalize">{activeTab}</span>
-              <span className="text-slate-600">/</span>
-              <span className="hidden sm:inline text-slate-400">Console Hub</span>
+            <div className="flex items-center gap-2 text-xs">
+              <span className="px-2.5 py-1 rounded-lg bg-white/[0.03] border border-white/[0.06] text-slate-400 font-medium hidden sm:inline">
+                {appName} Hub
+              </span>
+              <span className="text-slate-600 hidden sm:inline">/</span>
+              <span className="font-bold text-white capitalize bg-indigo-500/10 border border-indigo-500/20 px-2.5 py-1 rounded-lg flex items-center gap-1.5 text-indigo-300">
+                <span className="w-1.5 h-1.5 rounded-full bg-indigo-400" />
+                {navigationTabs.find((t) => t.id === activeTab)?.label || activeTab}
+              </span>
             </div>
           </div>
 
           <div className="flex items-center gap-2 sm:gap-3">
             {/* Quick Search */}
-            <div className="relative hidden md:block">
-              <Search className="w-4 h-4 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
+            <div className="relative hidden md:block group">
+              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 group-focus-within:text-indigo-400 transition-colors" />
               <input
                 type="text"
                 placeholder="Cari token / user..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-44 lg:w-56 bg-[#0d1424] border border-white/5 rounded-xl pl-9 pr-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:w-64 transition-all"
+                className="w-44 lg:w-56 bg-[#0c1322] border border-white/10 rounded-xl pl-9 pr-8 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500/60 focus:ring-2 focus:ring-indigo-500/20 focus:w-64 transition-all font-sans"
               />
+              <kbd className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[9px] font-mono text-slate-500 bg-white/5 border border-white/10 px-1 rounded pointer-events-none">/</kbd>
             </div>
 
             {/* Save Config Button */}
             <button
               onClick={handleSave}
               disabled={saving}
-              className="px-4 py-2 bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 text-white rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 shadow-lg shadow-indigo-600/25 active:scale-95 disabled:opacity-50 transition-all"
+              className="px-4 py-2 bg-gradient-to-r from-indigo-600 via-indigo-500 to-cyan-500 hover:from-indigo-500 hover:to-cyan-400 text-white rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 shadow-lg shadow-indigo-600/30 hover:shadow-indigo-500/50 active:scale-95 disabled:opacity-50 transition-all border border-indigo-400/20"
               title="Shortcut: Ctrl+S"
             >
               {saving ? <RefreshCcw className="animate-spin w-4 h-4" /> : <Save className="w-4 h-4" />}
@@ -1291,64 +1345,96 @@ export default function AdminPanel() {
                   {/* 4 KPI Metrics Grid */}
                   <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                     {/* KPI 1 */}
-                    <div className="glass-card p-4 sm:p-5 rounded-2xl relative overflow-hidden">
+                    <div className="glass-card p-4 sm:p-5 rounded-2xl relative overflow-hidden group before:absolute before:top-0 before:left-0 before:right-0 before:h-[2px] before:bg-gradient-to-r before:from-amber-500 before:to-amber-300">
                       <div className="flex items-center justify-between mb-3">
-                        <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Token Aktif</span>
-                        <div className="w-8 h-8 rounded-xl bg-amber-500/10 text-amber-400 flex items-center justify-center">
+                        <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Token Aktif</span>
+                        <div className="w-9 h-9 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center shadow-[0_0_15px_-3px_rgba(245,158,11,0.3)] group-hover:scale-110 transition-transform">
                           <Key className="w-4 h-4" />
                         </div>
                       </div>
                       <div className="text-2xl sm:text-3xl font-black text-white tracking-tight">
                         {tokens.filter((t) => !t.expiresAt || now === 0 || t.expiresAt > now).length}
                       </div>
-                      <p className="text-[11px] text-slate-400 mt-1">
-                        Dari total <span className="text-slate-200 font-semibold">{tokens.length}</span> token terdaftar
-                      </p>
+                      <div className="mt-2.5 flex items-center gap-2">
+                        <div className="flex-1 bg-white/5 rounded-full h-1.5 overflow-hidden">
+                          <div
+                            className="bg-gradient-to-r from-amber-500 to-amber-300 h-full rounded-full transition-all duration-500"
+                            style={{ width: `${tokens.length > 0 ? Math.round((tokens.filter((t) => !t.expiresAt || now === 0 || t.expiresAt > now).length / tokens.length) * 100) : 0}%` }}
+                          />
+                        </div>
+                        <span className="text-[10px] text-slate-400 font-mono">
+                          {tokens.length} total
+                        </span>
+                      </div>
                     </div>
 
                     {/* KPI 2 */}
-                    <div className="glass-card p-4 sm:p-5 rounded-2xl relative overflow-hidden">
+                    <div className="glass-card p-4 sm:p-5 rounded-2xl relative overflow-hidden group before:absolute before:top-0 before:left-0 before:right-0 before:h-[2px] before:bg-gradient-to-r before:from-indigo-500 before:to-indigo-300">
                       <div className="flex items-center justify-between mb-3">
-                        <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Slot Terpakai</span>
-                        <div className="w-8 h-8 rounded-xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center">
+                        <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Slot Terpakai</span>
+                        <div className="w-9 h-9 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 flex items-center justify-center shadow-[0_0_15px_-3px_rgba(99,102,241,0.3)] group-hover:scale-110 transition-transform">
                           <Tv className="w-4 h-4" />
                         </div>
                       </div>
                       <div className="text-2xl sm:text-3xl font-black text-white tracking-tight">
                         {tokens.reduce((sum, t) => sum + (Array.isArray(t.deviceIds) ? t.deviceIds.length : t.deviceId ? 1 : 0), 0)}
                       </div>
-                      <p className="text-[11px] text-slate-400 mt-1">
-                        Dari <span className="text-slate-200 font-semibold">{tokens.reduce((sum, t) => sum + (Number(t.maxDevices) || 1), 0)}</span> max slot TV
-                      </p>
+                      <div className="mt-2.5 flex items-center gap-2">
+                        <div className="flex-1 bg-white/5 rounded-full h-1.5 overflow-hidden">
+                          {(() => {
+                            const maxSlot = tokens.reduce((sum, t) => sum + (Number(t.maxDevices) || 1), 0);
+                            const usedSlot = tokens.reduce((sum, t) => sum + (Array.isArray(t.deviceIds) ? t.deviceIds.length : t.deviceId ? 1 : 0), 0);
+                            const slotPercent = maxSlot > 0 ? Math.min(100, Math.round((usedSlot / maxSlot) * 100)) : 0;
+                            return (
+                              <div
+                                className="bg-gradient-to-r from-indigo-500 to-indigo-300 h-full rounded-full transition-all duration-500"
+                                style={{ width: `${slotPercent}%` }}
+                              />
+                            );
+                          })()}
+                        </div>
+                        <span className="text-[10px] text-slate-400 font-mono">
+                          {tokens.reduce((sum, t) => sum + (Number(t.maxDevices) || 1), 0)} max
+                        </span>
+                      </div>
                     </div>
 
                     {/* KPI 3 */}
-                    <div className="glass-card p-4 sm:p-5 rounded-2xl relative overflow-hidden">
+                    <div className="glass-card p-4 sm:p-5 rounded-2xl relative overflow-hidden group before:absolute before:top-0 before:left-0 before:right-0 before:h-[2px] before:bg-gradient-to-r before:from-emerald-500 before:to-teal-300">
                       <div className="flex items-center justify-between mb-3">
-                        <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Sedang Streaming</span>
-                        <div className="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center">
+                        <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Live Streaming</span>
+                        <div className="w-9 h-9 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center shadow-[0_0_15px_-3px_rgba(16,185,129,0.3)] group-hover:scale-110 transition-transform">
                           <Activity className="w-4 h-4" />
                         </div>
                       </div>
                       <div className="text-2xl sm:text-3xl font-black text-emerald-400 tracking-tight flex items-center gap-2">
                         {activeUsersCount}
-                        <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+                        <span className="relative flex h-2.5 w-2.5">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                          <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                        </span>
                       </div>
-                      <p className="text-[11px] text-slate-400 mt-1">Pengguna aktif terhubung</p>
+                      <p className="text-[11px] text-emerald-400/80 mt-2 font-medium flex items-center gap-1.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                        TV & Device Aktif Terhubung
+                      </p>
                     </div>
 
                     {/* KPI 4 */}
-                    <div className="glass-card p-4 sm:p-5 rounded-2xl relative overflow-hidden">
+                    <div className="glass-card p-4 sm:p-5 rounded-2xl relative overflow-hidden group before:absolute before:top-0 before:left-0 before:right-0 before:h-[2px] before:bg-gradient-to-r before:from-cyan-500 before:to-sky-300">
                       <div className="flex items-center justify-between mb-3">
-                        <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Versi TV</span>
-                        <div className="w-8 h-8 rounded-xl bg-cyan-500/10 text-cyan-400 flex items-center justify-center">
+                        <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Versi TV</span>
+                        <div className="w-9 h-9 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 flex items-center justify-center shadow-[0_0_15px_-3px_rgba(6,182,212,0.3)] group-hover:scale-110 transition-transform">
                           <Zap className="w-4 h-4" />
                         </div>
                       </div>
                       <div className="text-2xl sm:text-3xl font-black text-cyan-300 tracking-tight">
                         v{latestVersionCode}
                       </div>
-                      <p className="text-[11px] text-slate-400 mt-1">Auto-Update TV aktif</p>
+                      <p className="text-[11px] text-slate-400 mt-2 flex items-center gap-1.5">
+                        <Check className="w-3 h-3 text-cyan-400" />
+                        OTA Update Otomatis Siap
+                      </p>
                     </div>
                   </div>
 
@@ -1356,17 +1442,25 @@ export default function AdminPanel() {
                   <div className="grid grid-cols-1 lg:grid-cols-7 gap-6">
                     {/* Top Channels (col-span-4) */}
                     <div className="lg:col-span-4 glass-panel p-5 sm:p-6 rounded-3xl space-y-4">
-                      <div className="flex items-center justify-between pb-3 border-b border-white/5">
+                      <div className="flex items-center justify-between pb-3 border-b border-white/[0.07]">
                         <div className="flex items-center gap-2.5">
-                          <Radio className="w-5 h-5 text-indigo-400" />
-                          <h3 className="text-sm font-bold text-white">Channel Paling Banyak Ditonton</h3>
+                          <div className="w-8 h-8 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
+                            <Radio className="w-4 h-4" />
+                          </div>
+                          <div>
+                            <h3 className="text-sm font-bold text-white">Channel Paling Banyak Ditonton</h3>
+                            <p className="text-[11px] text-slate-400">Peringkat statistik live tayangan</p>
+                          </div>
                         </div>
-                        <span className="text-xs text-slate-400">Real-time stats</span>
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 font-mono">
+                          Live Counter
+                        </span>
                       </div>
 
                       {channelStats.length === 0 ? (
-                        <div className="text-center py-12 text-slate-400 text-xs">
-                          Belum ada statistik channel terkumpul.
+                        <div className="text-center py-12 text-slate-400 text-xs flex flex-col items-center gap-2">
+                          <Radio className="w-6 h-6 text-slate-600 animate-pulse" />
+                          <span>Belum ada data tontonan saluran terkumpul.</span>
                         </div>
                       ) : (
                         <div className="space-y-3 pt-1">
@@ -1375,17 +1469,19 @@ export default function AdminPanel() {
                             const percent = Math.round((stat.count / maxCount) * 100);
                             const medals = ["🥇", "🥈", "🥉"];
                             return (
-                              <div key={stat.name || i} className="p-3 rounded-2xl bg-white/[0.02] border border-white/5 hover:border-indigo-500/30 transition-all space-y-2">
+                              <div key={stat.name || i} className="p-3.5 rounded-2xl bg-white/[0.02] border border-white/[0.06] hover:border-indigo-500/40 hover:bg-white/[0.04] transition-all space-y-2 group">
                                 <div className="flex items-center justify-between text-xs">
-                                  <div className="flex items-center gap-2 font-bold text-white">
-                                    <span>{medals[i] || `#${i + 1}`}</span>
-                                    <span className="truncate max-w-[200px] sm:max-w-[280px]">{stat.name}</span>
+                                  <div className="flex items-center gap-2.5 font-bold text-white">
+                                    <span className="text-sm">{medals[i] || `#${i + 1}`}</span>
+                                    <span className="truncate max-w-[200px] sm:max-w-[280px] group-hover:text-indigo-300 transition-colors">{stat.name}</span>
                                   </div>
-                                  <span className="font-mono text-indigo-300 font-bold">{stat.count} views</span>
+                                  <span className="font-mono text-indigo-300 font-bold px-2 py-0.5 rounded-lg bg-indigo-500/10 border border-indigo-500/20">
+                                    {stat.count} views
+                                  </span>
                                 </div>
-                                <div className="w-full bg-slate-800/60 rounded-full h-2 overflow-hidden">
+                                <div className="w-full bg-slate-900/80 rounded-full h-2 overflow-hidden p-0.5 border border-white/5">
                                   <div
-                                    className="bg-gradient-to-r from-indigo-500 to-cyan-400 h-full rounded-full transition-all duration-500"
+                                    className="bg-gradient-to-r from-indigo-500 via-purple-500 to-cyan-400 h-full rounded-full transition-all duration-500 shadow-[0_0_10px_rgba(99,102,241,0.5)]"
                                     style={{ width: `${percent}%` }}
                                   />
                                 </div>
@@ -1398,20 +1494,27 @@ export default function AdminPanel() {
 
                     {/* Active Streamers (col-span-3) */}
                     <div className="lg:col-span-3 glass-panel p-5 sm:p-6 rounded-3xl space-y-4 flex flex-col">
-                      <div className="flex items-center justify-between pb-3 border-b border-white/5">
+                      <div className="flex items-center justify-between pb-3 border-b border-white/[0.07]">
                         <div className="flex items-center gap-2.5">
-                          <Users className="w-5 h-5 text-emerald-400" />
-                          <h3 className="text-sm font-bold text-white">Penonton Streaming Saat Ini</h3>
+                          <div className="w-8 h-8 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
+                            <Users className="w-4 h-4" />
+                          </div>
+                          <div>
+                            <h3 className="text-sm font-bold text-white">Penonton Streaming</h3>
+                            <p className="text-[11px] text-slate-400">Realtime presence live</p>
+                          </div>
                         </div>
-                        <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 font-bold border border-emerald-500/20">
+                        <span className="text-xs px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-300 font-bold border border-emerald-500/25 flex items-center gap-1.5">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
                           {activeUsersCount} Online
                         </span>
                       </div>
 
-                      <div className="flex-1 overflow-y-auto max-h-[320px] space-y-2 pr-1">
+                      <div className="flex-1 overflow-y-auto max-h-[340px] space-y-2.5 pr-1">
                         {activeUsers.length === 0 ? (
-                          <div className="text-center py-10 text-slate-400 text-xs">
-                            Tidak ada penonton aktif saat ini.
+                          <div className="text-center py-12 text-slate-500 text-xs flex flex-col items-center gap-2">
+                            <Tv className="w-6 h-6 text-slate-700" />
+                            <span>Tidak ada penonton aktif saat ini.</span>
                           </div>
                         ) : (
                           activeUsers.map((user, idx) => {
@@ -1419,22 +1522,37 @@ export default function AdminPanel() {
                             return (
                               <div
                                 key={idx}
-                                className="p-3 rounded-2xl bg-white/[0.02] border border-white/5 hover:bg-white/[0.04] transition-all flex items-center justify-between gap-3 text-xs"
+                                className="p-3 rounded-2xl bg-white/[0.02] border border-white/[0.06] hover:border-emerald-500/30 hover:bg-white/[0.04] transition-all flex items-center justify-between gap-3 text-xs group"
                               >
                                 <div className="flex items-center gap-3 overflow-hidden">
-                                  <div className="w-8 h-8 rounded-xl bg-slate-800 flex items-center justify-center text-slate-300 shrink-0 border border-white/5">
+                                  <div className="w-9 h-9 rounded-xl bg-slate-800/90 flex items-center justify-center text-slate-300 shrink-0 border border-white/10 shadow-inner group-hover:border-emerald-500/30 transition-colors">
                                     {user.isTv ? <Monitor className="w-4 h-4 text-blue-400" /> : <Smartphone className="w-4 h-4 text-emerald-400" />}
                                   </div>
                                   <div className="overflow-hidden">
-                                    <div className="font-mono font-bold text-amber-300 truncate">{user.token}</div>
+                                    <div className="font-mono font-bold text-amber-300 truncate flex items-center gap-1.5">
+                                      <span>{user.token}</span>
+                                      {user.deviceBrand && user.deviceBrand !== "Unknown" && (
+                                        <span className="text-[9px] px-1 py-0.2 rounded bg-white/10 text-slate-300 font-sans font-normal">
+                                          {user.deviceBrand}
+                                        </span>
+                                      )}
+                                    </div>
                                     <div className="text-[11px] text-slate-400 truncate">{user.channel}</div>
                                   </div>
                                 </div>
                                 <div className="flex items-center gap-2 shrink-0">
-                                  <span className="text-[10px] text-slate-500">{elapsedSec}s lalu</span>
+                                  <span className="text-[10px] text-slate-500 font-mono">{elapsedSec}s lalu</span>
+                                  <button
+                                    onClick={() => setInboxModal({ isOpen: true, token: user.token, message: "" })}
+                                    className="p-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/25 text-emerald-400 transition-colors"
+                                    title="Kirim Pesan Layar TV"
+                                  >
+                                    <MessageCircle className="w-3.5 h-3.5" />
+                                  </button>
                                   <button
                                     onClick={() => handleKick(user.token)}
-                                    className="px-2 py-1 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 font-bold text-[10px] transition-colors"
+                                    className="px-2.5 py-1 rounded-lg bg-red-500/10 hover:bg-red-500/25 text-red-400 font-bold text-[10px] transition-colors border border-red-500/20"
+                                    title="Tendang Sesi Pengguna"
                                   >
                                     KICK
                                   </button>
@@ -1982,49 +2100,61 @@ export default function AdminPanel() {
                   </div>
 
                   {/* Token List Panel */}
-                  <div className="glass-panel p-6 rounded-3xl space-y-4">
+                  <div className="glass-panel p-6 rounded-3xl space-y-5">
                     {/* Sub-tabs & Filter Controls */}
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-3 border-b border-white/5">
-                      <div className="flex items-center gap-2 p-1 rounded-xl bg-white/[0.03] border border-white/5">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-white/[0.07]">
+                      {/* Segmented Control */}
+                      <div className="flex items-center gap-1.5 p-1 rounded-2xl bg-black/40 border border-white/[0.08] shadow-inner">
                         <button
                           onClick={() => setTokenSubTab("premium")}
-                          className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                            tokenSubTab === "premium" ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/20" : "text-slate-400 hover:text-white"
+                          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
+                            tokenSubTab === "premium"
+                              ? "bg-gradient-to-r from-indigo-600 to-indigo-500 text-white shadow-lg shadow-indigo-600/30 border border-indigo-400/30"
+                              : "text-slate-400 hover:text-white"
                           }`}
                         >
-                          Premium ({tokens.filter((t) => !t.isTrial).length})
+                          <span>💎 Token VIP</span>
+                          <span className="px-1.5 py-0.2 rounded-full bg-white/20 text-[10px] font-mono">
+                            {tokens.filter((t) => !t.isTrial).length}
+                          </span>
                         </button>
                         <button
                           onClick={() => setTokenSubTab("trial")}
-                          className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                            tokenSubTab === "trial" ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/20" : "text-slate-400 hover:text-white"
+                          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
+                            tokenSubTab === "trial"
+                              ? "bg-gradient-to-r from-indigo-600 to-indigo-500 text-white shadow-lg shadow-indigo-600/30 border border-indigo-400/30"
+                              : "text-slate-400 hover:text-white"
                           }`}
                         >
-                          Trial Users ({tokens.filter((t) => t.isTrial).length})
+                          <span>⏱️ Trial Gratis 1 Jam</span>
+                          <span className="px-1.5 py-0.2 rounded-full bg-white/20 text-[10px] font-mono">
+                            {tokens.filter((t) => t.isTrial).length}
+                          </span>
                         </button>
                       </div>
 
-                      <div className="flex items-center gap-2">
+                      {/* Status Filter Pills */}
+                      <div className="flex items-center gap-1.5 p-1 rounded-xl bg-white/[0.02] border border-white/5">
                         <button
                           onClick={() => setTokenFilter("all")}
-                          className={`px-3 py-1 rounded-lg text-xs font-semibold ${
-                            tokenFilter === "all" ? "bg-white/10 text-white" : "text-slate-500 hover:text-slate-300"
+                          className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all ${
+                            tokenFilter === "all" ? "bg-white/10 text-white shadow-sm" : "text-slate-500 hover:text-slate-300"
                           }`}
                         >
                           Semua
                         </button>
                         <button
                           onClick={() => setTokenFilter("active")}
-                          className={`px-3 py-1 rounded-lg text-xs font-semibold ${
-                            tokenFilter === "active" ? "bg-emerald-500/20 text-emerald-300" : "text-slate-500 hover:text-slate-300"
+                          className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all ${
+                            tokenFilter === "active" ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30" : "text-slate-500 hover:text-slate-300"
                           }`}
                         >
                           Aktif
                         </button>
                         <button
                           onClick={() => setTokenFilter("expired")}
-                          className={`px-3 py-1 rounded-lg text-xs font-semibold ${
-                            tokenFilter === "expired" ? "bg-red-500/20 text-red-300" : "text-slate-500 hover:text-slate-300"
+                          className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all ${
+                            tokenFilter === "expired" ? "bg-red-500/20 text-red-300 border border-red-500/30" : "text-slate-500 hover:text-slate-300"
                           }`}
                         >
                           Expired
@@ -2034,8 +2164,9 @@ export default function AdminPanel() {
 
                     {/* Token Rows */}
                     {filteredTokens.length === 0 ? (
-                      <div className="text-center py-12 text-slate-500 text-xs">
-                        Tidak ada token yang sesuai dengan filter.
+                      <div className="text-center py-16 text-slate-500 text-xs flex flex-col items-center gap-2">
+                        <Key className="w-8 h-8 text-slate-700 animate-pulse" />
+                        <span>Tidak ada token yang sesuai dengan filter atau pencarian saat ini.</span>
                       </div>
                     ) : (
                       <div className="space-y-3">
@@ -2051,44 +2182,72 @@ export default function AdminPanel() {
                           return (
                             <div
                               key={idx}
-                              className={`p-4 rounded-2xl border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4 ${
+                              className={`p-4 sm:p-5 rounded-2xl border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4 group ${
                                 isExpired
                                   ? "bg-red-950/10 border-red-500/20 opacity-70"
-                                  : "bg-white/[0.02] border-white/5 hover:border-indigo-500/30"
+                                  : "bg-gradient-to-r from-white/[0.025] to-white/[0.01] border-white/[0.07] hover:border-indigo-500/40 hover:shadow-[0_0_25px_-5px_rgba(99,102,241,0.15)]"
                               }`}
                             >
-                              <div className="space-y-1.5">
-                                <div className="flex items-center gap-2.5">
-                                  <span className="font-mono text-base font-black text-amber-300">{tokenObj.code}</span>
+                              <div className="space-y-2">
+                                <div className="flex flex-wrap items-center gap-2.5">
+                                  <span className="font-mono text-base font-black text-amber-300 tracking-wide">
+                                    {tokenObj.code}
+                                  </span>
                                   <button
                                     onClick={() => copyToClipboard(tokenObj.code, `Token ${tokenObj.code} tersalin!`)}
-                                    className="p-1 rounded-lg hover:bg-white/10 text-slate-400 hover:text-white transition-colors"
-                                    title="Salin Token"
+                                    className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white transition-all active:scale-90"
+                                    title="Salin Token ke Clipboard"
                                   >
-                                    {copiedKey === tokenObj.code ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                                    {copiedKey === tokenObj.code ? (
+                                      <Check className="w-3.5 h-3.5 text-emerald-400" />
+                                    ) : (
+                                      <Copy className="w-3.5 h-3.5" />
+                                    )}
                                   </button>
+
+                                  {/* Metallic Shimmer Badge */}
                                   {isExpired ? (
-                                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-red-500/20 text-red-300 font-bold">
+                                    <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-red-500/15 text-red-300 font-bold border border-red-500/30">
                                       EXPIRED
                                     </span>
+                                  ) : tokenObj.isTrial ? (
+                                    <span className="shimmer-badge text-[10px] px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-200 font-bold border border-slate-600">
+                                      ⏱️ TRIAL
+                                    </span>
                                   ) : (
-                                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-bold">
-                                      {tokenObj.label || "Lifetime"}
+                                    <span className="shimmer-badge text-[10px] px-2.5 py-0.5 rounded-full bg-gradient-to-r from-amber-500/20 via-amber-400/10 to-transparent text-amber-300 font-bold border border-amber-500/30 shadow-[0_0_12px_-2px_rgba(245,158,11,0.25)]">
+                                      👑 {tokenObj.label || "VIP Lifetime"}
                                     </span>
                                   )}
                                 </div>
 
-                                <div className="flex flex-wrap items-center gap-3 text-xs text-slate-400">
+                                <div className="flex flex-wrap items-center gap-4 text-xs text-slate-400">
                                   {tokenObj.expiresAt && (
-                                    <span className="flex items-center gap-1">
-                                      <Clock className="w-3 h-3 text-slate-500" />
+                                    <span className="flex items-center gap-1.5 font-mono">
+                                      <Clock className="w-3.5 h-3.5 text-slate-500" />
                                       Exp: {formatDateSafe(tokenObj.expiresAt)}
                                     </span>
                                   )}
-                                  <span className="flex items-center gap-1 text-slate-300">
-                                    <Monitor className="w-3 h-3 text-indigo-400" />
-                                    Slot: <b className="text-white">{devCount}/{maxDev}</b> TV Terhubung
-                                  </span>
+
+                                  {/* Visual Device Slots Meter */}
+                                  <div className="flex items-center gap-1.5">
+                                    <div className="flex items-center gap-1">
+                                      {Array.from({ length: Math.min(maxDev, 10) }).map((_, i) => (
+                                        <span
+                                          key={i}
+                                          className={`w-2 h-2 rounded-full transition-all ${
+                                            i < devCount
+                                              ? "bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.8)]"
+                                              : "bg-slate-700/80 border border-white/10"
+                                          }`}
+                                          title={i < devCount ? "Slot TV Terhubung" : "Slot TV Tersedia"}
+                                        />
+                                      ))}
+                                    </div>
+                                    <span className="text-xs text-slate-300 font-mono">
+                                      {devCount}/{maxDev} TV
+                                    </span>
+                                  </div>
                                 </div>
                               </div>
 
@@ -2096,7 +2255,7 @@ export default function AdminPanel() {
                                 {tokenObj.isTrial && (
                                   <button
                                     onClick={() => upgradeTrialToPremium(tokenObj.code)}
-                                    className="px-3 py-1.5 rounded-xl bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-300 text-xs font-bold transition-colors"
+                                    className="px-3.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition-all shadow-md shadow-indigo-600/20 active:scale-95"
                                   >
                                     Upgrade VIP
                                   </button>
@@ -2104,7 +2263,7 @@ export default function AdminPanel() {
                                 {devCount > 0 && (
                                   <button
                                     onClick={() => resetTokenDevice(tokenObj.code)}
-                                    className="px-3 py-1.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 text-xs font-bold transition-colors"
+                                    className="px-3 py-1.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 text-xs font-bold transition-colors border border-amber-500/20"
                                     title="Reset kaitan TV lama"
                                   >
                                     Reset TV
@@ -2112,21 +2271,21 @@ export default function AdminPanel() {
                                 )}
                                 <button
                                   onClick={() => setInboxModal({ isOpen: true, token: tokenObj.code, message: "" })}
-                                  className="px-3 py-1.5 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 text-xs font-bold transition-colors"
+                                  className="px-3 py-1.5 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 text-xs font-bold transition-colors border border-emerald-500/20"
                                 >
                                   Pesan TV
                                 </button>
                                 {!tokenObj.isTrial && (
                                   <button
                                     onClick={() => startEditToken(tokenObj)}
-                                    className="px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 text-xs font-bold transition-colors"
+                                    className="px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 text-xs font-bold transition-colors border border-white/10"
                                   >
                                     Edit
                                   </button>
                                 )}
                                 <button
                                   onClick={() => removeToken(tokenObj.code)}
-                                  className="p-1.5 rounded-xl hover:bg-red-500/20 text-slate-500 hover:text-red-400 transition-colors"
+                                  className="p-2 rounded-xl hover:bg-red-500/20 text-slate-500 hover:text-red-400 transition-colors"
                                   title="Hapus Token"
                                 >
                                   <Trash2 className="w-4 h-4" />
