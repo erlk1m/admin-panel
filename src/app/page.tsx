@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, Component, ErrorInfo, ReactNode } from "react";
+import { useState, useEffect, useRef, useCallback, Component, ErrorInfo, ReactNode } from "react";
 import {
   Tv,
   ShieldAlert,
@@ -16,28 +16,22 @@ import {
   Send,
   Activity,
   Users,
-  PlaySquare,
   PieChart,
   Menu,
   X,
   Check,
   Copy,
-  ExternalLink,
   Smartphone,
   Monitor,
   Search,
   Plus,
   Sparkles,
-  RotateCcw,
   MessageCircle,
   LogOut,
   Radio,
   Clock,
-  Eye,
   AlertCircle,
   Sliders,
-  ChevronRight,
-  UserCheck,
   Zap,
 } from "lucide-react";
 
@@ -180,8 +174,6 @@ const formatDateSafe = (timestamp: any) => {
   }
 };
 
-const isCustomEffect = (effect: any) => typeof effect === "string" && effect.startsWith("http");
-
 // ==========================================
 // Main Component
 // ==========================================
@@ -250,20 +242,22 @@ export default function AdminPanel() {
   const [activeUsers, setActiveUsers] = useState<ActiveUser[]>([]);
   const [activeUsersCount, setActiveUsersCount] = useState(0);
   const [channelStats, setChannelStats] = useState<{ name: string; count: number }[]>([]);
-  const [now, setNow] = useState<number | null>(null);
+  const [now, setNow] = useState<number>(0);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
 
   // ==========================================
   // Toast Helper
   // ==========================================
 
-  const showToast = (type: "success" | "error" | "info", message: string) => {
-    const id = Math.random().toString(36).substring(2, 9);
+  const toastSeqRef = useRef(0);
+  const showToast = useCallback((type: "success" | "error" | "info", message: string) => {
+    toastSeqRef.current += 1;
+    const id = `t_${toastSeqRef.current}`;
     setToasts((prev) => [...prev, { id, type, message }]);
     setTimeout(() => {
       setToasts((prev) => prev.filter((t) => t.id !== id));
     }, 3500);
-  };
+  }, []);
 
   const copyToClipboard = (text: string, label = "Tersalin ke clipboard!") => {
     navigator.clipboard.writeText(text);
@@ -278,13 +272,15 @@ export default function AdminPanel() {
     return () => clearInterval(timer);
   }, []);
 
+  const handleSaveRef = useRef<() => Promise<void>>(undefined);
+
   // Keyboard shortcut Ctrl+S / Cmd+S
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key === "s") {
         e.preventDefault();
         if (isAuthenticated && !saving) {
-          handleSave();
+          handleSaveRef.current?.();
         }
       }
     };
@@ -427,7 +423,11 @@ export default function AdminPanel() {
   };
 
   useEffect(() => {
-    loadConfig();
+    const timer = setTimeout(() => {
+      void loadConfig();
+    }, 0);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -842,6 +842,9 @@ export default function AdminPanel() {
       setSaving(false);
     }
   };
+  useEffect(() => {
+    handleSaveRef.current = handleSave;
+  });
 
   // ==========================================
   // Loading & Login Views
@@ -922,7 +925,7 @@ export default function AdminPanel() {
     const isTabMatch = tokenSubTab === "premium" ? !t.isTrial : t.isTrial;
     if (!isTabMatch) return false;
 
-    const isExpired = t.expiresAt && t.expiresAt <= Date.now();
+    const isExpired = Boolean(t.expiresAt && now > 0 && t.expiresAt <= now);
     if (tokenFilter === "active" && isExpired) return false;
     if (tokenFilter === "expired" && !isExpired) return false;
 
@@ -1294,7 +1297,7 @@ export default function AdminPanel() {
                         </div>
                       </div>
                       <div className="text-2xl sm:text-3xl font-black text-white tracking-tight">
-                        {tokens.filter((t) => !t.expiresAt || t.expiresAt > Date.now()).length}
+                        {tokens.filter((t) => !t.expiresAt || now === 0 || t.expiresAt > now).length}
                       </div>
                       <p className="text-[11px] text-slate-400 mt-1">
                         Dari total <span className="text-slate-200 font-semibold">{tokens.length}</span> token terdaftar
@@ -2035,7 +2038,7 @@ export default function AdminPanel() {
                     ) : (
                       <div className="space-y-3">
                         {filteredTokens.map((tokenObj, idx) => {
-                          const isExpired = tokenObj.expiresAt && tokenObj.expiresAt <= Date.now();
+                          const isExpired = Boolean(tokenObj.expiresAt && now > 0 && tokenObj.expiresAt <= now);
                           const maxDev = Number(tokenObj.maxDevices) || 1;
                           const devCount = Array.isArray(tokenObj.deviceIds)
                             ? tokenObj.deviceIds.length

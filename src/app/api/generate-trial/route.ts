@@ -79,7 +79,7 @@ export async function POST(request: Request) {
 
     // Ensure uniqueness
     let newCode = generateCode();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     while (data.tokens.some((t: any) => typeof t === 'object' && t.code === newCode)) {
         newCode = generateCode();
     }

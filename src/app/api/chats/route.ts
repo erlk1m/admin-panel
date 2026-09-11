@@ -56,8 +56,7 @@ export async function GET() {
         'Surrogate-Control': 'no-store'
       }
     });
-  } // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  catch (error: any) {
+  } catch {
     return NextResponse.json({ error: "Failed to fetch from Firebase" }, { status: 500 });
   }
 }
@@ -105,7 +104,7 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json({ success: true });
-  } // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  }  
   catch (error: any) {
     return NextResponse.json({ error: error.message || "Failed to save to Firebase" }, { status: 500 });
   }
@@ -149,7 +148,7 @@ export async function DELETE(request: Request) {
     }
 
     return NextResponse.json({ success: true });
-  } // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  }  
   catch (error: any) {
     return NextResponse.json({ error: error.message || "Failed to delete from Firebase" }, { status: 500 });
   }

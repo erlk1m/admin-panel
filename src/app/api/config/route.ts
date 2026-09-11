@@ -79,7 +79,7 @@ export async function GET(request: Request) {
         'Surrogate-Control': 'no-store'
       }
     });
-  } // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  }  
   catch (error: any) {
     return NextResponse.json({ error: "Failed to fetch from Firebase: " + (error?.message || "") }, { status: 500 });
   }
@@ -194,7 +194,7 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json({ success: true });
-  } // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  }  
   catch (error: any) {
     console.error("API Route Error:", error.message);
     return NextResponse.json({ error: error.message || "Failed to save to Firebase" }, { status: 500 });
