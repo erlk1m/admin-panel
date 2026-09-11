@@ -3,8 +3,8 @@ import { NextResponse } from "next/server";
 export async function POST(req: Request) {
   try {
     const { channel } = await req.json();
-    if (!channel) {
-      return NextResponse.json({ error: "Channel name is required" }, { status: 400 });
+    if (!channel || typeof channel !== "string" || channel.trim().length === 0 || channel.length > 100) {
+      return NextResponse.json({ error: "Channel name is required and must be valid" }, { status: 400 });
     }
 
     const firebaseUrl = process.env.FIREBASE_URL;

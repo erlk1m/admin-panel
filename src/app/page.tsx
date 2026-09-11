@@ -457,6 +457,8 @@ export default function AdminPanel() {
   // Real-time Polls
   useEffect(() => {
     if (isAuthenticated) {
+      const headers: Record<string, string> = { "x-admin-password": adminPassword };
+
       const fetchChats = () => {
         fetch("/api/chats")
           .then((res) => res.json())
@@ -480,7 +482,7 @@ export default function AdminPanel() {
       };
 
       const fetchPresence = () => {
-        fetch("/api/presence")
+        fetch("/api/presence", { headers })
           .then((res) => res.json())
           .then((data) => {
             if (data && data.users && Array.isArray(data.users)) {
@@ -544,7 +546,7 @@ export default function AdminPanel() {
         clearInterval(statsInterval);
       };
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, adminPassword]);
 
   // ==========================================
   // Handlers

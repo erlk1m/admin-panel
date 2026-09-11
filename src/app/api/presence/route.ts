@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 export const dynamic = 'force-dynamic';
-export async function GET() {
+export async function GET(request: Request) {
   try {
     const firebaseUrl = process.env.FIREBASE_URL;
     if (!firebaseUrl) {
@@ -54,8 +54,20 @@ export async function GET() {
     
     // Urutkan berdasarkan waktu terakhir aktif (paling baru)
     activeUsers.sort((a, b) => b.lastSeen - a.lastSeen);
+
+    // Authentication check: Only authenticated admin can view raw user tokens
+    const adminPassword = process.env.ADMIN_PASSWORD;
+    const providedPassword = request.headers.get("x-admin-password");
+    const isAdmin = Boolean(adminPassword && providedPassword === adminPassword);
+
+    const safeUsers = isAdmin
+      ? activeUsers
+      : activeUsers.map((u) => ({
+          ...u,
+          token: u.token.length > 4 ? `${u.token.slice(0, 3)}***` : "***",
+        }));
     
-    return NextResponse.json({ count: activeUsers.length, users: activeUsers }, {
+    return NextResponse.json({ count: activeUsers.length, users: safeUsers }, {
       headers: {
         'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
         'Pragma': 'no-cache',

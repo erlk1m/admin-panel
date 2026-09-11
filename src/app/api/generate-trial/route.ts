@@ -9,8 +9,13 @@ export async function POST(request: Request) {
 
     const { deviceId } = await request.json();
 
-    if (!deviceId) {
+    if (!deviceId || typeof deviceId !== "string") {
       return NextResponse.json({ error: "Device ID diperlukan" }, { status: 400 });
+    }
+
+    const cleanDeviceId = deviceId.trim();
+    if (cleanDeviceId.length < 3 || cleanDeviceId.length > 120) {
+      return NextResponse.json({ error: "Device ID tidak valid" }, { status: 400 });
     }
 
     const firebaseSecret = process.env.FIREBASE_SECRET;
@@ -36,6 +41,15 @@ export async function POST(request: Request) {
       data.tokens = [];
     }
 
+    // Prune stale trial tokens expired > 48 hours ago
+    const now = Date.now();
+    data.tokens = data.tokens.filter((t: any) => {
+      if (typeof t === "object" && t.isTrial && t.expiresAt && (now - t.expiresAt > 48 * 60 * 60 * 1000)) {
+        return false;
+      }
+      return true;
+    });
+
     // 2. Check if device already claimed trial
     let alreadyClaimed = false;
     let existingToken = null;
@@ -50,7 +64,7 @@ export async function POST(request: Request) {
           currentDeviceIds = [t.deviceId];
         }
 
-        if (currentDeviceIds.includes(deviceId)) {
+        if (currentDeviceIds.includes(cleanDeviceId)) {
           alreadyClaimed = true;
           existingToken = t;
           break;
@@ -86,8 +100,8 @@ export async function POST(request: Request) {
 
     const tokenObj = {
         code: newCode,
-        deviceId: deviceId,
-        deviceIds: [deviceId],
+        deviceId: cleanDeviceId,
+        deviceIds: [cleanDeviceId],
         maxDevices: 1,
         expiresAt: Date.now() + (60 * 60 * 1000), // 1 Hour
         label: "Trial User",

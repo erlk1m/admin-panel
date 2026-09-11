@@ -5,8 +5,8 @@ export async function POST(request: Request) {
     const adminPassword = process.env.ADMIN_PASSWORD;
     const providedPassword = request.headers.get("x-admin-password");
 
-    if (adminPassword && providedPassword !== adminPassword) {
-      return NextResponse.json({ error: "Password Admin Salah" }, { status: 401 });
+    if (!adminPassword || providedPassword !== adminPassword) {
+      return NextResponse.json({ error: "Password Admin Salah atau Belum Dikonfigurasi" }, { status: 401 });
     }
 
     const firebaseUrl = process.env.FIREBASE_URL;
@@ -20,11 +20,12 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Token is required" }, { status: 400 });
     }
 
+    const safeToken = encodeURIComponent(String(token)).replace(/\./g, '%2E');
     const firebaseSecret = process.env.FIREBASE_SECRET;
     const authQuery = firebaseSecret ? `?auth=${firebaseSecret}` : "";
 
-    // Tulis data KICK ke /kicks/<token>.json
-    const res = await fetch(`${firebaseUrl}/kicks/${token}.json${authQuery}`, {
+    // Tulis data KICK ke /kicks/<safeToken>.json
+    const res = await fetch(`${firebaseUrl}/kicks/${safeToken}.json${authQuery}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(Date.now()), // Menyimpan timestamp kapan ditendang

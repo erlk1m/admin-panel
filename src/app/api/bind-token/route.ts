@@ -13,8 +13,15 @@ export async function POST(request: Request) {
 
     const { code, deviceId } = await request.json();
 
-    if (!code || !deviceId) {
+    if (!code || typeof code !== "string" || !deviceId || typeof deviceId !== "string") {
       return NextResponse.json({ error: "Code dan Device ID diperlukan" }, { status: 400 });
+    }
+
+    const cleanCode = code.trim();
+    const cleanDeviceId = deviceId.trim();
+
+    if (cleanCode.length === 0 || cleanDeviceId.length === 0 || cleanCode.length > 100 || cleanDeviceId.length > 150) {
+      return NextResponse.json({ error: "Input Code atau Device ID tidak valid" }, { status: 400 });
     }
 
     // 1. Fetch current config
@@ -43,11 +50,11 @@ export async function POST(request: Request) {
     // 2. Find token
     for (let i = 0; i < data.tokens.length; i++) {
       const t = data.tokens[i];
-      if (typeof t === 'string' && t === code) {
+      if (typeof t === 'string' && t === cleanCode) {
         tokenIndex = i;
         tokenObj = { code: t, expiresAt: null, label: "Lifetime" };
         break;
-      } else if (typeof t === 'object' && t.code === code) {
+      } else if (typeof t === 'object' && t.code === cleanCode) {
         tokenIndex = i;
         tokenObj = { ...t };
         break;
@@ -73,6 +80,8 @@ export async function POST(request: Request) {
       currentDeviceIds = [tokenObj.deviceId];
     }
 
+    const safeCode = encodeURIComponent(String(tokenObj.code)).replace(/\./g, '%2E');
+
     const saveAndReturn = async (message: string) => {
       data.tokens[tokenIndex] = tokenObj;
       const putRes = await fetch(`${firebaseUrl}/config.json${authQuery}`, {
@@ -81,18 +90,18 @@ export async function POST(request: Request) {
         body: JSON.stringify(data),
       });
       if (!putRes.ok) throw new Error("Gagal menyimpan ke Firebase");
-      await fetch(`${firebaseUrl}/kicks/${code}.json${authQuery}`, { method: "DELETE" }).catch(() => {});
+      await fetch(`${firebaseUrl}/kicks/${safeCode}.json${authQuery}`, { method: "DELETE" }).catch(() => {});
       return NextResponse.json({ success: true, message });
     };
 
-    if (currentDeviceIds.includes(deviceId)) {
+    if (currentDeviceIds.includes(cleanDeviceId)) {
       // Already bound to this device, allow
-      await fetch(`${firebaseUrl}/kicks/${code}.json${authQuery}`, { method: "DELETE" }).catch(() => {});
+      await fetch(`${firebaseUrl}/kicks/${safeCode}.json${authQuery}`, { method: "DELETE" }).catch(() => {});
       return NextResponse.json({ success: true, message: "Akses diizinkan." });
     } else {
       // New device trying to bind
       if (currentDeviceIds.length < maxDevices) {
-        currentDeviceIds.push(deviceId);
+        currentDeviceIds.push(cleanDeviceId);
         tokenObj.deviceIds = currentDeviceIds;
         tokenObj.deviceId = currentDeviceIds[0]; // backward compatibility
         return await saveAndReturn("Token berhasil diikat ke perangkat ini.");

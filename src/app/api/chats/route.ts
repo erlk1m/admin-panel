@@ -66,8 +66,8 @@ export async function POST(request: Request) {
     const adminPassword = process.env.ADMIN_PASSWORD;
     const providedPassword = request.headers.get("x-admin-password");
 
-    if (adminPassword && providedPassword !== adminPassword) {
-      return NextResponse.json({ error: "Password Admin Salah" }, { status: 401 });
+    if (!adminPassword || providedPassword !== adminPassword) {
+      return NextResponse.json({ error: "Password Admin Salah atau Belum Dikonfigurasi" }, { status: 401 });
     }
 
     const firebaseUrl = process.env.FIREBASE_URL;
@@ -78,13 +78,16 @@ export async function POST(request: Request) {
     const body = await request.json();
     const { message, senderOverride } = body;
     
-    if (!message) {
+    if (!message || typeof message !== "string" || message.trim().length === 0) {
       return NextResponse.json({ error: "Message is required" }, { status: 400 });
     }
 
+    const safeMessage = message.trim().slice(0, 500);
+    const safeSender = typeof senderOverride === "string" ? senderOverride.trim().slice(0, 100) : "Admin|ID|🔧|#FF00FF|ADMIN";
+
     const chatPayload = {
-      sender: senderOverride || "Admin|ID|🔧|#FF00FF|ADMIN",
-      message: message,
+      sender: safeSender,
+      message: safeMessage,
       timestamp: Date.now()
     };
 
@@ -115,8 +118,8 @@ export async function DELETE(request: Request) {
     const adminPassword = process.env.ADMIN_PASSWORD;
     const providedPassword = request.headers.get("x-admin-password");
 
-    if (adminPassword && providedPassword !== adminPassword) {
-      return NextResponse.json({ error: "Password Admin Salah" }, { status: 401 });
+    if (!adminPassword || providedPassword !== adminPassword) {
+      return NextResponse.json({ error: "Password Admin Salah atau Belum Dikonfigurasi" }, { status: 401 });
     }
 
     const firebaseUrl = process.env.FIREBASE_URL;
@@ -127,16 +130,19 @@ export async function DELETE(request: Request) {
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
 
-    if (!id) {
+    if (!id || typeof id !== 'string') {
       return NextResponse.json({ error: "ID is required" }, { status: 400 });
     }
 
     const firebaseSecret = process.env.FIREBASE_SECRET;
     const authQuery = firebaseSecret ? `?auth=${firebaseSecret}` : "";
 
-    let url = `${firebaseUrl}/chats/${id}.json${authQuery}`;
+    let url = "";
     if (id === 'all') {
       url = `${firebaseUrl}/chats.json${authQuery}`;
+    } else {
+      const safeId = encodeURIComponent(id.trim()).replace(/\./g, '%2E');
+      url = `${firebaseUrl}/chats/${safeId}.json${authQuery}`;
     }
 
     const res = await fetch(url, {

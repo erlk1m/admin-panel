@@ -90,8 +90,8 @@ export async function POST(request: Request) {
     const adminPassword = process.env.ADMIN_PASSWORD;
     const providedPassword = request.headers.get("x-admin-password");
 
-    if (adminPassword && providedPassword !== adminPassword) {
-      return NextResponse.json({ error: "Password Admin Salah" }, { status: 401 });
+    if (!adminPassword || providedPassword !== adminPassword) {
+      return NextResponse.json({ error: "Password Admin Salah atau Belum Dikonfigurasi" }, { status: 401 });
     }
 
     const firebaseUrl = process.env.FIREBASE_URL;
