@@ -673,7 +673,7 @@ export default function AdminPanel() {
   };
 
   const addCustomToken = () => {
-    const cleanToken = customTokenInput.trim().toUpperCase();
+    const cleanToken = customTokenInput.trim();
     if (!cleanToken) {
       showToast("error", "Kode token tidak boleh kosong!");
       return;
@@ -2037,8 +2037,8 @@ export default function AdminPanel() {
                         <input
                           type="text"
                           value={customTokenInput}
-                          onChange={(e) => setCustomTokenInput(e.target.value.toUpperCase())}
-                          placeholder="VIP-BUDI"
+                          onChange={(e) => setCustomTokenInput(e.target.value)}
+                          placeholder="VIP-BUDI atau vipBudi123"
                           className="w-full bg-[#0c1322] border border-white/10 text-white font-mono font-bold rounded-xl p-3 text-xs focus:outline-none focus:border-amber-500"
                         />
                       </div>
