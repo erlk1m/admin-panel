@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useEffect } from "react";
 import { AlertTriangle } from "lucide-react";
 import { ConfirmDialogState } from "@/types/admin";
 
@@ -13,10 +13,28 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
   state,
   onClose,
 }) => {
+  const isOpen = Boolean(state?.isOpen);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen, onClose]);
+
   if (!state || !state.isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-toast">
+    <div
+      role="dialog"
+      aria-modal="true"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-toast"
+    >
       <div className="glass-panel p-6 rounded-3xl border border-white/10 max-w-md w-full shadow-2xl space-y-4">
         <div className="flex items-center gap-3">
           <div
@@ -35,14 +53,16 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
         </p>
         <div className="flex justify-end gap-3 pt-2">
           <button
+            type="button"
             onClick={onClose}
             className="px-4 py-2.5 rounded-xl text-sm font-medium text-slate-300 hover:bg-white/5 transition-colors"
           >
             Batal
           </button>
           <button
+            type="button"
             onClick={state.onConfirm}
-            className={`px-5 py-2.5 rounded-xl text-sm font-bold text-white transition-all shadow-lg ${
+            className={`px-5 py-2.5 rounded-xl text-sm font-bold text-white transition-all shadow-lg active:scale-95 ${
               state.isDestructive
                 ? "bg-red-600 hover:bg-red-500 shadow-red-600/25"
                 : "bg-indigo-600 hover:bg-indigo-500 shadow-indigo-600/25"
@@ -55,4 +75,3 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
     </div>
   );
 };
-

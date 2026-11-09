@@ -24,6 +24,7 @@ interface OverviewTabProps {
   latestVersionCode: number;
   channelStats: ChannelStat[];
   now: number;
+  searchQuery?: string;
   onGoToSettings: () => void;
   onOpenInbox: (token: string) => void;
   onKick: (token: string) => void;
@@ -37,6 +38,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
   latestVersionCode,
   channelStats,
   now,
+  searchQuery = "",
   onGoToSettings,
   onOpenInbox,
   onKick,
@@ -63,6 +65,25 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
 
   const medals = ["🥇", "🥈", "🥉"];
 
+  const trimmedQuery = searchQuery.trim().toLowerCase();
+  const filteredUsers = trimmedQuery
+    ? activeUsers.filter((user) => {
+        return (
+          user.token.toLowerCase().includes(trimmedQuery) ||
+          user.channel.toLowerCase().includes(trimmedQuery) ||
+          Boolean(
+            user.deviceBrand &&
+              user.deviceBrand.toLowerCase().includes(trimmedQuery)
+          ) ||
+          Boolean(
+            user.deviceModel &&
+              user.deviceModel.toLowerCase().includes(trimmedQuery)
+          ) ||
+          Boolean(user.country && user.country.toLowerCase().includes(trimmedQuery))
+        );
+      })
+    : activeUsers;
+
   return (
     <div className="space-y-6 animate-toast">
       {/* Maintenance Banner Warning */}
@@ -81,6 +102,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
             </div>
           </div>
           <button
+            type="button"
             onClick={onGoToSettings}
             className="px-3 py-1.5 bg-red-500 text-white text-xs font-bold rounded-lg hover:bg-red-400 shrink-0"
           >
@@ -262,7 +284,9 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
                   Penonton Streaming
                 </h3>
                 <p className="text-[11px] text-slate-400">
-                  Realtime presence live
+                  {trimmedQuery
+                    ? `Menampilkan ${filteredUsers.length} hasil cocok`
+                    : "Realtime presence live"}
                 </p>
               </div>
             </div>
@@ -273,13 +297,17 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
           </div>
 
           <div className="flex-1 overflow-y-auto max-h-[340px] space-y-2.5 pr-1">
-            {activeUsers.length === 0 ? (
+            {filteredUsers.length === 0 ? (
               <div className="text-center py-12 text-slate-500 text-xs flex flex-col items-center gap-2">
                 <Tv className="w-6 h-6 text-slate-700" />
-                <span>Tidak ada penonton aktif saat ini.</span>
+                <span>
+                  {trimmedQuery
+                    ? "Tidak ada penonton yang cocok dengan pencarian."
+                    : "Tidak ada penonton aktif saat ini."}
+                </span>
               </div>
             ) : (
-              activeUsers.map((user, idx) => {
+              filteredUsers.map((user, idx) => {
                 const elapsedSec = now
                   ? Math.max(
                       0,
@@ -301,13 +329,21 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
                       </div>
                       <div className="overflow-hidden">
                         <div className="font-mono font-bold text-amber-300 truncate flex items-center gap-1.5">
-                          <span>{user.token}</span>
+                          <span className="truncate">{user.token}</span>
                           {user.deviceBrand &&
                             user.deviceBrand !== "Unknown" && (
-                              <span className="text-[9px] px-1 py-0.2 rounded bg-white/10 text-slate-300 font-sans font-normal">
+                              <span
+                                className="text-[9px] px-1.5 py-0.2 rounded bg-white/10 text-slate-300 font-sans font-normal shrink-0"
+                                title={user.deviceModel || user.deviceBrand}
+                              >
                                 {user.deviceBrand}
                               </span>
                             )}
+                          {user.country && (
+                            <span className="text-[9px] px-1 py-0.2 rounded bg-indigo-500/15 text-indigo-300 font-mono shrink-0">
+                              {user.country}
+                            </span>
+                          )}
                         </div>
                         <div className="text-[11px] text-slate-400 truncate">
                           {user.channel}
@@ -319,6 +355,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
                         {elapsedSec}s lalu
                       </span>
                       <button
+                        type="button"
                         onClick={() => onOpenInbox(user.token)}
                         className="p-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/25 text-emerald-400 transition-colors"
                         title="Kirim Pesan Layar TV"
@@ -326,6 +363,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
                         <MessageCircle className="w-3.5 h-3.5" />
                       </button>
                       <button
+                        type="button"
                         onClick={() => onKick(user.token)}
                         className="px-2.5 py-1 rounded-lg bg-red-500/10 hover:bg-red-500/25 text-red-400 font-bold text-[10px] transition-colors border border-red-500/20"
                         title="Tendang Sesi Pengguna"
@@ -343,4 +381,3 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
     </div>
   );
 };
-

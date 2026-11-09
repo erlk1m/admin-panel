@@ -53,9 +53,11 @@ export default function AdminPanel() {
     setIsAuthenticated,
     loading,
     saving,
+    hasUnsavedChanges,
     config,
     setConfig,
     updateConfig,
+    discardChanges,
     handleLogin,
     handleSave,
   } = useAdminConfig(showToast);
@@ -235,6 +237,49 @@ export default function AdminPanel() {
     showToast("success", `Token ${tokenCode} berhasil di-upgrade ke VIP Lifetime!`);
   };
 
+  const handleClearExpiredTokens = (isTrialTab: boolean, count: number) => {
+    const labelType = isTrialTab ? "Trial 1 Jam" : "Token VIP";
+    setConfirmDialog({
+      isOpen: true,
+      title: `Hapus ${count} ${labelType} Expired?`,
+      message: `Semua token ${labelType} yang sudah kedaluwarsa akan dihapus dari draf konfigurasi. Pastikan klik Simpan Perubahan setelahnya.`,
+      confirmText: `Hapus ${count} Token`,
+      isDestructive: true,
+      onConfirm: () => {
+        const checkTime = Date.now();
+        setConfig((prev) => ({
+          ...prev,
+          tokens: prev.tokens.filter((t) => {
+            const isTabMatch = isTrialTab ? Boolean(t.isTrial) : !t.isTrial;
+            const isExpired = Boolean(t.expiresAt && t.expiresAt <= checkTime);
+            return !(isTabMatch && isExpired);
+          }),
+        }));
+        showToast(
+          "info",
+          `${count} token ${labelType} expired dihapus dari draf.`
+        );
+        setConfirmDialog(null);
+      },
+    });
+  };
+
+  const handleRequestDiscard = () => {
+    if (!hasUnsavedChanges) return;
+    setConfirmDialog({
+      isOpen: true,
+      title: "Batalkan Perubahan Belum Disimpan?",
+      message:
+        "Seluruh perubahan yang Anda lakukan sejak penyimpanan terakhir akan dikembalikan ke versi server saat ini.",
+      confirmText: "Ya, Batalkan",
+      isDestructive: true,
+      onConfirm: () => {
+        discardChanges();
+        setConfirmDialog(null);
+      },
+    });
+  };
+
   if (loading) {
     return <LoadingScreen />;
   }
@@ -328,11 +373,17 @@ export default function AdminPanel() {
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
           saving={saving}
+          hasUnsavedChanges={hasUnsavedChanges}
           onSave={handleSave}
+          onDiscardChanges={handleRequestDiscard}
           onOpenMobileMenu={() => setIsMobileMenuOpen(true)}
         />
 
-        <div className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 pb-28 md:pb-12">
+        <div
+          className={`flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 ${
+            hasUnsavedChanges || saving ? "pb-36 lg:pb-12" : "pb-24 lg:pb-12"
+          }`}
+        >
           <DashboardErrorBoundary>
             <div className="max-w-7xl mx-auto space-y-6">
               {activeTab === "overview" && (
@@ -344,6 +395,7 @@ export default function AdminPanel() {
                   latestVersionCode={config.latestVersionCode}
                   channelStats={channelStats}
                   now={now}
+                  searchQuery={searchQuery}
                   onGoToSettings={() => setActiveTab("settings")}
                   onOpenInbox={(token) =>
                     setInboxModal({ isOpen: true, token, message: "" })
@@ -361,11 +413,13 @@ export default function AdminPanel() {
                   config={config}
                   updateConfig={updateConfig}
                   showToast={showToast}
+                  searchQuery={searchQuery}
                 />
               )}
 
               {activeTab === "tokens" && (
                 <TokenManager
+                  appName={config.appName}
                   tokens={config.tokens}
                   now={now}
                   searchQuery={searchQuery}
@@ -384,6 +438,7 @@ export default function AdminPanel() {
                     }))
                   }
                   onRemoveToken={handleRemoveToken}
+                  onClearExpired={handleClearExpiredTokens}
                   onResetDevice={handleResetDevice}
                   onUpgradeTrial={handleUpgradeTrial}
                   onOpenInbox={(tokenCode: string) =>
@@ -411,12 +466,13 @@ export default function AdminPanel() {
         </div>
 
         <MobileNav
-          appName={config.appName}
           navigationTabs={navigationTabs}
           activeTab={activeTab}
           onSelectTab={setActiveTab}
           saving={saving}
+          hasUnsavedChanges={hasUnsavedChanges}
           onSave={handleSave}
+          onDiscardChanges={handleRequestDiscard}
         />
       </main>
     </div>

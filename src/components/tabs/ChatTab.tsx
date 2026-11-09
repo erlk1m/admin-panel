@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { MessageSquare, Send, Trash2 } from "lucide-react";
 import { formatDateSafe } from "@/lib/format";
 import { AdminConfigState, ChatMessage } from "@/types/admin";
@@ -13,6 +13,15 @@ interface ChatTabProps {
   onDeleteChat: (id: string) => void;
 }
 
+const ADMIN_NAME_EFFECTS = [
+  { value: "NONE", label: "Polos" },
+  { value: "GLITCH", label: "Glitch" },
+  { value: "SPARKLE", label: "Sparkle" },
+  { value: "NEON", label: "Neon" },
+  { value: "RAINBOW", label: "Rainbow" },
+  { value: "WAVY", label: "Wavy" },
+];
+
 export const ChatTab: React.FC<ChatTabProps> = ({
   config,
   updateConfig,
@@ -21,6 +30,13 @@ export const ChatTab: React.FC<ChatTabProps> = ({
   onDeleteChat,
 }) => {
   const [chatInput, setChatInput] = useState("");
+  const messagesBoxRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const el = messagesBoxRef.current;
+    if (!el) return;
+    el.scrollTop = el.scrollHeight;
+  }, [chatMessages.length]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -54,9 +70,11 @@ export const ChatTab: React.FC<ChatTabProps> = ({
               {config.chatEnabled ? "Chat Diaktifkan" : "Chat Ditutup"}
             </span>
             <button
+              type="button"
               onClick={() =>
                 updateConfig({ chatEnabled: !config.chatEnabled })
               }
+              aria-label="Toggle Live Chat"
               className={`w-12 h-6 rounded-full transition-colors relative ${
                 config.chatEnabled ? "bg-pink-600" : "bg-slate-700"
               }`}
@@ -71,7 +89,7 @@ export const ChatTab: React.FC<ChatTabProps> = ({
         </div>
 
         {/* Admin Identity Customizer & Live Preview */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 p-4 rounded-2xl bg-white/[0.02] border border-white/5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 p-4 rounded-2xl bg-white/[0.02] border border-white/5">
           <div className="space-y-2">
             <label className="text-[11px] font-bold text-slate-400 uppercase">
               Badge Ikon Admin
@@ -80,7 +98,7 @@ export const ChatTab: React.FC<ChatTabProps> = ({
               type="text"
               value={config.adminBadgeIcon}
               onChange={(e) => updateConfig({ adminBadgeIcon: e.target.value })}
-              className="w-full bg-[#0c1322] border border-white/10 rounded-xl p-2.5 text-xs text-white"
+              className="w-full bg-[#0c1322] border border-white/10 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-pink-500"
             />
           </div>
 
@@ -95,7 +113,7 @@ export const ChatTab: React.FC<ChatTabProps> = ({
                 onChange={(e) =>
                   updateConfig({ adminBadgeColor: e.target.value })
                 }
-                className="w-10 h-9 rounded-xl bg-transparent border-0 cursor-pointer"
+                className="w-10 h-9 rounded-xl bg-transparent border-0 cursor-pointer shrink-0"
               />
               <input
                 type="text"
@@ -108,6 +126,25 @@ export const ChatTab: React.FC<ChatTabProps> = ({
             </div>
           </div>
 
+          <div className="space-y-2">
+            <label className="text-[11px] font-bold text-slate-400 uppercase">
+              Efek Nama Admin
+            </label>
+            <select
+              value={config.adminNameEffect}
+              onChange={(e) =>
+                updateConfig({ adminNameEffect: e.target.value })
+              }
+              className="w-full bg-[#0c1322] border border-white/10 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-pink-500"
+            >
+              {ADMIN_NAME_EFFECTS.map((ef) => (
+                <option key={ef.value} value={ef.value}>
+                  {ef.label}
+                </option>
+              ))}
+            </select>
+          </div>
+
           {/* Live Preview Bubble */}
           <div className="space-y-2">
             <label className="text-[11px] font-bold text-slate-400 uppercase">
@@ -115,18 +152,23 @@ export const ChatTab: React.FC<ChatTabProps> = ({
             </label>
             <div className="p-2.5 rounded-xl bg-slate-900 border border-white/10 flex items-center gap-2">
               <span
-                className="px-2 py-0.5 rounded-md text-xs font-bold text-white shadow-sm"
+                className="px-2 py-0.5 rounded-md text-xs font-bold text-white shadow-sm shrink-0"
                 style={{ backgroundColor: config.adminBadgeColor }}
               >
                 {config.adminBadgeIcon} ADMIN
               </span>
-              <span className="text-xs text-slate-300">Halo penonton!</span>
+              <span className="text-xs text-slate-300 truncate">
+                Halo penonton!
+              </span>
             </div>
           </div>
         </div>
 
         {/* Chat Messages Box */}
-        <div className="bg-[#090d16] border border-white/10 rounded-2xl p-4 h-80 overflow-y-auto space-y-2 flex flex-col">
+        <div
+          ref={messagesBoxRef}
+          className="bg-[#090d16] border border-white/10 rounded-2xl p-4 h-80 overflow-y-auto space-y-2 flex flex-col"
+        >
           {chatMessages.length === 0 ? (
             <div className="text-center m-auto text-slate-500 text-xs">
               Belum ada pesan chat live dari penonton.
@@ -146,8 +188,8 @@ export const ChatTab: React.FC<ChatTabProps> = ({
                       : "hover:bg-white/[0.03]"
                   }`}
                 >
-                  <div className="space-y-0.5">
-                    <div className="flex items-center gap-2">
+                  <div className="space-y-0.5 min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
                       <span
                         className={`text-xs font-bold ${
                           isAdminMsg ? "text-pink-400" : "text-cyan-400"
@@ -159,11 +201,16 @@ export const ChatTab: React.FC<ChatTabProps> = ({
                         {formatDateSafe(msg.timestamp) || "Baru saja"}
                       </span>
                     </div>
-                    <p className="text-xs text-slate-200">{msg.message}</p>
+                    <p className="text-xs text-slate-200 break-words">
+                      {msg.message}
+                    </p>
                   </div>
                   <button
+                    type="button"
                     onClick={() => onDeleteChat(msg.id)}
-                    className="opacity-0 group-hover:opacity-100 p-1 rounded-lg text-slate-500 hover:text-red-400 transition-all"
+                    className="opacity-75 sm:opacity-0 sm:group-hover:opacity-100 focus:opacity-100 p-1.5 rounded-lg text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-all shrink-0"
+                    title="Hapus pesan"
+                    aria-label="Hapus pesan chat"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
@@ -178,8 +225,9 @@ export const ChatTab: React.FC<ChatTabProps> = ({
           <button
             type="button"
             onClick={() => onDeleteChat("all")}
-            className="px-3 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-400"
+            className="px-3 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-400 shrink-0"
             title="Bersihkan Semua Chat"
+            aria-label="Bersihkan Semua Chat"
           >
             <Trash2 className="w-4 h-4" />
           </button>
@@ -188,17 +236,17 @@ export const ChatTab: React.FC<ChatTabProps> = ({
             value={chatInput}
             onChange={(e) => setChatInput(e.target.value)}
             placeholder="Kirim pesan resmi sebagai Admin..."
-            className="flex-1 bg-[#0c1322] border border-white/10 text-white rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-pink-500"
+            className="flex-1 bg-[#0c1322] border border-white/10 text-white rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-pink-500 min-w-0"
           />
           <button
             type="submit"
-            className="px-5 rounded-xl bg-pink-600 hover:bg-pink-500 text-white font-bold text-xs flex items-center gap-2 shadow-lg shadow-pink-600/25"
+            className="px-4 sm:px-5 rounded-xl bg-pink-600 hover:bg-pink-500 text-white font-bold text-xs flex items-center gap-2 shadow-lg shadow-pink-600/25 shrink-0 active:scale-95 transition-all"
           >
-            <Send className="w-4 h-4" /> Kirim
+            <Send className="w-4 h-4" />
+            <span className="hidden sm:inline">Kirim</span>
           </button>
         </form>
       </div>
     </div>
   );
 };
-

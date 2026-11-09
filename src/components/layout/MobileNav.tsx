@@ -1,50 +1,66 @@
 "use client";
 
 import React from "react";
-import { RefreshCcw, Save, Sliders } from "lucide-react";
+import { RefreshCcw, RotateCcw, Save, Sliders } from "lucide-react";
 import { AdminTabId } from "@/types/admin";
 import { NavigationTab } from "./Sidebar";
 
 interface MobileNavProps {
-  appName: string;
   navigationTabs: NavigationTab[];
   activeTab: AdminTabId;
   onSelectTab: (tab: AdminTabId) => void;
   saving: boolean;
+  hasUnsavedChanges: boolean;
   onSave: () => void;
+  onDiscardChanges: () => void;
 }
 
 export const MobileNav: React.FC<MobileNavProps> = ({
-  appName,
   navigationTabs,
   activeTab,
   onSelectTab,
   saving,
+  hasUnsavedChanges,
   onSave,
+  onDiscardChanges,
 }) => {
   return (
     <>
-      {/* Mobile Floating Quick Save Bar */}
-      <div className="lg:hidden fixed bottom-16 left-0 right-0 p-3 bg-[#080c14]/90 backdrop-blur-xl border-t border-white/5 flex items-center justify-between z-30">
-        <div className="flex items-center gap-2 text-xs text-slate-400">
-          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-          <span className="font-semibold text-white truncate max-w-[150px]">
-            {appName} Admin
-          </span>
+      {/* Contextual Floating Save Bar: only appears when there are unsaved changes */}
+      {(hasUnsavedChanges || saving) && (
+        <div className="lg:hidden fixed bottom-16 left-0 right-0 px-3 py-2.5 bg-[#0a101e]/95 backdrop-blur-xl border-t border-amber-500/30 flex items-center justify-between gap-2 z-30 animate-toast">
+          <div className="flex items-center gap-2 text-xs text-amber-200 min-w-0">
+            <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse shrink-0" />
+            <span className="font-semibold truncate">
+              {saving ? "Menyimpan perubahan..." : "Ada perubahan belum disimpan"}
+            </span>
+          </div>
+          <div className="flex items-center gap-1.5 shrink-0">
+            {!saving && (
+              <button
+                type="button"
+                onClick={onDiscardChanges}
+                className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 border border-white/10"
+                aria-label="Batalkan perubahan"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+              </button>
+            )}
+            <button
+              onClick={onSave}
+              disabled={saving}
+              className="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-lg shadow-indigo-600/30 active:scale-95 disabled:opacity-50"
+            >
+              {saving ? (
+                <RefreshCcw className="animate-spin w-3.5 h-3.5" />
+              ) : (
+                <Save className="w-3.5 h-3.5" />
+              )}
+              <span>{saving ? "Menyimpan..." : "Simpan"}</span>
+            </button>
+          </div>
         </div>
-        <button
-          onClick={onSave}
-          disabled={saving}
-          className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold flex items-center gap-2 shadow-lg shadow-indigo-600/30 active:scale-95 disabled:opacity-50"
-        >
-          {saving ? (
-            <RefreshCcw className="animate-spin w-3.5 h-3.5" />
-          ) : (
-            <Save className="w-3.5 h-3.5" />
-          )}
-          <span>{saving ? "Menyimpan..." : "Simpan"}</span>
-        </button>
-      </div>
+      )}
 
       {/* Mobile Bottom Navigation Bar */}
       <nav className="lg:hidden fixed bottom-0 left-0 right-0 h-16 bg-[#090d16]/95 backdrop-blur-2xl border-t border-white/10 flex items-center justify-around z-40 px-2 pb-[env(safe-area-inset-bottom)]">
@@ -89,4 +105,3 @@ export const MobileNav: React.FC<MobileNavProps> = ({
     </>
   );
 };
-

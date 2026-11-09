@@ -41,13 +41,25 @@ export function useAdminConfig(
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [config, setConfig] = useState<AdminConfigState>(INITIAL_CONFIG);
+  const [lastSavedJson, setLastSavedJson] = useState<string>("");
 
-  const updateConfig = useCallback(
-    (patch: Partial<AdminConfigState>) => {
-      setConfig((prev) => ({ ...prev, ...patch }));
-    },
-    []
-  );
+  const hasUnsavedChanges =
+    isAuthenticated &&
+    lastSavedJson !== "" &&
+    JSON.stringify(config) !== lastSavedJson;
+
+  const updateConfig = useCallback((patch: Partial<AdminConfigState>) => {
+    setConfig((prev) => ({ ...prev, ...patch }));
+  }, []);
+
+  const discardChanges = useCallback(() => {
+    if (!lastSavedJson) return;
+    try {
+      const parsed = JSON.parse(lastSavedJson) as AdminConfigState;
+      setConfig(parsed);
+      showToast("info", "Perubahan yang belum disimpan dibatalkan.");
+    } catch {}
+  }, [lastSavedJson, showToast]);
 
   const loadConfig = useCallback(
     async (authPassword?: string) => {
@@ -59,7 +71,7 @@ export function useAdminConfig(
         const res = await fetch("/api/config", { headers, cache: "no-store" });
         const data = await res.json();
         if (data && typeof data === "object") {
-          setConfig((prev) => ({
+          const baseConfig: AdminConfigState = {
             m3uUrl: typeof data.m3uUrl === "string" ? data.m3uUrl : "",
             m3uUrl2: typeof data.m3uUrl2 === "string" ? data.m3uUrl2 : "",
             m3uUrl3: typeof data.m3uUrl3 === "string" ? data.m3uUrl3 : "",
@@ -71,7 +83,7 @@ export function useAdminConfig(
             customChannels: data.customChannels
               ? normalizeCustomChannels(data.customChannels)
               : [],
-            tokens: data.tokens ? normalizeTokens(data.tokens) : prev.tokens,
+            tokens: data.tokens ? normalizeTokens(data.tokens) : [],
             notificationText:
               typeof data.notificationText === "string"
                 ? data.notificationText
@@ -82,7 +94,9 @@ export function useAdminConfig(
                 : "#FFFFFF",
             notificationEnabled: Boolean(data.notificationEnabled),
             backgroundUrl:
-              typeof data.backgroundUrl === "string" ? data.backgroundUrl : "",
+              typeof data.backgroundUrl === "string"
+                ? data.backgroundUrl
+                : "",
             welcomeBannerUrl:
               typeof data.welcomeBannerUrl === "string"
                 ? data.welcomeBannerUrl
@@ -118,7 +132,17 @@ export function useAdminConfig(
               typeof data.appName === "string"
                 ? data.appName
                 : String(data.appName || "KIMTV"),
-          }));
+          };
+
+          if (authPassword) {
+            setConfig(baseConfig);
+            setLastSavedJson(JSON.stringify(baseConfig));
+          } else {
+            setConfig((prev) => ({
+              ...baseConfig,
+              tokens: data.tokens ? baseConfig.tokens : prev.tokens,
+            }));
+          }
         }
       } catch (e) {
         console.error("Config fetch error:", e);
@@ -166,6 +190,7 @@ export function useAdminConfig(
 
   const handleSave = useCallback(async () => {
     setSaving(true);
+    const payloadSnapshot = JSON.stringify(config);
     try {
       const res = await fetch("/api/config", {
         method: "POST",
@@ -173,11 +198,15 @@ export function useAdminConfig(
           "Content-Type": "application/json",
           "x-admin-password": adminPassword,
         },
-        body: JSON.stringify(config),
+        body: payloadSnapshot,
       });
 
       if (res.ok) {
-        showToast("success", "Semua pengaturan berhasil tersimpan ke Firebase!");
+        setLastSavedJson(payloadSnapshot);
+        showToast(
+          "success",
+          "Semua pengaturan berhasil tersimpan ke Firebase!"
+        );
       } else {
         const err = await res.json();
         showToast(
@@ -207,6 +236,17 @@ export function useAdminConfig(
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isAuthenticated, saving, handleSave]);
 
+  // Warn user before leaving page with unsaved changes
+  useEffect(() => {
+    if (!hasUnsavedChanges) return;
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [hasUnsavedChanges]);
+
   return {
     adminPassword,
     setAdminPassword,
@@ -214,11 +254,12 @@ export function useAdminConfig(
     setIsAuthenticated,
     loading,
     saving,
+    hasUnsavedChanges,
     config,
     setConfig,
     updateConfig,
+    discardChanges,
     handleLogin,
     handleSave,
   };
 }
-
