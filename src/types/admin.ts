@@ -36,6 +36,18 @@ export interface ActiveUser {
   lastSeen: number;
 }
 
+export interface ChatMessage {
+  id: string;
+  sender: string;
+  message: string;
+  timestamp: number;
+}
+
+export interface ChannelStat {
+  name: string;
+  count: number;
+}
+
 export interface ToastMessage {
   id: string;
   type: "success" | "error" | "info";
@@ -48,7 +60,50 @@ export interface ConfirmDialogState {
   message: string;
   confirmText?: string;
   isDestructive?: boolean;
-  onConfirm: () => void;
+  onConfirm: () => void | Promise<void>;
+}
+
+export interface InboxModalState {
+  isOpen: boolean;
+  token: string;
+  message: string;
+}
+
+export type AdminTabId =
+  | "overview"
+  | "analytics"
+  | "playlist"
+  | "tokens"
+  | "chat"
+  | "settings";
+
+export interface AdminConfigState {
+  m3uUrl: string;
+  m3uUrl2: string;
+  m3uUrl3: string;
+  m3uName: string;
+  m3uName2: string;
+  m3uName3: string;
+  epgUrl: string;
+  proxyUrl: string;
+  customChannels: CustomChannel[];
+  tokens: TokenObject[];
+  notificationText: string;
+  notificationColor: string;
+  notificationEnabled: boolean;
+  backgroundUrl: string;
+  welcomeBannerUrl: string;
+  latestVersionCode: number;
+  apkUpdateUrl: string;
+  adminContactUrl: string;
+  isMaintenance: boolean;
+  prerollAdUrl: string;
+  prerollAdEnabled: boolean;
+  appName: string;
+  chatEnabled: boolean;
+  adminBadgeIcon: string;
+  adminBadgeColor: string;
+  adminNameEffect: string;
 }
 
 export interface ConfigData {

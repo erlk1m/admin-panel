@@ -1,18 +1,18 @@
 import { NextResponse } from "next/server";
+import {
+  buildFirebaseUrl,
+  encodeFirebaseKey,
+  getFirebaseEnv,
+  requireAdmin,
+} from "@/lib/firebase";
 
 export async function POST(request: Request) {
   try {
-    const adminPassword = process.env.ADMIN_PASSWORD;
-    const providedPassword = request.headers.get("x-admin-password");
+    const auth = requireAdmin(request);
+    if (!auth.ok) return auth.response;
 
-    if (!adminPassword || providedPassword !== adminPassword) {
-      return NextResponse.json({ error: "Password Admin Salah atau Belum Dikonfigurasi" }, { status: 401 });
-    }
-
-    const firebaseUrl = process.env.FIREBASE_URL;
-    if (!firebaseUrl) {
-      return NextResponse.json({ error: "FIREBASE_URL is not configured" }, { status: 500 });
-    }
+    const firebase = getFirebaseEnv();
+    if (!firebase.ok) return firebase.response;
 
     const body = await request.json();
     const { token } = body;
@@ -20,16 +20,16 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Token is required" }, { status: 400 });
     }
 
-    const safeToken = encodeURIComponent(String(token)).replace(/\./g, '%2E');
-    const firebaseSecret = process.env.FIREBASE_SECRET;
-    const authQuery = firebaseSecret ? `?auth=${firebaseSecret}` : "";
+    const safeToken = encodeFirebaseKey(String(token));
 
-    // Tulis data KICK ke /kicks/<safeToken>.json
-    const res = await fetch(`${firebaseUrl}/kicks/${safeToken}.json${authQuery}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(Date.now()), // Menyimpan timestamp kapan ditendang
-    });
+    const res = await fetch(
+      buildFirebaseUrl(firebase.env, `/kicks/${safeToken}.json`),
+      {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(Date.now()),
+      }
+    );
 
     if (!res.ok) {
       const errorText = await res.text();
@@ -38,9 +38,11 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json({ success: true });
-  }  
-  catch (error: any) {
+  } catch (error: any) {
     console.error("API Route Error:", error.message);
-    return NextResponse.json({ error: error.message || "Failed to kick user" }, { status: 500 });
+    return NextResponse.json(
+      { error: error.message || "Failed to kick user" },
+      { status: 500 }
+    );
   }
 }

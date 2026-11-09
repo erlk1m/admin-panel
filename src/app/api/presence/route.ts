@@ -1,81 +1,92 @@
 import { NextResponse } from "next/server";
+import {
+  buildFirebaseUrl,
+  getFirebaseEnv,
+  isAdminRequest,
+  NO_STORE_FETCH_HEADERS,
+  NO_STORE_HEADERS,
+} from "@/lib/firebase";
 
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
+
 export async function GET(request: Request) {
   try {
-    const firebaseUrl = process.env.FIREBASE_URL;
-    if (!firebaseUrl) {
-      return NextResponse.json({ error: "FIREBASE_URL is not configured" }, { status: 500 });
-    }
+    const firebase = getFirebaseEnv();
+    if (!firebase.ok) return firebase.response;
 
-    const firebaseSecret = process.env.FIREBASE_SECRET;
-    const authQuery = firebaseSecret ? `?auth=${firebaseSecret}` : "";
-    const sep = authQuery ? "&" : "?";
-
-    // Ambil data presence dari Firebase (tambahkan timestamp agar tidak di-cache)
-    const res = await fetch(`${firebaseUrl}/presence.json${authQuery}${sep}_t=${Date.now()}`, { 
-      cache: 'no-store',
-      headers: {
-        'Cache-Control': 'no-cache, no-store, must-revalidate',
-        'Pragma': 'no-cache',
-        'Expires': '0'
+    const res = await fetch(
+      buildFirebaseUrl(firebase.env, "/presence.json", true),
+      {
+        cache: "no-store",
+        headers: NO_STORE_FETCH_HEADERS,
       }
-    });
+    );
     const data = await res.json();
-    
+
     const activeUsers = [];
     const now = Date.now();
     const threshold = 60000; // 60 detik batas toleransi offline
 
-    if (data && typeof data === 'object') {
+    if (data && typeof data === "object") {
       for (const token in data) {
         const userPresence = data[token];
-        if (!userPresence || typeof userPresence !== 'object') continue;
-        const lastSeenTime = Number(userPresence.lastActive || userPresence.lastSeen || 0);
-        // Cek apakah lastActive masih dalam rentang 60 detik terakhir
-        if (lastSeenTime && (now - lastSeenTime) <= threshold) {
-          const rawChannel = userPresence.activity || userPresence.channel || "Lainnya";
+        if (!userPresence || typeof userPresence !== "object") continue;
+        const lastSeenTime = Number(
+          userPresence.lastActive || userPresence.lastSeen || 0
+        );
+        if (lastSeenTime && now - lastSeenTime <= threshold) {
+          const rawChannel =
+            userPresence.activity || userPresence.channel || "Lainnya";
           const rawCountry = userPresence.country || "ID";
           const rawBrand = userPresence.deviceBrand || "Unknown";
           const rawModel = userPresence.deviceModel || "Unknown";
 
           activeUsers.push({
             token: String(token),
-            channel: typeof rawChannel === 'string' ? rawChannel : (typeof rawChannel === 'object' && rawChannel !== null ? ((rawChannel as any).name || (rawChannel as any).title || JSON.stringify(rawChannel)) : String(rawChannel)),
-            country: typeof rawCountry === 'string' ? rawCountry : String(rawCountry || "ID"),
-            deviceBrand: typeof rawBrand === 'string' ? rawBrand : String(rawBrand || "Unknown"),
-            deviceModel: typeof rawModel === 'string' ? rawModel : String(rawModel || "Unknown"),
+            channel:
+              typeof rawChannel === "string"
+                ? rawChannel
+                : typeof rawChannel === "object" && rawChannel !== null
+                ? (rawChannel as any).name ||
+                  (rawChannel as any).title ||
+                  JSON.stringify(rawChannel)
+                : String(rawChannel),
+            country:
+              typeof rawCountry === "string"
+                ? rawCountry
+                : String(rawCountry || "ID"),
+            deviceBrand:
+              typeof rawBrand === "string"
+                ? rawBrand
+                : String(rawBrand || "Unknown"),
+            deviceModel:
+              typeof rawModel === "string"
+                ? rawModel
+                : String(rawModel || "Unknown"),
             isTv: Boolean(userPresence.isTv),
-            lastSeen: lastSeenTime
+            lastSeen: lastSeenTime,
           });
         }
       }
     }
-    
-    // Urutkan berdasarkan waktu terakhir aktif (paling baru)
+
     activeUsers.sort((a, b) => b.lastSeen - a.lastSeen);
 
-    // Authentication check: Only authenticated admin can view raw user tokens
-    const adminPassword = process.env.ADMIN_PASSWORD;
-    const providedPassword = request.headers.get("x-admin-password");
-    const isAdmin = Boolean(adminPassword && providedPassword === adminPassword);
-
-    const safeUsers = isAdmin
+    const safeUsers = isAdminRequest(request)
       ? activeUsers
       : activeUsers.map((u) => ({
           ...u,
           token: u.token.length > 4 ? `${u.token.slice(0, 3)}***` : "***",
         }));
-    
-    return NextResponse.json({ count: activeUsers.length, users: safeUsers }, {
-      headers: {
-        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
-        'Pragma': 'no-cache',
-        'Expires': '0',
-        'Surrogate-Control': 'no-store'
-      }
-    });
+
+    return NextResponse.json(
+      { count: activeUsers.length, users: safeUsers },
+      { headers: NO_STORE_HEADERS }
+    );
   } catch {
-    return NextResponse.json({ error: "Failed to fetch from Firebase" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to fetch from Firebase" },
+      { status: 500 }
+    );
   }
 }
