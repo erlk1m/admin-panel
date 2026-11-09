@@ -43,10 +43,26 @@ export function getExpirationParams(
   }
 }
 
-export function generateRandomTokenCode(prefix = "KIM-"): string {
+export function generateRandomTokenCode(prefix = "KIM-", length = 6): string {
   const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+  const maxValid = Math.floor(256 / chars.length) * chars.length; // 252 (unbiased)
+  const cryptoApi = globalThis.crypto;
   let token = prefix;
-  for (let i = 0; i < 6; i++) {
+
+  if (cryptoApi && typeof cryptoApi.getRandomValues === "function") {
+    const buf = new Uint8Array(16);
+    while (token.length < prefix.length + length) {
+      cryptoApi.getRandomValues(buf);
+      for (let i = 0; i < buf.length && token.length < prefix.length + length; i++) {
+        if (buf[i] < maxValid) {
+          token += chars.charAt(buf[i] % chars.length);
+        }
+      }
+    }
+    return token;
+  }
+
+  for (let i = 0; i < length; i++) {
     token += chars.charAt(Math.floor(Math.random() * chars.length));
   }
   return token;

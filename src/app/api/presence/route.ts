@@ -2,15 +2,20 @@ import { NextResponse } from "next/server";
 import {
   buildFirebaseUrl,
   getFirebaseEnv,
-  isAdminRequest,
+  logServerError,
   NO_STORE_FETCH_HEADERS,
   NO_STORE_HEADERS,
+  requireAdmin,
+  safeDecodeFirebaseKey,
 } from "@/lib/firebase";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(request: Request) {
   try {
+    const auth = requireAdmin(request);
+    if (!auth.ok) return auth.response;
+
     const firebase = getFirebaseEnv();
     if (!firebase.ok) return firebase.response;
 
@@ -21,16 +26,28 @@ export async function GET(request: Request) {
         headers: NO_STORE_FETCH_HEADERS,
       }
     );
+
+    if (!res.ok) {
+      return NextResponse.json(
+        { error: "Gagal mengambil data presence dari database" },
+        { status: 502, headers: NO_STORE_HEADERS }
+      );
+    }
+
     const data = await res.json();
 
     const activeUsers = [];
     const now = Date.now();
-    const threshold = 60000; // 60 detik batas toleransi offline
+    const threshold = 60000;
 
-    if (data && typeof data === "object") {
-      for (const token in data) {
-        const userPresence = data[token];
-        if (!userPresence || typeof userPresence !== "object") continue;
+    if (data && typeof data === "object" && !Array.isArray(data)) {
+      const presenceMap = data as Record<string, unknown>;
+      for (const encodedToken in presenceMap) {
+        const rawEntry = presenceMap[encodedToken];
+        if (!rawEntry || typeof rawEntry !== "object" || Array.isArray(rawEntry)) {
+          continue;
+        }
+        const userPresence = rawEntry as Record<string, unknown>;
         const lastSeenTime = Number(
           userPresence.lastActive || userPresence.lastSeen || 0
         );
@@ -41,16 +58,19 @@ export async function GET(request: Request) {
           const rawBrand = userPresence.deviceBrand || "Unknown";
           const rawModel = userPresence.deviceModel || "Unknown";
 
+          let channelStr: string;
+          if (typeof rawChannel === "string") {
+            channelStr = rawChannel;
+          } else if (typeof rawChannel === "object" && rawChannel !== null) {
+            const obj = rawChannel as Record<string, unknown>;
+            channelStr = String(obj.name || obj.title || JSON.stringify(obj));
+          } else {
+            channelStr = String(rawChannel);
+          }
+
           activeUsers.push({
-            token: String(token),
-            channel:
-              typeof rawChannel === "string"
-                ? rawChannel
-                : typeof rawChannel === "object" && rawChannel !== null
-                ? (rawChannel as any).name ||
-                  (rawChannel as any).title ||
-                  JSON.stringify(rawChannel)
-                : String(rawChannel),
+            token: safeDecodeFirebaseKey(String(encodedToken)),
+            channel: channelStr,
             country:
               typeof rawCountry === "string"
                 ? rawCountry
@@ -72,21 +92,15 @@ export async function GET(request: Request) {
 
     activeUsers.sort((a, b) => b.lastSeen - a.lastSeen);
 
-    const safeUsers = isAdminRequest(request)
-      ? activeUsers
-      : activeUsers.map((u) => ({
-          ...u,
-          token: u.token.length > 4 ? `${u.token.slice(0, 3)}***` : "***",
-        }));
-
     return NextResponse.json(
-      { count: activeUsers.length, users: safeUsers },
+      { count: activeUsers.length, users: activeUsers },
       { headers: NO_STORE_HEADERS }
     );
-  } catch {
+  } catch (err) {
+    logServerError("api/presence GET", err);
     return NextResponse.json(
-      { error: "Failed to fetch from Firebase" },
-      { status: 500 }
+      { error: "Gagal mengambil data penonton aktif" },
+      { status: 500, headers: NO_STORE_HEADERS }
     );
   }
 }

@@ -22,6 +22,35 @@ const ADMIN_NAME_EFFECTS = [
   { value: "WAVY", label: "Wavy" },
 ];
 
+const isHttpUrl = (val?: string): boolean => {
+  const trimmed = (val || "").trim().toLowerCase();
+  return trimmed.startsWith("http://") || trimmed.startsWith("https://");
+};
+
+const ChatBadgeIcon: React.FC<{ icon?: string; fallback?: string }> = ({
+  icon,
+  fallback = "",
+}) => {
+  const [failedUrl, setFailedUrl] = useState("");
+  const cleanIcon = (icon || "").trim();
+
+  if (isHttpUrl(cleanIcon) && failedUrl !== cleanIcon) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src={cleanIcon}
+        alt=""
+        referrerPolicy="no-referrer"
+        onError={() => setFailedUrl(cleanIcon)}
+        className="w-3.5 h-3.5 rounded-sm object-contain shrink-0"
+      />
+    );
+  }
+
+  const display = cleanIcon && !isHttpUrl(cleanIcon) ? cleanIcon : fallback;
+  return display ? <span className="shrink-0">{display}</span> : null;
+};
+
 export const ChatTab: React.FC<ChatTabProps> = ({
   config,
   updateConfig,
@@ -152,10 +181,11 @@ export const ChatTab: React.FC<ChatTabProps> = ({
             </label>
             <div className="p-2.5 rounded-xl bg-slate-900 border border-white/10 flex items-center gap-2">
               <span
-                className="px-2 py-0.5 rounded-md text-xs font-bold text-white shadow-sm shrink-0"
+                className="px-2 py-0.5 rounded-md text-xs font-bold text-white shadow-sm shrink-0 inline-flex items-center gap-1"
                 style={{ backgroundColor: config.adminBadgeColor }}
               >
-                {config.adminBadgeIcon} ADMIN
+                <ChatBadgeIcon icon={config.adminBadgeIcon} fallback="🔧" />
+                <span>ADMIN</span>
               </span>
               <span className="text-xs text-slate-300 truncate">
                 Halo penonton!
@@ -177,6 +207,7 @@ export const ChatTab: React.FC<ChatTabProps> = ({
             chatMessages.map((msg) => {
               const senderParts = msg.sender.split("|");
               const senderName = senderParts[0] || "User";
+              const senderBadge = senderParts[2] || "";
               const isAdminMsg = senderParts.includes("ADMIN");
 
               return (
@@ -189,7 +220,8 @@ export const ChatTab: React.FC<ChatTabProps> = ({
                   }`}
                 >
                   <div className="space-y-0.5 min-w-0">
-                    <div className="flex flex-wrap items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <ChatBadgeIcon icon={senderBadge} />
                       <span
                         className={`text-xs font-bold ${
                           isAdminMsg ? "text-pink-400" : "text-cyan-400"

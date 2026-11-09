@@ -204,18 +204,55 @@ export const ChannelModal: React.FC<ChannelModalProps> = ({
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-slate-300 mb-1 font-semibold">
-                    License Key (DRM)
+                    Tipe DRM (Wajib jika pakai License Key)
+                  </label>
+                  <select
+                    value={channel?.licenseType || ""}
+                    onChange={(e) =>
+                      onChange({ ...channel, licenseType: e.target.value })
+                    }
+                    className="w-full bg-[#0c1322] border border-white/10 rounded-xl p-2.5 text-white focus:outline-none focus:border-amber-500"
+                  >
+                    <option value="">Tanpa DRM (Otomatis)</option>
+                    <option value="org.w3.clearkey">
+                      ClearKey (org.w3.clearkey)
+                    </option>
+                    <option value="com.widevine.alpha">
+                      Widevine (com.widevine.alpha)
+                    </option>
+                    <option value="com.microsoft.playready">
+                      PlayReady (com.microsoft.playready)
+                    </option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-slate-300 mb-1 font-semibold">
+                    License Key / DRM URL
                   </label>
                   <input
                     type="text"
-                    placeholder="key_id:key"
+                    placeholder="key_id:key atau https://license..."
                     value={channel?.licenseKey || ""}
-                    onChange={(e) =>
-                      onChange({ ...channel, licenseKey: e.target.value })
-                    }
+                    onChange={(e) => {
+                      const nextKey = e.target.value;
+                      const trimmedKey = nextKey.trim();
+                      const suggestedType =
+                        !channel?.licenseType && trimmedKey
+                          ? trimmedKey.toLowerCase().startsWith("http")
+                            ? "com.widevine.alpha"
+                            : "org.w3.clearkey"
+                          : channel?.licenseType;
+                      onChange({
+                        ...channel,
+                        licenseKey: nextKey,
+                        licenseType: suggestedType,
+                      });
+                    }}
                     className="w-full bg-[#0c1322] border border-white/10 rounded-xl p-2.5 text-white focus:outline-none focus:border-amber-500 font-mono"
                   />
                 </div>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-slate-300 mb-1 font-semibold">
                     User-Agent Kustom
@@ -230,20 +267,20 @@ export const ChannelModal: React.FC<ChannelModalProps> = ({
                     className="w-full bg-[#0c1322] border border-white/10 rounded-xl p-2.5 text-white focus:outline-none focus:border-amber-500"
                   />
                 </div>
-              </div>
-              <div>
-                <label className="block text-slate-300 mb-1 font-semibold">
-                  Referer URL (Opsional)
-                </label>
-                <input
-                  type="url"
-                  placeholder="https://sumber-origin.com/"
-                  value={channel?.referer || ""}
-                  onChange={(e) =>
-                    onChange({ ...channel, referer: e.target.value })
-                  }
-                  className="w-full bg-[#0c1322] border border-white/10 rounded-xl p-2.5 text-white focus:outline-none focus:border-amber-500 font-mono"
-                />
+                <div>
+                  <label className="block text-slate-300 mb-1 font-semibold">
+                    Referer URL (Opsional)
+                  </label>
+                  <input
+                    type="url"
+                    placeholder="https://sumber-origin.com/"
+                    value={channel?.referer || ""}
+                    onChange={(e) =>
+                      onChange({ ...channel, referer: e.target.value })
+                    }
+                    className="w-full bg-[#0c1322] border border-white/10 rounded-xl p-2.5 text-white focus:outline-none focus:border-amber-500 font-mono"
+                  />
+                </div>
               </div>
             </div>
           )}

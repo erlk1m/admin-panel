@@ -50,7 +50,6 @@ export default function AdminPanel() {
     adminPassword,
     setAdminPassword,
     isAuthenticated,
-    setIsAuthenticated,
     loading,
     saving,
     hasUnsavedChanges,
@@ -59,6 +58,7 @@ export default function AdminPanel() {
     updateConfig,
     discardChanges,
     handleLogin,
+    handleLogout,
     handleSave,
   } = useAdminConfig(showToast);
 
@@ -68,7 +68,7 @@ export default function AdminPanel() {
     activeUsers,
     activeUsersCount,
     channelStats,
-  } = useLivePolling(isAuthenticated, adminPassword);
+  } = useLivePolling(isAuthenticated, handleLogout);
 
   const handleSendChat = async (message: string): Promise<boolean> => {
     try {
@@ -76,13 +76,18 @@ export default function AdminPanel() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "x-admin-password": adminPassword,
         },
+        credentials: "same-origin",
         body: JSON.stringify({
           message,
           senderOverride: `Admin|ID|${config.adminBadgeIcon}|${config.adminBadgeColor}|ADMIN|${config.adminNameEffect}`,
         }),
       });
+      if (res.status === 401) {
+        void handleLogout();
+        showToast("error", "Sesi admin berakhir. Silakan login ulang.");
+        return false;
+      }
       if (!res.ok) {
         showToast("error", "Gagal mengirim pesan chat.");
         return false;
@@ -106,12 +111,19 @@ export default function AdminPanel() {
         isDestructive: true,
         onConfirm: async () => {
           try {
-            await fetch("/api/chats?id=all", {
+            const res = await fetch("/api/chats?id=all", {
               method: "DELETE",
-              headers: { "x-admin-password": adminPassword },
+              credentials: "same-origin",
             });
-            setChatMessages([]);
-            showToast("success", "Semua pesan chat berhasil dibersihkan.");
+            if (res.status === 401) {
+              void handleLogout();
+              showToast("error", "Sesi admin berakhir. Silakan login ulang.");
+            } else if (res.ok) {
+              setChatMessages([]);
+              showToast("success", "Semua pesan chat berhasil dibersihkan.");
+            } else {
+              showToast("error", "Gagal menghapus pesan chat.");
+            }
           } catch {
             showToast("error", "Gagal menghapus pesan chat.");
           }
@@ -122,13 +134,24 @@ export default function AdminPanel() {
     }
 
     try {
-      await fetch(`/api/chats?id=${encodeURIComponent(id)}`, {
+      const res = await fetch(`/api/chats?id=${encodeURIComponent(id)}`, {
         method: "DELETE",
-        headers: { "x-admin-password": adminPassword },
+        credentials: "same-origin",
       });
-      setChatMessages((prev) => prev.filter((m) => m.id !== id));
-      showToast("info", "Pesan dihapus.");
-    } catch {}
+      if (res.status === 401) {
+        void handleLogout();
+        showToast("error", "Sesi admin berakhir. Silakan login ulang.");
+        return;
+      }
+      if (res.ok) {
+        setChatMessages((prev) => prev.filter((m) => m.id !== id));
+        showToast("info", "Pesan dihapus.");
+      } else {
+        showToast("error", "Gagal menghapus pesan chat.");
+      }
+    } catch {
+      showToast("error", "Gagal menghapus pesan chat.");
+    }
   };
 
   const handleKick = (token: string) => {
@@ -140,15 +163,22 @@ export default function AdminPanel() {
       isDestructive: true,
       onConfirm: async () => {
         try {
-          await fetch("/api/kick", {
+          const res = await fetch("/api/kick", {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
-              "x-admin-password": adminPassword,
             },
+            credentials: "same-origin",
             body: JSON.stringify({ token }),
           });
-          showToast("success", `Sinyal KICK terkirim ke token ${token}!`);
+          if (res.status === 401) {
+            void handleLogout();
+            showToast("error", "Sesi admin berakhir. Silakan login ulang.");
+          } else if (res.ok) {
+            showToast("success", `Sinyal KICK terkirim ke token ${token}!`);
+          } else {
+            showToast("error", "Gagal mengirim sinyal KICK.");
+          }
         } catch {
           showToast("error", "Gagal mengirim sinyal KICK.");
         }
@@ -164,14 +194,18 @@ export default function AdminPanel() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "x-admin-password": adminPassword,
         },
+        credentials: "same-origin",
         body: JSON.stringify({
           token: inboxModal.token,
           message: inboxModal.message,
         }),
       });
-      if (res.ok) {
+      if (res.status === 401) {
+        void handleLogout();
+        showToast("error", "Sesi admin berakhir. Silakan login ulang.");
+        setInboxModal(null);
+      } else if (res.ok) {
         showToast(
           "success",
           `Pesan popup berhasil dikirim ke TV (${inboxModal.token})!`
@@ -353,7 +387,9 @@ export default function AdminPanel() {
         navigationTabs={navigationTabs}
         activeTab={activeTab}
         onSelectTab={setActiveTab}
-        onLogout={() => setIsAuthenticated(false)}
+        onLogout={() => {
+          void handleLogout();
+        }}
       />
 
       <MobileDrawer
@@ -363,7 +399,9 @@ export default function AdminPanel() {
         activeTab={activeTab}
         onSelectTab={setActiveTab}
         onClose={() => setIsMobileMenuOpen(false)}
-        onLogout={() => setIsAuthenticated(false)}
+        onLogout={() => {
+          void handleLogout();
+        }}
       />
 
       <main className="flex-1 flex flex-col h-screen overflow-hidden relative">

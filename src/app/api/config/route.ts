@@ -1,97 +1,98 @@
 import { NextResponse } from "next/server";
 import {
   buildFirebaseUrl,
+  fetchFirebaseWithEtag,
   getFirebaseEnv,
   isAdminRequest,
+  logServerError,
   NO_STORE_FETCH_HEADERS,
   NO_STORE_HEADERS,
+  putFirebaseWithEtag,
   requireAdmin,
 } from "@/lib/firebase";
-import { extractDeviceIds } from "@/lib/normalize";
+import {
+  extractDeviceIds,
+  normalizeCustomChannels,
+  normalizeTokens,
+} from "@/lib/normalize";
+import { sanitizeAdminConfigPayload } from "@/lib/validation";
+import { AdminConfigState, TokenObject } from "@/types/admin";
 
 export const dynamic = "force-dynamic";
+
+const MAX_CAS_ATTEMPTS = 4;
 
 export async function GET(request: Request) {
   try {
     const firebase = getFirebaseEnv();
     if (!firebase.ok) return firebase.response;
 
-    const res = await fetch(buildFirebaseUrl(firebase.env, "/config.json", true), {
-      cache: "no-store",
-      headers: NO_STORE_FETCH_HEADERS,
-    });
+    const res = await fetch(
+      buildFirebaseUrl(firebase.env, "/config.json", true),
+      {
+        cache: "no-store",
+        headers: NO_STORE_FETCH_HEADERS,
+      }
+    );
+
+    if (!res.ok) {
+      return NextResponse.json(
+        { error: "Gagal mengambil konfigurasi dari database." },
+        { status: 502, headers: NO_STORE_HEADERS }
+      );
+    }
+
     const data = await res.json();
-    const configData: Record<string, any> =
-      data && typeof data === "object" ? { ...data } : {};
+    const configData: Record<string, unknown> =
+      data && typeof data === "object" && !Array.isArray(data)
+        ? { ...(data as Record<string, unknown>) }
+        : {};
 
     if (!isAdminRequest(request)) {
-      // Return only public non-sensitive config
       return NextResponse.json(
         {
-          appName: configData.appName || "KIMTV",
+          appName:
+            typeof configData.appName === "string" && configData.appName.trim()
+              ? configData.appName
+              : "KIMTV",
           backgroundUrl: configData.backgroundUrl || null,
           welcomeBannerUrl: configData.welcomeBannerUrl || null,
           isMaintenance: Boolean(configData.isMaintenance),
-          notificationText: configData.notificationText || "",
-          notificationColor: configData.notificationColor || "#FFFFFF",
+          notificationText:
+            typeof configData.notificationText === "string"
+              ? configData.notificationText
+              : "",
+          notificationColor:
+            typeof configData.notificationColor === "string"
+              ? configData.notificationColor
+              : "#FFFFFF",
           notificationEnabled: Boolean(configData.notificationEnabled),
-          latestVersionCode: configData.latestVersionCode || 1,
+          latestVersionCode: Number(configData.latestVersionCode) || 1,
           apkUpdateUrl: configData.apkUpdateUrl || null,
           adminContactUrl: configData.adminContactUrl || null,
           chatEnabled: configData.chatEnabled !== false,
           prerollAdUrl: configData.prerollAdUrl || null,
           prerollAdEnabled: Boolean(configData.prerollAdEnabled),
         },
-        {
-          headers: {
-            "Cache-Control": "no-store, no-cache, must-revalidate",
-            Pragma: "no-cache",
-          },
-        }
+        { headers: NO_STORE_HEADERS }
       );
     }
 
-    // Normalize tokens if object (for authenticated admin)
-    if (
-      configData.tokens &&
-      !Array.isArray(configData.tokens) &&
-      typeof configData.tokens === "object"
-    ) {
-      configData.tokens = Object.entries(configData.tokens).map(
-        ([key, val]: [string, any]) => {
-          if (typeof val === "string") {
-            return { code: val || key, expiresAt: null, label: "Lifetime" };
-          }
-          if (typeof val === "object" && val !== null) {
-            return {
-              ...val,
-              code: typeof val.code === "string" ? val.code : key,
-              label: typeof val.label === "string" ? val.label : "Lifetime",
-              expiresAt:
-                typeof val.expiresAt === "number"
-                  ? val.expiresAt
-                  : Number(val.expiresAt) || null,
-            };
-          }
-          return { code: key, expiresAt: null, label: "Lifetime" };
-        }
-      );
+    if (configData.tokens) {
+      configData.tokens = normalizeTokens(configData.tokens);
     }
-
-    // Normalize customChannels if object
-    if (
-      configData.customChannels &&
-      !Array.isArray(configData.customChannels) &&
-      typeof configData.customChannels === "object"
-    ) {
-      configData.customChannels = Object.values(configData.customChannels);
+    if (configData.customChannels) {
+      configData.customChannels = normalizeCustomChannels(
+        configData.customChannels
+      );
     }
 
     return NextResponse.json(configData, { headers: NO_STORE_HEADERS });
-  } catch (error: any) {
+  } catch (err) {
+    logServerError("api/config GET", err);
     return NextResponse.json(
-      { error: "Failed to fetch from Firebase: " + (error?.message || "") },
-      { status: 500 }
+      { error: "Gagal memuat konfigurasi dari server." },
+      { status: 500, headers: NO_STORE_HEADERS }
     );
   }
 }
@@ -104,55 +105,65 @@ export async function POST(request: Request) {
     const firebase = getFirebaseEnv();
     if (!firebase.ok) return firebase.response;
 
-    const body = await request.json();
-
-    // 1. Fetch current config from Firebase to prevent overwriting active device bindings and trials
-    let currentConfig: Record<string, any> = {};
+    let rawBody: unknown;
     try {
-      const getRes = await fetch(
-        buildFirebaseUrl(firebase.env, "/config.json", true),
-        {
-          cache: "no-store",
-          headers: NO_STORE_FETCH_HEADERS,
-        }
+      rawBody = await request.json();
+    } catch {
+      return NextResponse.json(
+        { error: "Format payload JSON tidak valid." },
+        { status: 400, headers: NO_STORE_HEADERS }
       );
-      if (getRes.ok) {
-        currentConfig = (await getRes.json()) || {};
-      }
-    } catch (e) {
-      console.warn("Could not pre-fetch current config for merging:", e);
     }
 
-    // 2. Merge tokens safely
-    if (Array.isArray(body.tokens)) {
-      let currentTokens: any[] = [];
-      if (Array.isArray(currentConfig.tokens)) {
-        currentTokens = currentConfig.tokens;
-      } else if (
-        currentConfig.tokens &&
-        typeof currentConfig.tokens === "object"
-      ) {
-        currentTokens = Object.values(currentConfig.tokens);
+    const sanitized = sanitizeAdminConfigPayload(rawBody);
+    if (!sanitized.ok) {
+      return NextResponse.json(
+        { error: sanitized.error },
+        { status: 400, headers: NO_STORE_HEADERS }
+      );
+    }
+
+    for (let attempt = 0; attempt < MAX_CAS_ATTEMPTS; attempt++) {
+      const currentFetch = await fetchFirebaseWithEtag<Record<string, unknown>>(
+        firebase.env,
+        "/config.json"
+      );
+
+      if (!currentFetch.ok) {
+        return NextResponse.json(
+          { error: "Gagal membaca konfigurasi terbaru dari database." },
+          { status: 502, headers: NO_STORE_HEADERS }
+        );
       }
 
-      const currentTokenMap = new Map<string, any>();
-      for (const t of currentTokens) {
-        if (t && typeof t === "object" && t.code) {
-          currentTokenMap.set(String(t.code), t);
+      const currentConfig =
+        currentFetch.data &&
+        typeof currentFetch.data === "object" &&
+        !Array.isArray(currentFetch.data)
+          ? currentFetch.data
+          : {};
+
+      const currentTokens = currentConfig.tokens
+        ? normalizeTokens(currentConfig.tokens)
+        : [];
+      const currentTokenMap = new Map<string, TokenObject>();
+      for (const existingToken of currentTokens) {
+        if (existingToken.code) {
+          currentTokenMap.set(existingToken.code, existingToken);
         }
       }
 
-      const mergedTokens: any[] = [];
+      const mergedTokens: TokenObject[] = [];
       const handledCodes = new Set<string>();
 
-      for (const inputToken of body.tokens) {
-        if (!inputToken || !inputToken.code) continue;
-        const code = String(inputToken.code);
-        handledCodes.add(code);
+      for (const inputToken of sanitized.config.tokens) {
+        handledCodes.add(inputToken.code);
+        const existing = currentTokenMap.get(inputToken.code);
 
-        const existing = currentTokenMap.get(code);
         if (existing) {
-          const isResetExplicit = Boolean(inputToken._resetDevice);
+          const isResetExplicit = sanitized.resetDeviceCodes.has(
+            inputToken.code
+          );
           const preservedDeviceIds = isResetExplicit
             ? []
             : extractDeviceIds(existing);
@@ -160,52 +171,68 @@ export async function POST(request: Request) {
             ? ""
             : existing.deviceId || preservedDeviceIds[0] || "";
 
-          const cleanToken = { ...inputToken };
-          delete cleanToken._resetDevice;
-
           mergedTokens.push({
-            ...cleanToken,
+            ...inputToken,
             deviceId: preservedDeviceId,
             deviceIds: preservedDeviceIds,
           });
         } else {
-          const cleanToken = { ...inputToken };
-          delete cleanToken._resetDevice;
-          mergedTokens.push(cleanToken);
+          mergedTokens.push(inputToken);
         }
       }
 
-      // Preserve any active trial tokens from Firebase that were generated in the background
-      for (const t of currentTokens) {
-        if (t && t.code && !handledCodes.has(String(t.code)) && t.isTrial) {
-          if (!t.expiresAt || t.expiresAt > Date.now()) {
-            mergedTokens.push(t);
-          }
+      // Preserve active trial tokens claimed concurrently on TVs
+      const now = Date.now();
+      for (const existingToken of currentTokens) {
+        if (
+          existingToken.code &&
+          !handledCodes.has(existingToken.code) &&
+          existingToken.isTrial &&
+          (!existingToken.expiresAt || existingToken.expiresAt > now)
+        ) {
+          mergedTokens.push(existingToken);
         }
       }
 
-      body.tokens = mergedTokens;
+      const payloadToSave: AdminConfigState = {
+        ...sanitized.config,
+        tokens: mergedTokens,
+      };
+
+      const putResult = await putFirebaseWithEtag(
+        firebase.env,
+        "/config.json",
+        payloadToSave,
+        currentFetch.etag
+      );
+
+      if (putResult.ok) {
+        return NextResponse.json(
+          { success: true, config: payloadToSave },
+          { headers: NO_STORE_HEADERS }
+        );
+      }
+
+      if (!putResult.conflict) {
+        return NextResponse.json(
+          { error: "Gagal menyimpan konfigurasi ke database." },
+          { status: 502, headers: NO_STORE_HEADERS }
+        );
+      }
     }
 
-    // 3. Save merged config back to Firebase RTDB
-    const res = await fetch(buildFirebaseUrl(firebase.env, "/config.json"), {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    });
-
-    if (!res.ok) {
-      const errorText = await res.text();
-      console.error("Firebase Error:", errorText);
-      throw new Error("Gagal menyimpan ke Firebase: " + errorText);
-    }
-
-    return NextResponse.json({ success: true });
-  } catch (error: any) {
-    console.error("API Route Error:", error.message);
     return NextResponse.json(
-      { error: error.message || "Failed to save to Firebase" },
-      { status: 500 }
+      {
+        error:
+          "Konfigurasi sedang diperbarui secara bersamaan. Silakan coba simpan lagi.",
+      },
+      { status: 409, headers: NO_STORE_HEADERS }
+    );
+  } catch (err) {
+    logServerError("api/config POST", err);
+    return NextResponse.json(
+      { error: "Terjadi kesalahan saat menyimpan konfigurasi." },
+      { status: 500, headers: NO_STORE_HEADERS }
     );
   }
 }
