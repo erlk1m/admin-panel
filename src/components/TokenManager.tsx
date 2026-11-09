@@ -122,7 +122,7 @@ export const TokenManager: React.FC<TokenManagerProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const cleanCode = code.trim().toUpperCase();
+    const cleanCode = code.trim();
     if (!cleanCode) {
       showToast("error", "Kode Token tidak boleh kosong!");
       return;
@@ -423,8 +423,8 @@ export const TokenManager: React.FC<TokenManagerProps> = ({
                     type="text"
                     required
                     value={code}
-                    onChange={(e) => setCode(e.target.value.toUpperCase())}
-                    placeholder="misal: KIM-VIP2026"
+                    onChange={(e) => setCode(e.target.value)}
+                    placeholder="misal: KIM-VIP2026 atau kimVip123"
                     className="w-full px-4 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-sm text-white font-mono font-bold focus:outline-none focus:border-indigo-500"
                   />
                   {!editingToken && (
