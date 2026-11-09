@@ -35,7 +35,74 @@ interface TokenManagerProps {
   showToast: (type: ToastMessage["type"], message: string) => void;
 }
 
-const PAGE_SIZE = 20;
+const PAGE_SIZE = 24;
+
+const isHttpUrl = (val?: string): boolean => {
+  const trimmed = (val || "").trim().toLowerCase();
+  return trimmed.startsWith("http://") || trimmed.startsWith("https://");
+};
+
+const TokenBadgeIcon: React.FC<{ icon?: string }> = ({ icon }) => {
+  const [failedUrl, setFailedUrl] = useState("");
+  const cleanIcon = (icon || "").trim();
+
+  if (isHttpUrl(cleanIcon) && failedUrl !== cleanIcon) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src={cleanIcon}
+        alt=""
+        referrerPolicy="no-referrer"
+        onError={() => setFailedUrl(cleanIcon)}
+        className="w-3.5 h-3.5 rounded-sm object-contain shrink-0"
+      />
+    );
+  }
+
+  return (
+    <span className="shrink-0">
+      {cleanIcon && !isHttpUrl(cleanIcon) ? cleanIcon : "👑"}
+    </span>
+  );
+};
+
+const TokenEffectBadge: React.FC<{ effect: string }> = ({ effect }) => {
+  const [failedUrl, setFailedUrl] = useState("");
+  const clean = effect.trim();
+  const isUrl = isHttpUrl(clean);
+
+  if (isUrl) {
+    return (
+      <span
+        title={`Efek GIF: ${clean}`}
+        className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-purple-500/15 text-purple-300 font-semibold border border-purple-500/25 shrink-0"
+      >
+        {failedUrl !== clean ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={clean}
+            alt="GIF"
+            referrerPolicy="no-referrer"
+            onError={() => setFailedUrl(clean)}
+            className="w-3 h-3 rounded-sm object-contain shrink-0"
+          />
+        ) : (
+          <Sparkles className="w-2.5 h-2.5 shrink-0" />
+        )}
+        <span>GIF</span>
+      </span>
+    );
+  }
+
+  return (
+    <span
+      title={clean}
+      className="text-[10px] px-2 py-0.5 rounded-full bg-purple-500/15 text-purple-300 font-mono border border-purple-500/25 truncate max-w-[96px] shrink-0"
+    >
+      {clean}
+    </span>
+  );
+};
 
 export const TokenManager: React.FC<TokenManagerProps> = ({
   appName = "KIMTV",
@@ -384,7 +451,7 @@ export const TokenManager: React.FC<TokenManagerProps> = ({
           </div>
         </div>
 
-        {/* Token Rows */}
+        {/* Responsive Grid of Token Cards */}
         {filteredTokens.length === 0 ? (
           <div className="text-center py-16 text-slate-500 text-xs flex flex-col items-center gap-2">
             <Key className="w-8 h-8 text-slate-700 animate-pulse" />
@@ -394,7 +461,7 @@ export const TokenManager: React.FC<TokenManagerProps> = ({
           </div>
         ) : (
           <>
-            <div className="space-y-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3.5">
               {paginatedTokens.map((tokenObj, idx) => {
                 const isExpired = Boolean(
                   tokenObj.expiresAt && now > 0 && tokenObj.expiresAt <= now
@@ -405,93 +472,96 @@ export const TokenManager: React.FC<TokenManagerProps> = ({
                   : tokenObj.deviceId
                   ? 1
                   : 0;
-                const hasCustomEffect =
-                  tokenObj.nameEffect && tokenObj.nameEffect !== "NONE";
+                const hasCustomEffect = Boolean(
+                  tokenObj.nameEffect && tokenObj.nameEffect !== "NONE"
+                );
 
                 return (
                   <div
                     key={tokenObj.code || idx}
-                    className={`p-4 sm:p-5 rounded-2xl border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4 group ${
+                    className={`p-4 rounded-2xl border transition-all flex flex-col justify-between gap-3.5 group ${
                       isExpired
                         ? "bg-red-950/10 border-red-500/20 opacity-75"
-                        : "bg-gradient-to-r from-white/[0.025] to-white/[0.01] border-white/[0.07] hover:border-indigo-500/40 hover:shadow-[0_0_25px_-5px_rgba(99,102,241,0.15)]"
+                        : "bg-gradient-to-br from-white/[0.03] to-white/[0.01] border-white/[0.07] hover:border-indigo-500/40 hover:shadow-[0_0_25px_-5px_rgba(99,102,241,0.18)]"
                     }`}
                   >
-                    <div className="space-y-2 min-w-0">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className="font-mono text-base font-black text-amber-300 tracking-wide break-all">
-                          {tokenObj.code}
-                        </span>
+                    {/* Card Top & Metadata */}
+                    <div className="space-y-2.5">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <span
+                            className="font-mono text-sm font-black text-amber-300 tracking-wide truncate"
+                            title={tokenObj.code}
+                          >
+                            {tokenObj.code}
+                          </span>
 
-                        <button
-                          type="button"
-                          onClick={() =>
-                            copyToClipboard(
-                              tokenObj.code,
-                              tokenObj.code,
-                              `Token ${tokenObj.code} tersalin!`
-                            )
-                          }
-                          className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white transition-all active:scale-90"
-                          title="Salin Kode Token"
-                        >
-                          {copiedKey === tokenObj.code ? (
-                            <Check className="w-3.5 h-3.5 text-emerald-400" />
-                          ) : (
-                            <Copy className="w-3.5 h-3.5" />
-                          )}
-                        </button>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              copyToClipboard(
+                                tokenObj.code,
+                                tokenObj.code,
+                                `Token ${tokenObj.code} tersalin!`
+                              )
+                            }
+                            className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white transition-all active:scale-90 shrink-0"
+                            title="Salin Kode Token"
+                          >
+                            {copiedKey === tokenObj.code ? (
+                              <Check className="w-3.5 h-3.5 text-emerald-400" />
+                            ) : (
+                              <Copy className="w-3.5 h-3.5" />
+                            )}
+                          </button>
 
-                        <button
-                          type="button"
-                          onClick={() => copyShareInfo(tokenObj)}
-                          className="px-2 py-1 rounded-lg bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-300 text-[10px] font-bold border border-indigo-500/20 flex items-center gap-1 transition-all active:scale-95"
-                          title="Salin info token & masa aktif siap kirim ke WhatsApp"
-                        >
-                          {copiedKey === `info_${tokenObj.code}` ? (
-                            <Check className="w-3 h-3 text-emerald-400" />
-                          ) : (
-                            <Share2 className="w-3 h-3" />
-                          )}
-                          <span>Info</span>
-                        </button>
+                          <button
+                            type="button"
+                            onClick={() => copyShareInfo(tokenObj)}
+                            className="px-2 py-1 rounded-lg bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-300 text-[10px] font-bold border border-indigo-500/20 flex items-center gap-1 transition-all active:scale-95 shrink-0"
+                            title="Salin info token & masa aktif siap kirim ke WhatsApp"
+                          >
+                            {copiedKey === `info_${tokenObj.code}` ? (
+                              <Check className="w-3 h-3 text-emerald-400" />
+                            ) : (
+                              <Share2 className="w-3 h-3" />
+                            )}
+                            <span>Info</span>
+                          </button>
+                        </div>
 
                         {/* Status / Tier Badge */}
-                        {isExpired ? (
-                          <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-red-500/15 text-red-300 font-bold border border-red-500/30">
-                            EXPIRED
-                          </span>
-                        ) : tokenObj.isTrial ? (
-                          <span className="shimmer-badge text-[10px] px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-200 font-bold border border-slate-600">
-                            ⏱️ TRIAL
-                          </span>
-                        ) : (
-                          <span className="shimmer-badge text-[10px] px-2.5 py-0.5 rounded-full bg-gradient-to-r from-amber-500/20 via-amber-400/10 to-transparent text-amber-300 font-bold border border-amber-500/30 shadow-[0_0_12px_-2px_rgba(245,158,11,0.25)]">
-                            {tokenObj.badgeIcon || "👑"}{" "}
-                            {tokenObj.label || "VIP Lifetime"}
-                          </span>
-                        )}
-
-                        {hasCustomEffect && (
-                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-purple-500/15 text-purple-300 font-mono border border-purple-500/25">
-                            {tokenObj.nameEffect}
-                          </span>
-                        )}
+                        <div className="shrink-0 max-w-[135px]">
+                          {isExpired ? (
+                            <span className="inline-block text-[10px] px-2.5 py-0.5 rounded-full bg-red-500/15 text-red-300 font-bold border border-red-500/30">
+                              EXPIRED
+                            </span>
+                          ) : tokenObj.isTrial ? (
+                            <span className="shimmer-badge inline-block text-[10px] px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-200 font-bold border border-slate-600">
+                              ⏱️ TRIAL
+                            </span>
+                          ) : (
+                            <span
+                              title={tokenObj.label || "VIP Lifetime"}
+                              className="shimmer-badge inline-flex items-center gap-1.5 max-w-full text-[10px] px-2.5 py-0.5 rounded-full bg-gradient-to-r from-amber-500/20 via-amber-400/10 to-transparent text-amber-300 font-bold border border-amber-500/30 shadow-[0_0_12px_-2px_rgba(245,158,11,0.25)]"
+                            >
+                              <TokenBadgeIcon icon={tokenObj.badgeIcon} />
+                              <span className="truncate">
+                                {tokenObj.label || "VIP Lifetime"}
+                              </span>
+                            </span>
+                          )}
+                        </div>
                       </div>
 
-                      <div className="flex flex-wrap items-center gap-4 text-xs text-slate-400">
-                        {tokenObj.expiresAt && (
-                          <span className="flex items-center gap-1.5 font-mono">
-                            <Clock className="w-3.5 h-3.5 text-slate-500" />
-                            Exp: {formatDateSafe(tokenObj.expiresAt)}
-                          </span>
-                        )}
-
-                        {/* Visual Device Slots Meter */}
-                        <div className="flex items-center gap-1.5">
-                          <div className="flex items-center gap-1">
-                            {Array.from({ length: Math.min(maxDev, 10) }).map(
-                              (_, i) => (
+                      {/* Slot Meter + Custom Effect + Expiry */}
+                      <div className="space-y-1.5">
+                        <div className="flex items-center justify-between gap-2 text-xs text-slate-400">
+                          <div className="flex items-center gap-1.5">
+                            <div className="flex items-center gap-1">
+                              {Array.from({
+                                length: Math.min(maxDev, 10),
+                              }).map((_, i) => (
                                 <span
                                   key={i}
                                   className={`w-2 h-2 rounded-full transition-all ${
@@ -505,54 +575,71 @@ export const TokenManager: React.FC<TokenManagerProps> = ({
                                       : "Slot TV Tersedia"
                                   }
                                 />
-                              )
-                            )}
+                              ))}
+                            </div>
+                            <span className="text-[11px] text-slate-300 font-mono">
+                              {devCount}/{maxDev} TV
+                            </span>
                           </div>
-                          <span className="text-xs text-slate-300 font-mono">
-                            {devCount}/{maxDev} TV
-                          </span>
+
+                          {hasCustomEffect && tokenObj.nameEffect && (
+                            <TokenEffectBadge effect={tokenObj.nameEffect} />
+                          )}
                         </div>
+
+                        {tokenObj.expiresAt && (
+                          <div className="flex items-center gap-1.5 text-[11px] font-mono text-slate-400">
+                            <Clock className="w-3 h-3 text-slate-500 shrink-0" />
+                            <span className="truncate">
+                              Exp: {formatDateSafe(tokenObj.expiresAt)}
+                            </span>
+                          </div>
+                        )}
                       </div>
                     </div>
 
-                    <div className="flex flex-wrap items-center gap-2 shrink-0">
-                      {tokenObj.isTrial && (
+                    {/* Card Footer Actions */}
+                    <div className="flex items-center justify-between gap-1.5 pt-3 border-t border-white/[0.06]">
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        {tokenObj.isTrial && (
+                          <button
+                            type="button"
+                            onClick={() => onUpgradeTrial(tokenObj.code)}
+                            className="px-2.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] font-bold transition-all shadow-md shadow-indigo-600/20 active:scale-95"
+                          >
+                            Upgrade VIP
+                          </button>
+                        )}
+                        {devCount > 0 && (
+                          <button
+                            type="button"
+                            onClick={() => onResetDevice(tokenObj.code)}
+                            className="px-2.5 py-1.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 text-[11px] font-bold transition-colors border border-amber-500/20"
+                            title="Reset kaitan TV lama"
+                          >
+                            Reset TV
+                          </button>
+                        )}
                         <button
                           type="button"
-                          onClick={() => onUpgradeTrial(tokenObj.code)}
-                          className="px-3.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition-all shadow-md shadow-indigo-600/20 active:scale-95"
+                          onClick={() => onOpenInbox(tokenObj.code)}
+                          className="px-2.5 py-1.5 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 text-[11px] font-bold transition-colors border border-emerald-500/20"
                         >
-                          Upgrade VIP
+                          Pesan TV
                         </button>
-                      )}
-                      {devCount > 0 && (
                         <button
                           type="button"
-                          onClick={() => onResetDevice(tokenObj.code)}
-                          className="px-3 py-1.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 text-xs font-bold transition-colors border border-amber-500/20"
-                          title="Reset kaitan TV lama"
+                          onClick={() => setEditingToken(tokenObj)}
+                          className="px-2.5 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 text-[11px] font-bold transition-colors border border-white/10"
                         >
-                          Reset TV
+                          Edit
                         </button>
-                      )}
-                      <button
-                        type="button"
-                        onClick={() => onOpenInbox(tokenObj.code)}
-                        className="px-3 py-1.5 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 text-xs font-bold transition-colors border border-emerald-500/20"
-                      >
-                        Pesan TV
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setEditingToken(tokenObj)}
-                        className="px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 text-xs font-bold transition-colors border border-white/10"
-                      >
-                        Edit
-                      </button>
+                      </div>
+
                       <button
                         type="button"
                         onClick={() => onRemoveToken(tokenObj.code)}
-                        className="p-2 rounded-xl hover:bg-red-500/20 text-slate-500 hover:text-red-400 transition-colors"
+                        className="p-1.5 rounded-xl hover:bg-red-500/20 text-slate-500 hover:text-red-400 transition-colors shrink-0"
                         title="Hapus Token"
                         aria-label={`Hapus token ${tokenObj.code}`}
                       >

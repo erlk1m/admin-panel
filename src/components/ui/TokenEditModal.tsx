@@ -21,9 +21,24 @@ const NAME_EFFECT_OPTIONS = [
   { value: "NEON", label: "Neon" },
   { value: "RAINBOW", label: "Rainbow" },
   { value: "WAVY", label: "Wavy" },
+  { value: "CUSTOM_URL", label: "Custom GIF URL" },
 ];
 
+const PRESET_EFFECT_VALUES = new Set([
+  "NONE",
+  "GLITCH",
+  "SPARKLE",
+  "NEON",
+  "RAINBOW",
+  "WAVY",
+]);
+
 const QUICK_BADGES = ["👑", "💎", "⚡", "🔥", "⭐", ""];
+
+const isHttpUrl = (val: string): boolean => {
+  const trimmed = val.trim().toLowerCase();
+  return trimmed.startsWith("http://") || trimmed.startsWith("https://");
+};
 
 export const TokenEditModal: React.FC<TokenEditModalProps> = ({
   token,
@@ -33,13 +48,22 @@ export const TokenEditModal: React.FC<TokenEditModalProps> = ({
   onSave,
   onResetDevice,
 }) => {
+  const initialEffect = token.nameEffect || "NONE";
+  const isInitialPreset = PRESET_EFFECT_VALUES.has(initialEffect);
+
   const [code, setCode] = useState(token.code);
   const [label, setLabel] = useState(token.label || "Lifetime");
   const [durationMode, setDurationMode] = useState<string>("keep");
   const [maxDevices, setMaxDevices] = useState<number>(token.maxDevices || 1);
   const [badgeIcon, setBadgeIcon] = useState(token.badgeIcon || "");
   const [badgeColor, setBadgeColor] = useState(token.badgeColor || "#FFD700");
-  const [nameEffect, setNameEffect] = useState(token.nameEffect || "NONE");
+  const [nameEffectMode, setNameEffectMode] = useState(
+    isInitialPreset ? initialEffect : "CUSTOM_URL"
+  );
+  const [customEffectUrl, setCustomEffectUrl] = useState(
+    isInitialPreset ? "" : initialEffect
+  );
+  const [failedBadgeUrl, setFailedBadgeUrl] = useState("");
   const [isResetPending, setIsResetPending] = useState(false);
   const [codeError, setCodeError] = useState("");
 
@@ -58,6 +82,11 @@ export const TokenEditModal: React.FC<TokenEditModalProps> = ({
     : 0;
   const devCount = isResetPending ? 0 : rawDevCount;
   const isExpired = Boolean(token.expiresAt && now > 0 && token.expiresAt <= now);
+
+  const cleanBadge = badgeIcon.trim();
+  const showBadgeImage = Boolean(
+    isHttpUrl(cleanBadge) && failedBadgeUrl !== cleanBadge
+  );
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -90,6 +119,11 @@ export const TokenEditModal: React.FC<TokenEditModalProps> = ({
       }
     }
 
+    const finalNameEffect =
+      nameEffectMode === "CUSTOM_URL"
+        ? customEffectUrl.trim() || "NONE"
+        : nameEffectMode;
+
     onSave(token.code, {
       ...token,
       code: cleanCode,
@@ -97,9 +131,9 @@ export const TokenEditModal: React.FC<TokenEditModalProps> = ({
       expiresAt: nextExpiresAt,
       isTrial: nextIsTrial,
       maxDevices: Math.max(1, Math.min(10, Number(maxDevices) || 1)),
-      badgeIcon: badgeIcon.trim(),
+      badgeIcon: cleanBadge,
       badgeColor: badgeColor.trim() || "#FFD700",
-      nameEffect,
+      nameEffect: finalNameEffect,
       ...(isResetPending
         ? { deviceId: "", deviceIds: [], _resetDevice: true }
         : {}),
@@ -263,17 +297,30 @@ export const TokenEditModal: React.FC<TokenEditModalProps> = ({
 
           {/* Chat Identity Customizer */}
           <div className="p-3.5 rounded-2xl bg-white/[0.02] border border-white/10 space-y-3">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between gap-2">
               <span className="text-[11px] font-bold text-indigo-300 uppercase tracking-wider flex items-center gap-1.5">
                 <Sparkles className="w-3.5 h-3.5" />
                 Identitas Live Chat Pengguna
               </span>
               <span
-                className="text-xs font-bold px-2 py-0.5 rounded-lg bg-slate-900 border border-white/10"
+                className="text-xs font-bold px-2.5 py-0.5 rounded-lg bg-slate-900 border border-white/10 inline-flex items-center gap-1.5 max-w-[180px]"
                 style={{ color: badgeColor || "#FFD700" }}
               >
-                {badgeIcon ? `${badgeIcon} ` : ""}
-                {code || "User"}
+                {showBadgeImage ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={cleanBadge}
+                    alt="Badge"
+                    referrerPolicy="no-referrer"
+                    onError={() => setFailedBadgeUrl(cleanBadge)}
+                    className="w-4 h-4 object-contain rounded-sm shrink-0"
+                  />
+                ) : (
+                  cleanBadge && !isHttpUrl(cleanBadge) && (
+                    <span className="shrink-0">{cleanBadge}</span>
+                  )
+                )}
+                <span className="truncate">{code || "User"}</span>
               </span>
             </div>
 
@@ -333,8 +380,8 @@ export const TokenEditModal: React.FC<TokenEditModalProps> = ({
                   Efek Nama di TV
                 </label>
                 <select
-                  value={nameEffect}
-                  onChange={(e) => setNameEffect(e.target.value)}
+                  value={nameEffectMode}
+                  onChange={(e) => setNameEffectMode(e.target.value)}
                   className="w-full bg-[#0c1322] border border-white/10 rounded-xl p-2.5 text-white focus:outline-none focus:border-indigo-500"
                 >
                   {NAME_EFFECT_OPTIONS.map((opt) => (
@@ -345,6 +392,21 @@ export const TokenEditModal: React.FC<TokenEditModalProps> = ({
                 </select>
               </div>
             </div>
+
+            {nameEffectMode === "CUSTOM_URL" && (
+              <div>
+                <label className="block text-slate-400 mb-1 font-semibold">
+                  URL GIF Efek Nama
+                </label>
+                <input
+                  type="url"
+                  value={customEffectUrl}
+                  onChange={(e) => setCustomEffectUrl(e.target.value)}
+                  placeholder="https://example.com/sparkles.gif"
+                  className="w-full bg-[#0c1322] border border-white/10 rounded-xl p-2.5 text-white font-mono focus:outline-none focus:border-indigo-500"
+                />
+              </div>
+            )}
           </div>
         </div>
 
